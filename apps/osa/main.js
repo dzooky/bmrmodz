@@ -25,54 +25,71 @@ mgu.run({
         const MAX_HISTORY = 300;
         let history = [];
         let atfHistory = [];
+        let pendingCool = null;
         try {
             const saved = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
             if (Array.isArray(saved)) {
                 history = saved.filter((x) => x && !x.kind && G.isNum(x.outside) && G.isNum(x.oilStart) && G.isNum(x.coolantStart) && G.isNum(x.oilMin) && G.isNum(x.coolantMin));
                 atfHistory = saved.filter((x) => x && x.kind === 'atf-warm' && G.isNum(x.startTemp) && G.isNum(x.minutes));
                 atfHistory = atfHistory.concat(saved.filter((x) => x && x.kind === 'atf-cool' && G.isNum(x.startTemp) && G.isNum(x.minutes)));
+                const pending = saved.find((x) => x && x.kind === 'atf-cool-pending' && G.isNum(x.startTemp) && G.isNum(x.startedAt));
+                if (pending) pendingCool = { startTemp: pending.startTemp, startedAt: pending.startedAt };
             }
         } catch (e) { /* first run or no history yet */ }
         const saveHistory = () => {
             const tmp = HISTORY_FILE + '.tmp';
-            try { fs.writeFileSync(tmp, JSON.stringify(history.slice(-MAX_HISTORY).concat(atfHistory.slice(-MAX_HISTORY)))); fs.renameSync(tmp, HISTORY_FILE); }
+            try {
+                const rows = history.slice(-MAX_HISTORY).concat(atfHistory.slice(-MAX_HISTORY));
+                if (pendingCool) rows.push({ kind: 'atf-cool-pending', startTemp: pendingCool.startTemp, startedAt: pendingCool.startedAt });
+                fs.writeFileSync(tmp, JSON.stringify(rows));
+                fs.renameSync(tmp, HISTORY_FILE);
+            }
             catch (e) { log.warn('OSA history save: ' + e); try { fs.unlinkSync(tmp); } catch (ignore) {} }
         };
         let atfWasRunning = null;
         let atfWarmSession = null;
-        let atfCoolSession = null;
+        let atfCoolSession = pendingCool;
         const updateAtfHistory = (d) => {
             const running = G.isNum(d.rpm) ? d.rpm >= 300 : null;
             const atf = transmission.fresh ? transmission.temp : null;
-            const now = mono();
+            const now = Date.now();
             if (running === null) return;
-            if (running && atfWasRunning !== true) atfCoolSession = null;
-            // EGS may provide its first fresh sample a few seconds after engine start.
-            // Start the timer when that first cold ATF sample becomes available.
-            if (running && !atfWarmSession && G.isNum(atf) && atf < 30) {
-                atfWarmSession = { start: now, startTemp: atf, outside: G.isNum(outsideTemp) ? outsideTemp : null };
-            }
-            if (running && atfWarmSession && G.isNum(atf) && atf >= 30) {
-                atfHistory.push({ kind: 'atf-warm', at: Date.now(), outside: atfWarmSession.outside,
-                    startTemp: atfWarmSession.startTemp, minutes: (now - atfWarmSession.start) / 60000 });
-                atfHistory = atfHistory.slice(-MAX_HISTORY);
-                saveHistory();
-                log.info('OSA ATF warm-up history saved');
-                atfWarmSession = null;
-            }
-            if (!running && atfWasRunning === true) {
-                atfWarmSession = null;
-                atfCoolSession = G.isNum(atf) && atf > 40
-                    ? { start: now, startTemp: atf }
-                    : null;
-            }
-            if (!running && atfCoolSession && G.isNum(atf) && atf <= 30) {
-                atfHistory.push({ kind: 'atf-cool', at: Date.now(), startTemp: atfCoolSession.startTemp,
-                    minutes: (now - atfCoolSession.start) / 60000 });
-                atfHistory = atfHistory.slice(-MAX_HISTORY);
-                saveHistory();
-                log.info('OSA ATF cool-down history saved');
-                atfCoolSession = null;
+            if (running) {
+                if (atfCoolSession) {
+                    // A new engine run ends an interrupted cooling observation.
+                    atfCoolSession = null;
+                    pendingCool = null;
+                    saveHistory();
+                }
+                if (!atfWarmSession && G.isNum(atf) && atf < 30) {
+                    atfWarmSession = { start: mono(), startTemp: atf, outside: G.isNum(outsideTemp) ? outsideTemp : null };
+                }
+                if (atfWarmSession && G.isNum(atf) && atf >= 30) {
+                    atfHistory.push({ kind: 'atf-warm', at: now, outside: atfWarmSession.outside,
+                        startTemp: atfWarmSession.startTemp, minutes: (mono() - atfWarmSession.start) / 60000 });
+                    atfHistory = atfHistory.slice(-MAX_HISTORY);
+                    saveHistory();
+                    log.info('OSA ATF warm-up history saved');
+                    atfWarmSession = null;
+                }
+            } else {
+                if (atfWasRunning === true) {
+                    atfWarmSession = null;
+                    if (G.isNum(atf) && atf > 40) {
+                        atfCoolSession = { startTemp: atf, startedAt: now };
+                        pendingCool = atfCoolSession;
+                        saveHistory();
+                    }
+                }
+                if (atfCoolSession && G.isNum(atf) && atf <= 30) {
+                    atfHistory.push({ kind: 'atf-cool', at: now, startTemp: atfCoolSession.startTemp,
+                        minutes: Math.max(0, (now - atfCoolSession.startedAt) / 60000) });
+                    atfHistory = atfHistory.slice(-MAX_HISTORY);
+                    atfCoolSession = null;
+                    pendingCool = null;
+                    saveHistory();
+                    log.info('OSA ATF cool-down history saved');
+                }
             }
             atfWasRunning = running;
         };
@@ -319,15 +336,24 @@ mgu.run({
                 cv.text('°C', value === null ? 1010 : 1018, 245, 27, t.dim);
                 cv.text(transmission.sgbd ? ('EGS ' + transmission.sgbd + ' · DID 6000') : 'EGS · DID 6000', 952, 285, 18, t.dim);
 
-                cv.text('ATF WARM-UP · TO 30°C', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
-                const warmAvg = atfAverage('atf-warm');
-                const warmElapsed = atfWarmSession ? Math.max(1, Math.round((mono() - atfWarmSession.start) / 60000)) : null;
-                cv.text(atfWarmSession ? (warmElapsed + ' min elapsed') : (warmAvg === null ? '--' : 'avg ' + Math.round(warmAvg) + ' min'), 952, 385, 26, atfWarmSession ? t.text : t.dim, { font: 'num' });
-                cv.text('ATF COOL-DOWN · TO 30°C', 1260, 345, 20, t.dim, { font: 'bold', spacing: 1 });
-                const coolAvg = atfAverage('atf-cool');
-                const coolElapsed = atfCoolSession ? Math.max(1, Math.round((mono() - atfCoolSession.start) / 60000)) : null;
-                cv.text(atfCoolSession ? (coolElapsed + ' min elapsed') : (coolAvg === null ? '--' : 'avg ' + Math.round(coolAvg) + ' min'), 1260, 385, 26, atfCoolSession ? t.text : t.dim, { font: 'num' });
-                cv.text('Starts below 30°C · cooling starts above 40°C', 952, 445, 18, t.dim);
+                const engineRunning = G.isNum(d.rpm) && d.rpm >= 300;
+                const atfMode = value !== null && value < 30 ? 'heat'
+                    : (value !== null && value > 40 && !engineRunning ? 'cool' : null);
+                if (atfMode === 'heat') {
+                    cv.text('ATF HEAT-UP · TO 30°C', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
+                    const warmAvg = atfAverage('atf-warm');
+                    const warmElapsed = atfWarmSession ? Math.max(1, Math.round((mono() - atfWarmSession.start) / 60000)) : null;
+                    cv.text(atfWarmSession ? (warmElapsed + ' min elapsed') : (warmAvg === null ? 'COLLECTING DATA' : 'avg ' + Math.round(warmAvg) + ' min'), 952, 385, 26, atfWarmSession ? t.text : t.dim, { font: 'num' });
+                } else if (atfMode === 'cool') {
+                    cv.text('ATF COOL-DOWN · TO 30°C', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
+                    const coolAvg = atfAverage('atf-cool');
+                    const coolElapsed = atfCoolSession ? Math.max(1, Math.round((Date.now() - atfCoolSession.startedAt) / 60000)) : null;
+                    cv.text(atfCoolSession ? (coolElapsed + ' min elapsed') : (coolAvg === null ? 'COLLECTING DATA' : 'avg ' + Math.round(coolAvg) + ' min'), 952, 385, 26, atfCoolSession ? t.text : t.dim, { font: 'num' });
+                } else {
+                    cv.text('SERVICE TEMPERATURE MONITOR', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
+                    cv.text('HEAT <30°C  ·  COOL >40°C + ENGINE OFF', 952, 385, 20, t.dim);
+                }
+                cv.text('One service mode at a time · HEAT / COOL', 952, 445, 18, t.dim);
                 if (transmission.error) cv.text(transmission.error, 952, 475, 17, t.warn, { maxWidth: 590 });
             } else {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
