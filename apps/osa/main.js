@@ -34,11 +34,11 @@ mgu.run({
             catch (e) { log.warn('OSA history save: ' + e); try { fs.unlinkSync(tmp); } catch (ignore) {} }
         };
         let warmSession = null;
-        let lastWarmSample = 0;
+        let currentStart = null;
         const similarHistory = (targetOil, targetCoolant) => {
-            if (!warmSession) return null;
+            if (!currentStart) return null;
             for (let tol = 1; tol <= 5; tol++) {
-                const matches = history.filter((x) => Math.abs(x.outside - warmSession.outside) <= tol && Math.abs(x.oilStart - warmSession.oilStart) <= tol && Math.abs(x.coolantStart - warmSession.coolantStart) <= tol && x.oilTarget === targetOil && x.coolantTarget === targetCoolant);
+                const matches = history.filter((x) => Math.abs(x.outside - currentStart.outside) <= tol && Math.abs(x.oilStart - currentStart.oilStart) <= tol && Math.abs(x.coolantStart - currentStart.coolantStart) <= tol && x.oilTarget === targetOil && x.coolantTarget === targetCoolant);
                 if (matches.length) {
                     return {
                         oil: matches.reduce((sum, x) => sum + x.oilMin, 0) / matches.length,
@@ -57,6 +57,7 @@ mgu.run({
                     if (!G.isNum(d.oil) || !G.isNum(d.coolant) || !G.isNum(outsideTemp)) return;
                     warmSession = { start: now, outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant,
                         oilTarget, coolantTarget, oilAt: null, coolantAt: null };
+                    currentStart = { outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant };
                 }
                 if (warmSession.oilAt === null && G.isNum(d.oil) && d.oil >= warmSession.oilTarget) warmSession.oilAt = (now - warmSession.start) / 60000;
                 if (warmSession.coolantAt === null && G.isNum(d.coolant) && d.coolant >= warmSession.coolantTarget) warmSession.coolantAt = (now - warmSession.start) / 60000;
