@@ -11,16 +11,17 @@ Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
 
 The repository follows the MGU Store repository format in `mgu-repo.json`.
 
-To build OSA locally:
+The repository is configured for **mgu-store** to build OSA on the head unit.
+The Store supplies the BMW SDK donor and links the SDK into the app during its
+source build. The build script therefore omits `node_modules/oap-sdk` from the
+published package; BMW's SDK is not redistributed.
 
-```sh
-python3 kit/tools/build.py osa
-```
-
-The BMW `oap-sdk` is not redistributed. As in the source MGU kit, extract it from an app on your own head unit with:
+For a standalone local build (outside mgu-store), the SDK must first be extracted
+from an app on your own head unit with:
 
 ```sh
 node kit/tools/extract_sdk.js /path/to/app.js
+python3 kit/tools/build.py osa
 ```
 
 Keep the generated `oap-sdk/` directory local; it is intentionally not committed.
