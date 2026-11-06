@@ -25,6 +25,13 @@ mgu.run({
         const hist = [];
         const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         let lastHist = 0;
+        // Keep the calculated heating rate stable between samples. The display
+        // refreshes faster than the vehicle signals, so update this only on a
+        // new temperature sample rather than on every rendered frame.
+        const rateState = {
+            oil: { sample: 0, rate: null },
+            coolant: { sample: 0, rate: null }
+        };
         car.onSample((d) => {
             const now = mono();
             if (now - lastHist > 5000 && (G.isNum(d.oil) || G.isNum(d.coolant))) {
@@ -32,7 +39,12 @@ mgu.run({
                 hist.push([now, d.oil, d.coolant]);
                 while (hist.length > 240) hist.shift();
             }
-        }, () => { hist.length = 0; lastHist = 0; });
+        }, () => {
+            hist.length = 0;
+            lastHist = 0;
+            rateState.oil = { sample: 0, rate: null };
+            rateState.coolant = { sample: 0, rate: null };
+        });
 
         const TYPICAL = { oil: { drive: 4, idle: 1.5 }, coolant: { drive: 7, idle: 3 } };
         function measured(idx) {
@@ -53,7 +65,18 @@ mgu.run({
             const m = measured(key === 'oil' ? 1 : 2);
             const typ = TYPICAL[key][G.isNum(d.speed) && d.speed > 10 ? 'drive' : 'idle'];
             const w = G.clamp(m.span / 120000, 0, 1);
-            const rate = G.isNum(m.rate) ? w * m.rate + (1 - w) * typ : typ;
+            const sample = hist.length ? hist[hist.length - 1][0] : 0;
+            const state = rateState[key];
+            if (sample && sample !== state.sample) {
+                state.sample = sample;
+                // Ignore implausible one-window spikes, then ease toward the
+                // measured B57 warm-up rate instead of letting ETA jump.
+                const ceiling = key === 'oil' ? 10 : 15;
+                const observed = G.isNum(m.rate) ? G.clamp(m.rate, -1.5, ceiling) : typ;
+                const candidate = w * observed + (1 - w) * typ;
+                state.rate = G.isNum(state.rate) ? state.rate * 0.7 + candidate * 0.3 : candidate;
+            }
+            const rate = G.isNum(state.rate) ? state.rate : typ;
             if (w > 0.8 && rate < 0.15) return { state: 'stalled', rate };
             return { state: 'warming', min: (target - temp) / Math.max(0.15, rate), rate, est: w < 0.5 };
         }
