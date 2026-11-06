@@ -12,6 +12,8 @@ const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
+const fs = require('fs');
+const path = require('path');
 
 const W = 1600, H = 520;
 
@@ -19,6 +21,59 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let page = 0;
+        const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
+        const MAX_HISTORY = 300;
+        let history = [];
+        try {
+            const saved = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
+            if (Array.isArray(saved)) history = saved.filter((x) => x && G.isNum(x.outside) && G.isNum(x.oilStart) && G.isNum(x.coolantStart) && G.isNum(x.oilMin) && G.isNum(x.coolantMin));
+        } catch (e) { /* first run or no history yet */ }
+        const saveHistory = () => {
+            const tmp = HISTORY_FILE + '.tmp';
+            try { fs.writeFileSync(tmp, JSON.stringify(history.slice(-MAX_HISTORY))); fs.renameSync(tmp, HISTORY_FILE); }
+            catch (e) { log.warn('OSA history save: ' + e); try { fs.unlinkSync(tmp); } catch (ignore) {} }
+        };
+        let warmSession = null;
+        let lastWarmSample = 0;
+        const similarHistory = (d, targetOil, targetCoolant) => {
+            if (!G.isNum(outsideTemp) || !G.isNum(d.oil) || !G.isNum(d.coolant)) return null;
+            for (let tol = 1; tol <= 5; tol++) {
+                const matches = history.filter((x) => Math.abs(x.outside - outsideTemp) <= tol && Math.abs(x.oilStart - d.oil) <= tol && Math.abs(x.coolantStart - d.coolant) <= tol && x.oilTarget === targetOil && x.coolantTarget === targetCoolant);
+                if (matches.length) {
+                    return {
+                        oil: matches.reduce((sum, x) => sum + x.oilMin, 0) / matches.length,
+                        coolant: matches.reduce((sum, x) => sum + x.coolantMin, 0) / matches.length,
+                        count: matches.length, tolerance: tol
+                    };
+                }
+            }
+            return null;
+        };
+        const updateWarmHistory = (d, oilTarget, coolantTarget) => {
+            const now = mono();
+            if (d.demo || !G.isNum(d.rpm)) { warmSession = null; return; }
+            if (d.rpm >= 300) {
+                if (!warmSession) {
+                    if (!G.isNum(d.oil) || !G.isNum(d.coolant) || !G.isNum(outsideTemp)) return;
+                    warmSession = { start: now, outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant,
+                        oilTarget, coolantTarget, oilAt: null, coolantAt: null };
+                }
+                if (warmSession.oilAt === null && G.isNum(d.oil) && d.oil >= warmSession.oilTarget) warmSession.oilAt = (now - warmSession.start) / 60000;
+                if (warmSession.coolantAt === null && G.isNum(d.coolant) && d.coolant >= warmSession.coolantTarget) warmSession.coolantAt = (now - warmSession.start) / 60000;
+                if (warmSession.oilAt !== null && warmSession.coolantAt !== null) {
+                    history.push({ at: Date.now(), outside: warmSession.outside, oilStart: warmSession.oilStart,
+                        coolantStart: warmSession.coolantStart, oilTarget: warmSession.oilTarget,
+                        coolantTarget: warmSession.coolantTarget, oilMin: warmSession.oilAt, coolantMin: warmSession.coolantAt });
+                    if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
+                    saveHistory();
+                    log.info('OSA warm-up history saved (' + history.length + ' records)');
+                    warmSession = null;
+                }
+            } else if (warmSession) {
+                // Engine stopped before both targets: discard the incomplete session.
+                warmSession = null;
+            }
+        };
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
@@ -90,7 +145,7 @@ mgu.run({
             if (w > 0.8 && rate < 0.15) return { state: 'stalled', rate };
             return { state: 'warming', min: (target - temp) / Math.max(0.15, rate), rate, est: w < 0.5 };
         }
-        function etaRow(cv, t, y, label, e, target) {
+        function etaRow(cv, t, y, label, e, target, historical) {
             cv.text(label, 952, y, 22, t.dim, { font: 'bold', spacing: 1.5 });
             let big, color = t.text, unit = '', right = '';
             if (e.state === 'ready') { big = 'READY'; color = t.ok; }
@@ -102,6 +157,10 @@ mgu.run({
             if (unit) cv.text('min', 960 + bw, y + 54, 25, t.dim);
             cv.text('target ' + Math.round(target) + '°C', 1552, y, 21, t.dim, { align: 'right' });
             if (right) cv.text(right, 1552, y + 48, 21, t.dim, { align: 'right' });
+            if (historical !== null && historical !== undefined) {
+                const histText = '(' + Math.max(1, Math.round(historical)) + ' min)';
+                cv.text(histText, 1552, y + 54, 24, t.dim, { align: 'right', font: 'num' });
+            }
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
@@ -152,6 +211,8 @@ mgu.run({
 
                 const oilTarget = Number(ctx.settings.get('warmOil')) || 80;
                 const coolantTarget = Number(ctx.settings.get('warmCoolant')) || 80;
+                updateWarmHistory(d, oilTarget, coolantTarget);
+                const historical = similarHistory(d, oilTarget, coolantTarget);
                 G.panel(cv, t, 928, 44, 648, 468, null);
                 cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.22));
                 cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
@@ -161,10 +222,10 @@ mgu.run({
                 const outsideText = G.isNum(outsideTemp) ? ((outsideTemp > 0 ? '+' : '') + outsideTemp.toFixed(1)) : '--';
                 cv.text(outsideText, 952, 225, 42, G.isNum(outsideTemp) ? t.text : t.dim, { font: 'num' });
                 cv.text('°C', 1045, 225, 25, t.dim);
-                etaRow(cv, t, 270, 'OIL READY IN', eta('oil', d.oil, oilTarget, d), oilTarget);
-                etaRow(cv, t, 370, 'COOLANT READY IN', eta('coolant', d.coolant, coolantTarget, d), coolantTarget);
+                etaRow(cv, t, 270, 'OIL READY IN', eta('oil', d.oil, oilTarget, d), oilTarget, historical ? historical.oil : null);
+                etaRow(cv, t, 370, 'COOLANT READY IN', eta('coolant', d.coolant, coolantTarget, d), coolantTarget, historical ? historical.coolant : null);
                 cv.text('BMW native vehicle signals · CDS / EnvironmentalInformation', 952, 475, 17, t.dim);
-            } else {
+            } else if (page === 1) {
                 const live = transmission.fresh;
                 const value = live ? transmission.temp : null;
                 const status = live ? 'LIVE' :
@@ -207,20 +268,34 @@ mgu.run({
                 if (transmission.error) {
                     cv.text(transmission.error, 952, 390, 19, t.warn, { maxWidth: 590 });
                 }
+            } else {
+                G.panel(cv, t, 24, 44, 1552, 468, null);
+                cv.text('WARM-UP HISTORY', 64, 100, 30, t.text, { font: 'bold', spacing: 2 });
+                cv.text('COMPLETED RECORDS', 64, 165, 20, t.dim, { font: 'bold', spacing: 1.5 });
+                cv.text(String(history.length), 64, 230, 52, t.text, { font: 'num' });
+                const avgOil = history.length ? history.reduce((s, x) => s + x.oilMin, 0) / history.length : null;
+                const avgCoolant = history.length ? history.reduce((s, x) => s + x.coolantMin, 0) / history.length : null;
+                cv.text('AVERAGE TIME TO OIL TARGET', 520, 165, 20, t.dim, { font: 'bold', spacing: 1 });
+                cv.text(avgOil === null ? '--' : Math.round(avgOil) + ' min', 520, 230, 42, avgOil === null ? t.dim : t.text, { font: 'num' });
+                cv.text('AVERAGE TIME TO COOLANT TARGET', 1050, 165, 20, t.dim, { font: 'bold', spacing: 1 });
+                cv.text(avgCoolant === null ? '--' : Math.round(avgCoolant) + ' min', 1050, 230, 42, avgCoolant === null ? t.dim : t.text, { font: 'num' });
+                cv.text('Similar-start averages use the first matching tolerance from ±1°C to ±5°C.', 64, 330, 20, t.dim);
+                cv.text('Only sessions reaching both configured target temperatures are saved.', 64, 370, 20, t.dim);
+                cv.text('Stored locally · latest ' + MAX_HISTORY + ' completed sessions', 64, 450, 18, t.dim);
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission'], page, []);
+            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics'], page, []);
             return ui.image('MAIN_GFX', cv);
         }
 
         const switchPage = (next) => {
-            page = next;
+            page = (next + 3) % 3;
             return render();
         };
 
-        ui.onClick('BTN_PAGE', () => switchPage(1 - page));
-        ui.onClick('BTN_PREV', () => switchPage(1 - page));
-        ctx.onTab((i) => i !== page && switchPage(i));
+        ui.onClick('BTN_PAGE', () => switchPage(page + 1));
+        ui.onClick('BTN_PREV', () => switchPage(page + 2));
+        ctx.onTab((i) => i !== page && i >= 0 && i < 3 && switchPage(i));
 
         ui.onVisible((name, on) => {
             if (name === 'MAIN') transmission.setVisible(on);
