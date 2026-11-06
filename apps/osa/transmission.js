@@ -26,13 +26,22 @@ class TransmissionReader {
     }
 
     setVisible(on) {
+        const wasVisible = this.visible;
         this.visible = !!on;
-        if (!on && this.link) this.link.cancel();
+        if (!on && this.link) {
+            this.link.cancel();
+        } else if (on && !wasVisible && this.link) {
+            // A previous visit may have marked EGS silent after transport refusals.
+            // Give it another chance whenever the user returns to Transmission.
+            this.link.wake(0x18);
+            this.debugText = 'EGS 18: retry enabled';
+        }
     }
 
     async init() {
         this.link = new ReadOnlyDiag(this.ctx.signals, this.ctx.log, {
-            onDebug: (message) => { this.debugText = message; }
+            onDebug: (message) => { this.debugText = message; },
+            busyMs: 500
         });
         await this.link.init();
         this.running = true;
@@ -40,11 +49,10 @@ class TransmissionReader {
     }
 
     async identify() {
-        const id = 0xF150;
         const uds = await this.link.physical(0x18, 0x22, [0xF1, 0x50], 1800,
             (b) => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50)
                 || (b[0] === 0x7F && b[1] === 0x22)),
-            { maxRetries: 0, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
+            { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
         if (!uds) {
             this.statusText = 'NO EGS RESPONSE';
             return false;
@@ -69,7 +77,7 @@ class TransmissionReader {
         const uds = await this.link.physical(0x18, 0x22, [0x60, 0x00], 1800,
             (b) => b && ((b[0] === 0x62 && b[1] === 0x60 && b[2] === 0x00)
                 || (b[0] === 0x7F && b[1] === 0x22)),
-            { maxRetries: 0, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
+            { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
         if (!uds || uds[0] !== 0x62 || uds[1] !== 0x60 || uds[2] !== 0x00 || uds.length !== 4) {
             this.statusText = 'WAITING FOR DATA';
             this.error = !uds ? 'No response from EGS' : 'Unexpected DID 6000 response';
