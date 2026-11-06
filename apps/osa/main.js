@@ -126,6 +126,7 @@ mgu.run({
                 if (transmission.error) {
                     cv.text(transmission.error, 952, 390, 19, t.warn, { maxWidth: 590 });
                 }
+                cv.text(transmission.debugText || 'TRACE: waiting', 952, 440, 16, t.dim, { maxWidth: 590 });
             }
 
             G.frame(cv, t, ['Engine', 'Transmission'], page, []);
