@@ -29,11 +29,13 @@ mgu.run({
             if (page === 0) {
                 const d = car.data();
                 const oil = G.isNum(d.oil) ? d.oil : null;
-                const status = oil === null ? 'WAITING FOR OIL DATA' : (d.demo ? 'DEMO DATA' : 'LIVE');
+                const status = oil === null ? 'NO OIL TEMP' : (d.demo ? 'DEMO DATA' : 'LIVE');
                 const statusColor = oil === null ? t.dim : (d.demo ? t.warn : t.ok);
 
+                // Match the Warm-Up oil gauge: same position, dimensions,
+                // temperature range, segment scale and hot-zone colours.
                 G.segBar(cv, t, 24, 44, 880, 468, {
-                    label: 'Engine oil',
+                    label: 'Oil',
                     value: oil,
                     unit: '°C',
                     decimals: 0,
@@ -43,20 +45,28 @@ mgu.run({
                     scale: { every: 25 },
                     zones: [
                         { from: 120, to: 135, color: 'warn' },
-                        { from: 135, to: 150, color: 'crit' }
+                        { from: 135, to: 160, color: 'crit' }
                     ],
                     ramp: 'hot',
                     limit: 120
                 });
 
+                // Warm-Up-style right information panel, currently focused
+                // only on oil data. No estimated warm-up values are invented.
                 G.panel(cv, t, 928, 44, 648, 468, null);
-                cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.16));
-                cv.text(status, 1252, 110, 29, statusColor, {
-                    align: 'center', font: 'bold', spacing: 1
+                cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.22));
+                cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
+                    align: 'center', font: 'bold', spacing: 3
                 });
-                cv.text('Engine oil temperature', 952, 190, 24, t.dim);
-                cv.text(oil === null ? '-- °C' : (Math.round(oil) + ' °C'), 952, 258, 48, t.text, { font: 'bold' });
-                cv.text('BMW native vehicle signal · CDS', 952, 320, 21, t.dim);
+
+                cv.text('ENGINE OIL TEMPERATURE', 952, 190, 22, t.dim, {
+                    font: 'bold', spacing: 1.5
+                });
+                cv.text(oil === null ? '--' : String(Math.round(oil)), 952, 289, 80, oil === null ? t.dim : t.text, {
+                    font: 'num'
+                });
+                cv.text('°C', oil === null ? 1010 : 1040, 289, 30, t.dim);
+                cv.text('BMW native vehicle signal · CDS', 952, 350, 21, t.dim);
             } else {
                 const live = transmission.fresh;
                 const status = live ? 'LIVE' :
