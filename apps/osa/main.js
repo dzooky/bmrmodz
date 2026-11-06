@@ -29,7 +29,7 @@ mgu.run({
             const saved = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
             if (Array.isArray(saved)) {
                 history = saved.filter((x) => x && !x.kind && G.isNum(x.outside) && G.isNum(x.oilStart) && G.isNum(x.coolantStart) && G.isNum(x.oilMin) && G.isNum(x.coolantMin));
-                atfHistory = saved.filter((x) => x && x.kind === 'atf-warm' && G.isNum(x.outside) && G.isNum(x.startTemp) && G.isNum(x.minutes));
+                atfHistory = saved.filter((x) => x && x.kind === 'atf-warm' && G.isNum(x.startTemp) && G.isNum(x.minutes));
                 atfHistory = atfHistory.concat(saved.filter((x) => x && x.kind === 'atf-cool' && G.isNum(x.startTemp) && G.isNum(x.minutes)));
             }
         } catch (e) { /* first run or no history yet */ }
@@ -46,11 +46,11 @@ mgu.run({
             const atf = transmission.fresh ? transmission.temp : null;
             const now = mono();
             if (running === null) return;
-            if (running && atfWasRunning !== true) {
-                atfCoolSession = null;
-                atfWarmSession = G.isNum(atf) && atf < 30
-                    ? { start: now, startTemp: atf, outside: G.isNum(outsideTemp) ? outsideTemp : null }
-                    : null;
+            if (running && atfWasRunning !== true) atfCoolSession = null;
+            // EGS may provide its first fresh sample a few seconds after engine start.
+            // Start the timer when that first cold ATF sample becomes available.
+            if (running && !atfWarmSession && G.isNum(atf) && atf < 30) {
+                atfWarmSession = { start: now, startTemp: atf, outside: G.isNum(outsideTemp) ? outsideTemp : null };
             }
             if (running && atfWarmSession && G.isNum(atf) && atf >= 30) {
                 atfHistory.push({ kind: 'atf-warm', at: Date.now(), outside: atfWarmSession.outside,
