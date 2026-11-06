@@ -88,6 +88,7 @@ class Diag extends EventEmitter {
             }, callTimeoutMs);
             const v = r && typeof r === 'object' ? (r.TasuErrorEnum || Object.keys(r).map((k) => r[k]).find((x) => typeof x === 'string')) : r;
             const verdict = v === undefined ? 'NO_ERROR' : String(v);
+            if (opts && opts.onTransport) opts.onTransport(verdict);
             if (!/TEMPORARILY_NOT_ACCEPTED|BUSY/i.test(verdict) || attempt >= maxRetries) return verdict;
             this.busy++;
             if (this.busyLog) this.log.info('transport busy (' + verdict + '), retrying');
@@ -144,6 +145,7 @@ class Diag extends EventEmitter {
                 this.removeListener('frame', onFrame); resolve(v);
             };
             onFrame = (f) => {
+                if (opts && opts.onFrame) opts.onFrame(f);
                 if (f.ecu !== target) return;
                 if (f.uds[0] === 0x7F && f.uds[2] === 0x78) {      // response pending: never the reply itself
                     if (f.uds[1] !== sid) return;                       // another request's (another app's) 78
