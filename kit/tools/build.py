@@ -400,9 +400,11 @@ def build_start_widget(spec, app_id, icon_src, out, pkg_out=None):
 
 def build(app_id, language='en', preview_only=False):
     language = normalize_language(language)
-    if not preview_only and not all(os.path.isfile(os.path.join(SDK, name)) for name in ('index.js', 'package.json')):
-        raise SystemExit('BMW oap-sdk is missing. Extract it from your own head unit with kit/tools/extract_sdk.js, '
-                         'or use --preview-only for an offline preview (no installable package).')
+    # mgu-store supplies the BMW SDK donor and links it into the app on the head unit.
+    # In that mode the SDK must not be copied into node_modules or redistributed.
+    store_build = bool(os.environ.get('MGU_OUT'))
+    if not preview_only and not store_build and not all(os.path.isfile(os.path.join(SDK, name)) for name in ('index.js', 'package.json')):
+        raise SystemExit('BMW oap-sdk is missing. Extract it locally for a standalone build, or build through mgu-store.')
     adir = os.path.join(APPS, app_id)
     spec = json.load(open(os.path.join(adir, 'app.json'), encoding='utf-8'))
     spec = localize_spec(spec, language)
@@ -415,7 +417,8 @@ def build(app_id, language='en', preview_only=False):
     src = os.path.join(stage, 'source')
     os.makedirs(os.path.join(src, 'javascript', 'kit'))
     os.makedirs(os.path.join(src, 'config'))
-    os.makedirs(os.path.join(src, 'node_modules', 'oap-sdk'))
+    if not store_build:
+        os.makedirs(os.path.join(src, 'node_modules', 'oap-sdk'))
 
     manifest = manifest_for(json.loads(json.dumps(spec)))
     xml, uidesc, strings, state_ids = build_ui(spec, language)
@@ -515,8 +518,9 @@ def build(app_id, language='en', preview_only=False):
     if preview_only:
         print('%s %s: offline preview in %s (NO SDK, NOT INSTALLABLE)' % (app_id, ver, stage))
         return
-    shutil.copy(os.path.join(SDK, 'index.js'), os.path.join(src, 'node_modules', 'oap-sdk', 'index.js'))
-    shutil.copy(os.path.join(SDK, 'package.json'), os.path.join(src, 'node_modules', 'oap-sdk', 'package.json'))
+    if not store_build:
+        shutil.copy(os.path.join(SDK, 'index.js'), os.path.join(src, 'node_modules', 'oap-sdk', 'index.js'))
+        shutil.copy(os.path.join(SDK, 'package.json'), os.path.join(src, 'node_modules', 'oap-sdk', 'package.json'))
 
     # --- rhmiData: package format (inside source/) and installed format ---
     icon = spec['id'] + '_icon.png'
@@ -583,16 +587,22 @@ def build(app_id, language='en', preview_only=False):
 
     # --- archives ---
     os.makedirs(DIST, exist_ok=True)
-    bundle = os.path.join(DIST, f'{app_id}@{ver}.mgu')
-    with gz_header_free(bundle) as gz, tarfile.open(fileobj=gz, mode='w') as tf:
-        for n in ('meta.json', 'source', 'rhmiData', 'rhmiDataStartWidget', 'oapgen'):
-            if os.path.exists(os.path.join(stage, n)):
-                tf.add(os.path.join(stage, n), arcname=n)
-    npm = os.path.join(DIST, f'{app_id}@{ver}.tgz')
+    npm_dir = os.environ.get('MGU_OUT') if store_build else DIST
+    os.makedirs(npm_dir, exist_ok=True)
+    npm = os.path.join(npm_dir, f'{app_id}@{ver}.tgz')
     with gz_header_free(npm) as gz, tarfile.open(fileobj=gz, mode='w') as tf:
         tf.add(src, arcname='package')
-    print(f'{app_id} {ver}: {os.path.relpath(bundle, ROOT)} ({os.path.getsize(bundle) // 1024} KiB), '
-          f'{len(uidesc["containers"])} screens, states {state_ids}')
+    if store_build:
+        print(f'{app_id} {ver}: Store package {npm} ({os.path.getsize(npm) // 1024} KiB), '
+              f'{len(uidesc["containers"])} screens, states {state_ids}')
+    else:
+        bundle = os.path.join(DIST, f'{app_id}@{ver}.mgu')
+        with gz_header_free(bundle) as gz, tarfile.open(fileobj=gz, mode='w') as tf:
+            for n in ('meta.json', 'source', 'rhmiData', 'rhmiDataStartWidget', 'oapgen'):
+                if os.path.exists(os.path.join(stage, n)):
+                    tf.add(os.path.join(stage, n), arcname=n)
+        print(f'{app_id} {ver}: {os.path.relpath(bundle, ROOT)} ({os.path.getsize(bundle) // 1024} KiB), '
+              f'{len(uidesc["containers"])} screens, states {state_ids}')
 
 
 def gz_header_free(path):
