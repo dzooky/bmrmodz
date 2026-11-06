@@ -304,7 +304,7 @@ mgu.run({
 
                 // Match the Engine oil page layout; only the data source and
                 // transmission-specific temperature zones differ.
-                G.segBar(cv, t, 24, 44, 880, 468, {
+                G.segBar(cv, t, 24, 44, 880, 225, {
                     label: 'Oil',
                     value,
                     unit: '°C',
