@@ -24,14 +24,61 @@ mgu.run({
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
         let history = [];
+        let atfHistory = [];
         try {
             const saved = JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
-            if (Array.isArray(saved)) history = saved.filter((x) => x && G.isNum(x.outside) && G.isNum(x.oilStart) && G.isNum(x.coolantStart) && G.isNum(x.oilMin) && G.isNum(x.coolantMin));
+            if (Array.isArray(saved)) {
+                history = saved.filter((x) => x && !x.kind && G.isNum(x.outside) && G.isNum(x.oilStart) && G.isNum(x.coolantStart) && G.isNum(x.oilMin) && G.isNum(x.coolantMin));
+                atfHistory = saved.filter((x) => x && x.kind === 'atf-warm' && G.isNum(x.outside) && G.isNum(x.startTemp) && G.isNum(x.minutes));
+                atfHistory = atfHistory.concat(saved.filter((x) => x && x.kind === 'atf-cool' && G.isNum(x.startTemp) && G.isNum(x.minutes)));
+            }
         } catch (e) { /* first run or no history yet */ }
         const saveHistory = () => {
             const tmp = HISTORY_FILE + '.tmp';
-            try { fs.writeFileSync(tmp, JSON.stringify(history.slice(-MAX_HISTORY))); fs.renameSync(tmp, HISTORY_FILE); }
+            try { fs.writeFileSync(tmp, JSON.stringify(history.slice(-MAX_HISTORY).concat(atfHistory.slice(-MAX_HISTORY)))); fs.renameSync(tmp, HISTORY_FILE); }
             catch (e) { log.warn('OSA history save: ' + e); try { fs.unlinkSync(tmp); } catch (ignore) {} }
+        };
+        let atfWasRunning = null;
+        let atfWarmSession = null;
+        let atfCoolSession = null;
+        const updateAtfHistory = (d) => {
+            const running = G.isNum(d.rpm) ? d.rpm >= 300 : null;
+            const atf = transmission.fresh ? transmission.temp : null;
+            const now = mono();
+            if (running === null) return;
+            if (running && atfWasRunning !== true) {
+                atfCoolSession = null;
+                atfWarmSession = G.isNum(atf) && atf < 30
+                    ? { start: now, startTemp: atf, outside: G.isNum(outsideTemp) ? outsideTemp : null }
+                    : null;
+            }
+            if (running && atfWarmSession && G.isNum(atf) && atf >= 30) {
+                atfHistory.push({ kind: 'atf-warm', at: Date.now(), outside: atfWarmSession.outside,
+                    startTemp: atfWarmSession.startTemp, minutes: (now - atfWarmSession.start) / 60000 });
+                atfHistory = atfHistory.slice(-MAX_HISTORY);
+                saveHistory();
+                log.info('OSA ATF warm-up history saved');
+                atfWarmSession = null;
+            }
+            if (!running && atfWasRunning === true) {
+                atfWarmSession = null;
+                atfCoolSession = G.isNum(atf) && atf > 40
+                    ? { start: now, startTemp: atf }
+                    : null;
+            }
+            if (!running && atfCoolSession && G.isNum(atf) && atf <= 30) {
+                atfHistory.push({ kind: 'atf-cool', at: Date.now(), startTemp: atfCoolSession.startTemp,
+                    minutes: (now - atfCoolSession.start) / 60000 });
+                atfHistory = atfHistory.slice(-MAX_HISTORY);
+                saveHistory();
+                log.info('OSA ATF cool-down history saved');
+                atfCoolSession = null;
+            }
+            atfWasRunning = running;
+        };
+        const atfAverage = (kind) => {
+            const rows = atfHistory.filter((x) => x.kind === kind);
+            return rows.length ? rows.reduce((sum, x) => sum + x.minutes, 0) / rows.length : null;
         };
         let warmSession = null;
         let currentStart = null;
@@ -176,6 +223,7 @@ mgu.run({
             const oilTarget = Number(ctx.settings.get('warmOil')) || 80;
             const coolantTarget = Number(ctx.settings.get('warmCoolant')) || 80;
             updateWarmHistory(d, oilTarget, coolantTarget);
+            updateAtfHistory(d);
 
             if (page === 0) {
                 const oil = G.isNum(d.oil) ? d.oil : null;
@@ -262,32 +310,49 @@ mgu.run({
                     align: 'center', font: 'bold', spacing: 3
                 });
 
-                cv.text('TRANSMISSION OIL TEMPERATURE', 952, 190, 22, t.dim, {
+                cv.text('TRANSMISSION OIL TEMPERATURE', 952, 170, 22, t.dim, {
                     font: 'bold', spacing: 1.5
                 });
-                cv.text(value === null ? '--' : String(Math.round(value)), 952, 289, 80, value === null ? t.dim : t.text, {
+                cv.text(value === null ? '--' : String(Math.round(value)), 952, 245, 62, value === null ? t.dim : t.text, {
                     font: 'num'
                 });
-                cv.text('°C', value === null ? 1010 : 1040, 289, 30, t.dim);
-                cv.text(transmission.sgbd ? ('EGS ' + transmission.sgbd + ' · DID 6000') : 'EGS · DID 6000', 952, 350, 21, t.dim);
-                if (transmission.error) {
-                    cv.text(transmission.error, 952, 390, 19, t.warn, { maxWidth: 590 });
-                }
+                cv.text('°C', value === null ? 1010 : 1018, 245, 27, t.dim);
+                cv.text(transmission.sgbd ? ('EGS ' + transmission.sgbd + ' · DID 6000') : 'EGS · DID 6000', 952, 285, 18, t.dim);
+
+                cv.text('ATF WARM-UP · TO 30°C', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
+                const warmAvg = atfAverage('atf-warm');
+                const warmElapsed = atfWarmSession ? Math.max(1, Math.round((mono() - atfWarmSession.start) / 60000)) : null;
+                cv.text(atfWarmSession ? (warmElapsed + ' min elapsed') : (warmAvg === null ? '--' : 'avg ' + Math.round(warmAvg) + ' min'), 952, 385, 26, atfWarmSession ? t.text : t.dim, { font: 'num' });
+                cv.text('ATF COOL-DOWN · TO 30°C', 1260, 345, 20, t.dim, { font: 'bold', spacing: 1 });
+                const coolAvg = atfAverage('atf-cool');
+                const coolElapsed = atfCoolSession ? Math.max(1, Math.round((mono() - atfCoolSession.start) / 60000)) : null;
+                cv.text(atfCoolSession ? (coolElapsed + ' min elapsed') : (coolAvg === null ? '--' : 'avg ' + Math.round(coolAvg) + ' min'), 1260, 385, 26, atfCoolSession ? t.text : t.dim, { font: 'num' });
+                cv.text('Starts below 30°C · cooling starts above 40°C', 952, 445, 18, t.dim);
+                if (transmission.error) cv.text(transmission.error, 952, 475, 17, t.warn, { maxWidth: 590 });
             } else {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
                 const statsHistory = history.filter((x) => x.oilTarget === oilTarget && x.coolantTarget === coolantTarget);
-                cv.text('WARM-UP HISTORY', 64, 100, 30, t.text, { font: 'bold', spacing: 2 });
-                cv.text('COMPLETED RECORDS · CURRENT TARGETS', 64, 165, 20, t.dim, { font: 'bold', spacing: 1.5 });
-                cv.text(String(statsHistory.length), 64, 230, 52, t.text, { font: 'num' });
+                cv.text('ENGINE WARM-UP HISTORY', 64, 95, 27, t.text, { font: 'bold', spacing: 2 });
+                cv.text('RECORDS', 64, 145, 18, t.dim, { font: 'bold' });
+                cv.text(String(statsHistory.length), 64, 205, 42, t.text, { font: 'num' });
                 const avgOil = statsHistory.length ? statsHistory.reduce((s, x) => s + x.oilMin, 0) / statsHistory.length : null;
                 const avgCoolant = statsHistory.length ? statsHistory.reduce((s, x) => s + x.coolantMin, 0) / statsHistory.length : null;
-                cv.text('AVERAGE TIME TO OIL TARGET', 520, 165, 20, t.dim, { font: 'bold', spacing: 1 });
-                cv.text(avgOil === null ? '--' : Math.round(avgOil) + ' min', 520, 230, 42, avgOil === null ? t.dim : t.text, { font: 'num' });
-                cv.text('AVERAGE TIME TO COOLANT TARGET', 1050, 165, 20, t.dim, { font: 'bold', spacing: 1 });
-                cv.text(avgCoolant === null ? '--' : Math.round(avgCoolant) + ' min', 1050, 230, 42, avgCoolant === null ? t.dim : t.text, { font: 'num' });
-                cv.text('Similar-start averages use the first matching tolerance from ±1°C to ±5°C.', 64, 330, 20, t.dim);
-                cv.text('Only sessions reaching both configured target temperatures are saved.', 64, 370, 20, t.dim);
-                cv.text('Stored locally · latest ' + MAX_HISTORY + ' completed sessions', 64, 450, 18, t.dim);
+                cv.text('OIL AVERAGE', 300, 145, 18, t.dim, { font: 'bold' });
+                cv.text(avgOil === null ? '--' : Math.round(avgOil) + ' min', 300, 205, 32, avgOil === null ? t.dim : t.text, { font: 'num' });
+                cv.text('COOLANT AVERAGE', 570, 145, 18, t.dim, { font: 'bold' });
+                cv.text(avgCoolant === null ? '--' : Math.round(avgCoolant) + ' min', 570, 205, 32, avgCoolant === null ? t.dim : t.text, { font: 'num' });
+                cv.text('TRANSMISSION ATF HISTORY', 64, 285, 27, t.text, { font: 'bold', spacing: 2 });
+                const warmRows = atfHistory.filter((x) => x.kind === 'atf-warm');
+                const coolRows = atfHistory.filter((x) => x.kind === 'atf-cool');
+                cv.text('WARM-UP RECORDS', 64, 345, 18, t.dim, { font: 'bold' });
+                cv.text(String(warmRows.length), 64, 400, 30, t.text, { font: 'num' });
+                cv.text('AVERAGE TO 30°C', 300, 345, 18, t.dim, { font: 'bold' });
+                cv.text(atfAverage('atf-warm') === null ? '--' : Math.round(atfAverage('atf-warm')) + ' min', 300, 400, 30, t.text, { font: 'num' });
+                cv.text('COOL-DOWN RECORDS', 700, 345, 18, t.dim, { font: 'bold' });
+                cv.text(String(coolRows.length), 700, 400, 30, t.text, { font: 'num' });
+                cv.text('AVERAGE TO 30°C', 960, 345, 18, t.dim, { font: 'bold' });
+                cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
+                cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             }
 
             G.frame(cv, t, ['Engine', 'Transmission', 'Statistics'], page, []);
