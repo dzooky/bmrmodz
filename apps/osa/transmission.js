@@ -19,6 +19,7 @@ class TransmissionReader {
         this.at = 0;
         this.statusText = 'CONNECTING';
         this.error = '';
+        this.debugText = 'TRACE: waiting';
         this.visible = false;
         this.running = false;
         this.busy = false;
@@ -30,7 +31,9 @@ class TransmissionReader {
     }
 
     async init() {
-        this.link = new ReadOnlyDiag(this.ctx.signals, this.ctx.log);
+        this.link = new ReadOnlyDiag(this.ctx.signals, this.ctx.log, {
+            onDebug: (message) => { this.debugText = message; }
+        });
         await this.link.init();
         this.running = true;
         this.pump().catch((e) => this.ctx.log.warn('OSA transmission reader: ' + e));
@@ -106,6 +109,7 @@ class TransmissionReader {
                 }
             } catch (e) {
                 this.error = String(e.message || e);
+                this.debugText = 'EXCEPTION: ' + this.error;
                 this.statusText = 'READ ERROR';
                 this.ctx.log.warn('OSA EGS read: ' + this.error);
             } finally {
