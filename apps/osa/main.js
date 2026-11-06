@@ -35,6 +35,7 @@ mgu.run({
         };
         let warmSession = null;
         let currentStart = null;
+        let sessionDone = false;
         const similarHistory = (targetOil, targetCoolant) => {
             if (!currentStart) return null;
             for (let tol = 1; tol <= 5; tol++) {
@@ -53,7 +54,7 @@ mgu.run({
             const now = mono();
             if (d.demo || !G.isNum(d.rpm)) { warmSession = null; return; }
             if (d.rpm >= 300) {
-                if (!warmSession) {
+                if (!warmSession && !sessionDone) {
                     if (!G.isNum(d.oil) || !G.isNum(d.coolant) || !G.isNum(outsideTemp)) return;
                     warmSession = { start: now, outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant,
                         oilTarget, coolantTarget, oilAt: null, coolantAt: null };
@@ -69,10 +70,12 @@ mgu.run({
                     saveHistory();
                     log.info('OSA warm-up history saved (' + history.length + ' records)');
                     warmSession = null;
+                    sessionDone = true;
                 }
-            } else if (warmSession) {
-                // Engine stopped before both targets: discard the incomplete session.
+            } else {
+                // Engine stopped: discard an incomplete session and arm the next start.
                 warmSession = null;
+                sessionDone = false;
             }
         };
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
