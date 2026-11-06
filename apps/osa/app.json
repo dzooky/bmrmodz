@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine oil temperature monitoring and service assistance",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "vendor": "custom",
   "loggingId": "OAA1",
   "iconGlyph": "temp",
@@ -152,6 +152,9 @@
     },
     "de.bmw.infotainment.vehicle.Vehicle2": {
       "statusCarSpeed2": "rs"
+    },
+    "de.bmw.infrastructure.EnvironmentalInformation": {
+      "ExteriorTemperature": "s"
     }
   }
 }
