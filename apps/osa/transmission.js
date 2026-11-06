@@ -19,7 +19,6 @@ class TransmissionReader {
         this.at = 0;
         this.statusText = 'CONNECTING';
         this.error = '';
-        this.debugText = 'TRACE: waiting';
         this.visible = false;
         this.running = false;
         this.busy = false;
@@ -34,13 +33,11 @@ class TransmissionReader {
             // A previous visit may have marked EGS silent after transport refusals.
             // Give it another chance whenever the user returns to Transmission.
             this.link.wake(0x18);
-            this.debugText = 'EGS 18: retry enabled';
         }
     }
 
     async init() {
         this.link = new ReadOnlyDiag(this.ctx.signals, this.ctx.log, {
-            onDebug: (message) => { this.debugText = message; },
             busyMs: 500
         });
         await this.link.init();
@@ -117,7 +114,6 @@ class TransmissionReader {
                 }
             } catch (e) {
                 this.error = String(e.message || e);
-                this.debugText = 'EXCEPTION: ' + this.error;
                 this.statusText = 'READ ERROR';
                 this.ctx.log.warn('OSA EGS read: ' + this.error);
             } finally {
