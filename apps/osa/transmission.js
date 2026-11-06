@@ -40,7 +40,8 @@ class TransmissionReader {
         const id = 0xF150;
         const uds = await this.link.physical(0x18, 0x22, [0xF1, 0x50], 1800,
             (b) => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50)
-                || (b[0] === 0x7F && b[1] === 0x22)));
+                || (b[0] === 0x7F && b[1] === 0x22)),
+            { maxRetries: 0, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
         if (!uds) {
             this.statusText = 'NO EGS RESPONSE';
             return false;
@@ -64,7 +65,8 @@ class TransmissionReader {
     async readTemperature() {
         const uds = await this.link.physical(0x18, 0x22, [0x60, 0x00], 1800,
             (b) => b && ((b[0] === 0x62 && b[1] === 0x60 && b[2] === 0x00)
-                || (b[0] === 0x7F && b[1] === 0x22)));
+                || (b[0] === 0x7F && b[1] === 0x22)),
+            { maxRetries: 0, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
         if (!uds || uds[0] !== 0x62 || uds[1] !== 0x60 || uds[2] !== 0x00 || uds.length !== 4) {
             this.statusText = 'WAITING FOR DATA';
             this.error = !uds ? 'No response from EGS' : 'Unexpected DID 6000 response';
