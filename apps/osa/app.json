@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine oil temperature monitoring and service assistance",
-  "version": "0.1.9",
+  "version": "0.2.0",
   "vendor": "custom",
   "loggingId": "OAA1",
   "iconGlyph": "temp",
