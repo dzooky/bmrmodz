@@ -35,10 +35,10 @@ mgu.run({
         };
         let warmSession = null;
         let lastWarmSample = 0;
-        const similarHistory = (d, targetOil, targetCoolant) => {
-            if (!G.isNum(outsideTemp) || !G.isNum(d.oil) || !G.isNum(d.coolant)) return null;
+        const similarHistory = (targetOil, targetCoolant) => {
+            if (!warmSession) return null;
             for (let tol = 1; tol <= 5; tol++) {
-                const matches = history.filter((x) => Math.abs(x.outside - outsideTemp) <= tol && Math.abs(x.oilStart - d.oil) <= tol && Math.abs(x.coolantStart - d.coolant) <= tol && x.oilTarget === targetOil && x.coolantTarget === targetCoolant);
+                const matches = history.filter((x) => Math.abs(x.outside - warmSession.outside) <= tol && Math.abs(x.oilStart - warmSession.oilStart) <= tol && Math.abs(x.coolantStart - warmSession.coolantStart) <= tol && x.oilTarget === targetOil && x.coolantTarget === targetCoolant);
                 if (matches.length) {
                     return {
                         oil: matches.reduce((sum, x) => sum + x.oilMin, 0) / matches.length,
@@ -168,8 +168,12 @@ mgu.run({
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
 
+            const d = car.data();
+            const oilTarget = Number(ctx.settings.get('warmOil')) || 80;
+            const coolantTarget = Number(ctx.settings.get('warmCoolant')) || 80;
+            updateWarmHistory(d, oilTarget, coolantTarget);
+
             if (page === 0) {
-                const d = car.data();
                 const oil = G.isNum(d.oil) ? d.oil : null;
                 const status = oil === null ? 'NO OIL TEMP' : (d.demo ? 'DEMO DATA' : 'LIVE');
                 const statusColor = oil === null ? t.dim : (d.demo ? t.warn : t.ok);
@@ -209,10 +213,7 @@ mgu.run({
                     limit: 105
                 });
 
-                const oilTarget = Number(ctx.settings.get('warmOil')) || 80;
-                const coolantTarget = Number(ctx.settings.get('warmCoolant')) || 80;
-                updateWarmHistory(d, oilTarget, coolantTarget);
-                const historical = similarHistory(d, oilTarget, coolantTarget);
+                const historical = similarHistory(oilTarget, coolantTarget);
                 G.panel(cv, t, 928, 44, 648, 468, null);
                 cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.22));
                 cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
