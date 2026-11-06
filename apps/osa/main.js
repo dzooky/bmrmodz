@@ -275,11 +275,12 @@ mgu.run({
                 }
             } else {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
+                const statsHistory = history.filter((x) => x.oilTarget === oilTarget && x.coolantTarget === coolantTarget);
                 cv.text('WARM-UP HISTORY', 64, 100, 30, t.text, { font: 'bold', spacing: 2 });
-                cv.text('COMPLETED RECORDS', 64, 165, 20, t.dim, { font: 'bold', spacing: 1.5 });
-                cv.text(String(history.length), 64, 230, 52, t.text, { font: 'num' });
-                const avgOil = history.length ? history.reduce((s, x) => s + x.oilMin, 0) / history.length : null;
-                const avgCoolant = history.length ? history.reduce((s, x) => s + x.coolantMin, 0) / history.length : null;
+                cv.text('COMPLETED RECORDS · CURRENT TARGETS', 64, 165, 20, t.dim, { font: 'bold', spacing: 1.5 });
+                cv.text(String(statsHistory.length), 64, 230, 52, t.text, { font: 'num' });
+                const avgOil = statsHistory.length ? statsHistory.reduce((s, x) => s + x.oilMin, 0) / statsHistory.length : null;
+                const avgCoolant = statsHistory.length ? statsHistory.reduce((s, x) => s + x.coolantMin, 0) / statsHistory.length : null;
                 cv.text('AVERAGE TIME TO OIL TARGET', 520, 165, 20, t.dim, { font: 'bold', spacing: 1 });
                 cv.text(avgOil === null ? '--' : Math.round(avgOil) + ' min', 520, 230, 42, avgOil === null ? t.dim : t.text, { font: 'num' });
                 cv.text('AVERAGE TIME TO COOLANT TARGET', 1050, 165, 20, t.dim, { font: 'bold', spacing: 1 });
