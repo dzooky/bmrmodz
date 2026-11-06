@@ -1,8 +1,8 @@
 {
   "id": "osa",
   "title": "Oil Service Assistant",
-  "description": "Engine oil temperature monitoring and service assistance",
-  "version": "0.2.0",
+  "description": "Engine and transmission oil temperature monitoring for service procedures",
+  "version": "0.2.1",
   "vendor": "custom",
   "loggingId": "OAA1",
   "iconGlyph": "temp",
