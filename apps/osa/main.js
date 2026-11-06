@@ -21,6 +21,16 @@ mgu.run({
         let page = 0;
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
         const transmission = new TransmissionReader(ctx);
+        let outsideTemp = null;
+        ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
+            ExteriorTemperature: (v) => {
+                const raw = v && v.temperatureExterior;
+                outsideTemp = typeof raw === 'number' && isFinite(raw) && raw !== 255
+                    ? raw * 0.5 - 40 : null;
+            }
+        }, log).then((sub) => {
+            if (sub.error) log.warn('OSA outside temperature: ' + sub.error);
+        });
 
         const hist = [];
         const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
@@ -147,9 +157,13 @@ mgu.run({
                 cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
                     align: 'center', font: 'bold', spacing: 3
                 });
-                etaRow(cv, t, 190, 'OIL READY IN', eta('oil', d.oil, oilTarget, d), oilTarget);
-                etaRow(cv, t, 305, 'COOLANT READY IN', eta('coolant', d.coolant, coolantTarget, d), coolantTarget);
-                cv.text('BMW native vehicle signals · CDS', 952, 455, 19, t.dim);
+                cv.text('OUTSIDE TEMPERATURE', 952, 170, 22, t.dim, { font: 'bold', spacing: 1.5 });
+                const outsideText = G.isNum(outsideTemp) ? ((outsideTemp > 0 ? '+' : '') + outsideTemp.toFixed(1)) : '--';
+                cv.text(outsideText, 952, 225, 42, G.isNum(outsideTemp) ? t.text : t.dim, { font: 'num' });
+                cv.text('°C', 1045, 225, 25, t.dim);
+                etaRow(cv, t, 270, 'OIL READY IN', eta('oil', d.oil, oilTarget, d), oilTarget);
+                etaRow(cv, t, 370, 'COOLANT READY IN', eta('coolant', d.coolant, coolantTarget, d), coolantTarget);
+                cv.text('BMW native vehicle signals · CDS / EnvironmentalInformation', 952, 475, 17, t.dim);
             } else {
                 const live = transmission.fresh;
                 const value = live ? transmission.temp : null;
