@@ -32,9 +32,9 @@ mgu.run({
                 const status = oil === null ? 'NO OIL TEMP' : (d.demo ? 'DEMO DATA' : 'LIVE');
                 const statusColor = oil === null ? t.dim : (d.demo ? t.warn : t.ok);
 
-                // Match the Warm-Up oil gauge: same position, dimensions,
-                // temperature range, segment scale and hot-zone colours.
-                G.segBar(cv, t, 24, 44, 880, 468, {
+                // Engine page keeps BOTH Warm-Up temperature gauges:
+                // engine oil and engine coolant. Transmission page is oil-only.
+                G.segBar(cv, t, 24, 44, 880, 225, {
                     label: 'Oil',
                     value: oil,
                     unit: '°C',
@@ -49,6 +49,22 @@ mgu.run({
                     ],
                     ramp: 'hot',
                     limit: 120
+                });
+                G.segBar(cv, t, 24, 286, 880, 225, {
+                    label: 'Coolant',
+                    value: G.isNum(d.coolant) ? d.coolant : null,
+                    unit: '°C',
+                    decimals: 0,
+                    min: 0,
+                    max: 150,
+                    step: 10,
+                    scale: { every: 25 },
+                    zones: [
+                        { from: 105, to: 120, color: 'warn' },
+                        { from: 120, to: 150, color: 'crit' }
+                    ],
+                    ramp: 'hot',
+                    limit: 105
                 });
 
                 // Warm-Up-style right information panel, currently focused
