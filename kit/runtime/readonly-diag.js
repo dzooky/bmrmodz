@@ -65,6 +65,7 @@ class ReadOnlyDiag {
         diag.busyLog = false;
         LINKS.set(this, diag);
         this.log = log;
+        this.onDebug = opts && typeof opts.onDebug === 'function' ? opts.onDebug : null;
         this.gapMs = (opts && opts.gapMs) || 25;
         this.silentAfter = (opts && opts.silentAfter) || 5;
         this.misses = {};             // address -> requests in a row without an answer
@@ -81,6 +82,8 @@ class ReadOnlyDiag {
     /** how often the transport said busy so far */
     get busy() { return LINKS.get(this).busy; }
 
+    debug(message) { if (this.onDebug) this.onDebug(String(message)); }
+
     /** Has this unit stopped answering? (skipped until wake()) */
     silent(target) { return (this.misses[target] || 0) >= this.silentAfter; }
     wake(target) { if (target === undefined) this.misses = {}; else delete this.misses[target]; }
@@ -92,18 +95,26 @@ class ReadOnlyDiag {
     physical(target, sid, data, timeoutMs, accept, opts) {
         const d = Array.isArray(data) ? data.slice() : data;          // checked = sent: no change after the check
         try { check(target, sid, d, false); } catch (e) { return this.blocked(e); }
-        if (this.silent(target)) return Promise.resolve(null);
+        if (this.silent(target)) { this.debug('SKIPPED: ECU ' + hex(target) + ' marked silent'); return Promise.resolve(null); }
+        this.debug('QUEUED: ' + hex(target) + ' / ' + hex(sid) + ' ' + d.map((b) => hex(b)).join(' '));
         return this.queue(async () => {
             this.stats.sent++;
             const t0 = Date.now();
-            const uds = await LINKS.get(this).physical(target, sid, d, timeoutMs || 1500, accept, opts);
+            this.debug('SENDING: ' + hex(target) + ' / ' + hex(sid) + ' ' + d.map((b) => hex(b)).join(' '));
+            const trace = Object.assign({}, opts, {
+                onTransport: (verdict) => { this.debug('TRANSPORT: ' + verdict); if (opts && opts.onTransport) opts.onTransport(verdict); },
+                onFrame: (frame) => { this.debug('FRAME ECU ' + hex(frame.ecu) + ': ' + frame.uds.map((b) => hex(b)).join(' ')); if (opts && opts.onFrame) opts.onFrame(frame); }
+            });
+            const uds = await LINKS.get(this).physical(target, sid, d, timeoutMs || 1500, accept, trace);
             if (uds) { this.stats.ms += Date.now() - t0; this.stats.timed++; }
             if (!uds) {
+                this.debug('NO MATCHING RESPONSE (timeout)');
                 this.stats.missed++;
                 this.misses[target] = (this.misses[target] || 0) + 1;
                 if (this.silent(target)) { this.stats.silent++; this.log.info('unit ' + hex(target) + ': no answer ' + this.silentAfter + ' times in a row - skipped until the next scan'); }
                 return null;
             }
+            this.debug('REPLY: ' + uds.map((b) => hex(b)).join(' '));
             this.misses[target] = 0;
             this.stats.replies++;
             if (uds[0] === 0x7F && uds[2] === 0x21) this.next = Math.max(this.next, Date.now() + 1000);      // busy: give it a second
