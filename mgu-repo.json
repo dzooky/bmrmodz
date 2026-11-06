@@ -17,7 +17,6 @@
         "{id}"
       ],
       "sdk": "oap-sdk",
-      "output": "dist/{id}@{version}.tgz",
       "shared": [
         "kit/runtime",
         "kit/platform",
@@ -26,8 +25,7 @@
         "kit/tools/pack_data.py",
         "kit/tools/localize.py",
         "kit/tools/locale-revisions.json",
-        "kit/tools/oapgen",
-        "oap-sdk"
+        "kit/tools/oapgen"
       ]
     }
   },
