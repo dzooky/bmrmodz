@@ -69,12 +69,15 @@ mgu.run({
                 cv.text('BMW native vehicle signal · CDS', 952, 350, 21, t.dim);
             } else {
                 const live = transmission.fresh;
+                const value = live ? transmission.temp : null;
                 const status = live ? 'LIVE' :
                     transmission.statusText === 'LIVE' ? 'LINK STALE' : transmission.statusText;
-                const value = live ? transmission.temp : null;
+                const statusColor = live ? t.ok : t.dim;
 
+                // Match the Engine oil page layout; only the data source and
+                // transmission-specific temperature zones differ.
                 G.segBar(cv, t, 24, 44, 880, 468, {
-                    label: 'Transmission oil',
+                    label: 'Oil',
                     value,
                     unit: '°C',
                     decimals: 0,
@@ -91,18 +94,21 @@ mgu.run({
                 });
 
                 G.panel(cv, t, 928, 44, 648, 468, null);
-                cv.roundRect(952, 70, 600, 60, 10, withAlpha(live ? t.ok : t.dim, 0.16));
-                cv.text(status, 1252, 110, 30, live ? t.ok : t.dim, {
-                    align: 'center', font: 'bold', spacing: 2
+                cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.22));
+                cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
+                    align: 'center', font: 'bold', spacing: 3
                 });
 
-                cv.text('Transmission oil temperature', 952, 190, 24, t.dim);
-                cv.text(live ? (value + ' °C') : '-- °C', 952, 258, 48, t.text, { font: 'bold' });
-                cv.text(transmission.sgbd ? ('EGS ' + transmission.sgbd) : 'ZF 8HP · EGS identification', 952, 310, 22, t.dim);
+                cv.text('TRANSMISSION OIL TEMPERATURE', 952, 190, 22, t.dim, {
+                    font: 'bold', spacing: 1.5
+                });
+                cv.text(value === null ? '--' : String(Math.round(value)), 952, 289, 80, value === null ? t.dim : t.text, {
+                    font: 'num'
+                });
+                cv.text('°C', value === null ? 1010 : 1040, 289, 30, t.dim);
+                cv.text(transmission.sgbd ? ('EGS ' + transmission.sgbd + ' · DID 6000') : 'EGS · DID 6000', 952, 350, 21, t.dim);
                 if (transmission.error) {
-                    cv.text(transmission.error, 952, 370, 19, t.warn, { maxWidth: 590 });
-                } else {
-                    cv.text('Read-only live data · DID 6000', 952, 370, 19, t.dim);
+                    cv.text(transmission.error, 952, 390, 19, t.warn, { maxWidth: 590 });
                 }
             }
 
