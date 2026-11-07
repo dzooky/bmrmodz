@@ -232,7 +232,7 @@ mgu.run({
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
-        function tbdTab(p) { return p === 3 ? 2 : (p < 2 ? p : -1); }
+        function tbdTab(p) { return p >= 0 && p <= 3 ? p : -1; }
 
         function render() {
             const t = ctx.theme();
@@ -421,7 +421,7 @@ mgu.run({
                 cv.text('Autor: dzooky@bmrmodz', cx, 478, 20, t.text, { align: 'center', font: 'bold' });
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'About'], tbdTab(page), []);
+            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], tbdTab(page), []);
             return ui.image('MAIN_GFX', cv);
         }
 
@@ -433,8 +433,8 @@ mgu.run({
         ui.onClick('BTN_PAGE', () => switchPage(page + 1));
         ui.onClick('BTN_PREV', () => switchPage(page + 2));
         ctx.onTab((i) => {
-            const target = i === 2 ? 3 : i;
-            if (target !== page && (target === 0 || target === 1 || target === 3)) return switchPage(target);
+            const target = i;
+            if (target !== page && target >= 0 && target <= 3) return switchPage(target);
         });
 
         ui.onVisible((name, on) => {
