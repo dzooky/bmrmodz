@@ -219,8 +219,15 @@ class Display {
     _tabList() {
         const base = this.tabInfo || { tabs: [], sel: -1, badges: [] };
         const tabs = (base.tabs || []).slice();
-        const settings = this.own() && this.hasSettings() ? tabs.push('Settings') - 1 : -1;
-        const sel = this.sheet && this.sheet.settings ? settings : this.sheet ? -1 : base.sel;
+        let settings = -1;
+        if (this.own() && this.hasSettings()) {
+            if (this.spec.settingsBeforeLast && tabs.length) {
+                settings = tabs.length - 1;
+                tabs.splice(settings, 0, 'Settings');
+            } else settings = tabs.push('Settings') - 1;
+        }
+        const appSel = settings >= 0 && base.sel >= settings ? base.sel + 1 : base.sel;
+        const sel = this.sheet && this.sheet.settings ? settings : this.sheet ? -1 : appSel;
         return { tabs, sel, badges: base.badges || [], settings };
     }
     /** Open header tab i: the app's page, or the settings (Settings tab). */
@@ -229,7 +236,8 @@ class Display {
         if (i === tl.settings) { if (!(this.sheet && this.sheet.settings)) this._click('BTN_SETTINGS'); return; }
         const closed = !!this.sheet;
         this.closeSheet();
-        if (this.onTab) try { Promise.resolve(this.onTab(i, closed)).catch((e) => this.log.error('tab', e)); } catch (e) { this.log.error('tab', e); }
+        const appIndex = tl.settings >= 0 && i > tl.settings ? i - 1 : i;
+        if (this.onTab) try { Promise.resolve(this.onTab(appIndex, closed)).catch((e) => this.log.error('tab', e)); } catch (e) { this.log.error('tab', e); }
     }
     /**
      * What the controller's knob goes through, in order: the header's tabs, the page's targets, the bar. A
