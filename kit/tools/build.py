@@ -257,8 +257,7 @@ def build_ui(spec, language='en'):
                 bar.append((bid, bx, bc))
             if bar:
                 groups.append(('Bar', bar))
-        elif kind == 'settings':
-            items = []
+        elif kind == 'settings':            items = []
             settings_items(items)
             groups.append(('List', items))
         else:   # list / menu: components from "items" (a menu adds the settings after them)
@@ -508,7 +507,7 @@ def build(app_id, language='en', preview_only=False):
             body = file.read()
         with open(entry, 'wb') as file:
             file.write(comment.encode('utf-8') + body)
-    rt_spec = {k: spec.get(k) for k in ('id', 'title', 'version', 'screens', 'settings', 'config', 'startWidget')}
+    rt_spec = {k: spec.get(k) for k in ('id', 'title', 'version', 'screens', 'settings', 'settingsBeforeLast', 'config', 'startWidget')}
     rt_spec['stateIds'] = state_ids
     json.dump(rt_spec, open(os.path.join(src, 'javascript', 'kit', 'app-spec.json'), 'w', encoding='utf-8', newline='\n'), indent=1)
     locale = {'language': language, 'strings': load_locale(language)}
@@ -517,8 +516,7 @@ def build(app_id, language='en', preview_only=False):
     json.dump(locale, open(os.path.join(src, 'javascript', 'kit', 'locale.json'), 'w', encoding='utf-8', newline='\n'), ensure_ascii=False)
     if preview_only:
         print('%s %s: offline preview in %s (NO SDK, NOT INSTALLABLE)' % (app_id, ver, stage))
-        return
-    if not store_build:
+        return    if not store_build:
         shutil.copy(os.path.join(SDK, 'index.js'), os.path.join(src, 'node_modules', 'oap-sdk', 'index.js'))
         shutil.copy(os.path.join(SDK, 'package.json'), os.path.join(src, 'node_modules', 'oap-sdk', 'package.json'))
 
