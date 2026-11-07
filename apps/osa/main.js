@@ -15,56 +15,6 @@ const TransmissionReader = require('./transmission');
 const fs = require('fs');
 const path = require('path');
 
-const zlib = require('zlib');
-
-function decodeAboutPng(buf) {
-    let width = 0, height = 0, bitDepth = 0, colorType = 0, palette = null, alpha = null;
-    const idat = [];
-    for (let p = 8; p + 8 <= buf.length;) {
-        const len = buf.readUInt32BE(p), type = buf.toString('ascii', p + 4, p + 8);
-        const data = buf.slice(p + 8, p + 8 + len);
-        if (type === 'IHDR') {
-            width = data.readUInt32BE(0); height = data.readUInt32BE(4);
-            bitDepth = data[8]; colorType = data[9];
-        } else if (type === 'PLTE') palette = data;
-        else if (type === 'tRNS') alpha = data;
-        else if (type === 'IDAT') idat.push(data);
-        else if (type === 'IEND') break;
-        p += 12 + len;
-    }
-    if (bitDepth !== 8 || colorType !== 3 || !palette) throw new Error('Unsupported OSA About PNG');
-    const packed = zlib.inflateSync(Buffer.concat(idat));
-    const stride = width, indices = Buffer.alloc(width * height);
-    const paeth = (a, b, c) => {
-        const p = a + b - c, pa = Math.abs(p - a), pb = Math.abs(p - b), pc = Math.abs(p - c);
-        return pa <= pb && pa <= pc ? a : (pb <= pc ? b : c);
-    };
-    for (let y = 0; y < height; y++) {
-        const src = y * (stride + 1), dst = y * stride, filter = packed[src];
-        for (let x = 0; x < stride; x++) {
-            const raw = packed[src + 1 + x], a = x ? indices[dst + x - 1] : 0;
-            const b = y ? indices[dst - stride + x] : 0;
-            const c = y && x ? indices[dst - stride + x - 1] : 0;
-            let value = raw;
-            if (filter === 1) value += a;
-            else if (filter === 2) value += b;
-            else if (filter === 3) value += Math.floor((a + b) / 2);
-            else if (filter === 4) value += paeth(a, b, c);
-            else if (filter !== 0) throw new Error('Unsupported PNG filter ' + filter);
-            indices[dst + x] = value & 255;
-        }
-    }
-    const rgba = Buffer.alloc(width * height * 4);
-    for (let i = 0; i < indices.length; i++) {
-        const pi = indices[i] * 3, di = i * 4;
-        rgba[di] = palette[pi]; rgba[di + 1] = palette[pi + 1]; rgba[di + 2] = palette[pi + 2];
-        rgba[di + 3] = alpha && indices[i] < alpha.length ? alpha[indices[i]] : 255;
-    }
-    return { width, height, data: rgba };
-}
-
-const ABOUT_IMAGE = decodeAboutPng(fs.readFileSync(path.join(__dirname, 'about.png')));
-
 const W = 1600, H = 520;
 
 mgu.run({
@@ -430,8 +380,46 @@ mgu.run({
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             } else {
+                // About page: compact author/project profile with the OSA mark centred at the top.
                 G.panel(cv, t, 24, 44, 1552, 468, null);
-                cv.drawRGBAImage(ABOUT_IMAGE.data, ABOUT_IMAGE.width, ABOUT_IMAGE.height, 0, 0, W, H);
+                const cx = 800, cy = 158;
+                const gold = '#D7A642', silver = '#AEB7C2', red = '#E34848';
+
+                // Gear behind the oil drop.
+                for (let i = 0; i < 12; i++) {
+                    const a = i * Math.PI / 6;
+                    const x1 = cx - 28 + Math.cos(a) * 43, y1 = cy + Math.sin(a) * 43;
+                    const x2 = cx - 28 + Math.cos(a) * 58, y2 = cy + Math.sin(a) * 58;
+                    cv.line(x1, y1, x2, y2, 10, silver);
+                }
+                cv.arc(cx - 28, cy, 34, 45, 0, 360, silver);
+                cv.circle(cx - 28, cy, 23, t.bg);
+
+                // Oil drop.
+                cv.convex([[cx - 28, cy - 55], [cx - 62, cy - 5], [cx - 65, cy + 15],
+                    [cx - 58, cy + 37], [cx - 43, cy + 50], [cx - 28, cy + 54],
+                    [cx - 13, cy + 50], [cx + 2, cy + 37], [cx + 9, cy + 15],
+                    [cx + 6, cy - 5]], gold);
+                cv.arc(cx - 28, cy + 14, 27, 31, 0, 360, '#F2C96D');
+
+                // Thermometer at the right of the drop.
+                cv.roundRect(cx + 30, cy - 48, 20, 78, 10, silver);
+                cv.circle(cx + 40, cy + 38, 20, silver);
+                cv.roundRect(cx + 36, cy - 8, 8, 48, 4, red);
+                cv.circle(cx + 40, cy + 38, 11, red);
+                cv.circle(cx + 40, cy - 48, 4, '#F2F4F7');
+
+                cv.text('OIL SERVICE ASSISTANT', cx, 260, 34, t.text,
+                    { align: 'center', font: 'bold', spacing: 2.5 });
+                cv.text('Independent BMW MGU application', cx, 302, 23, t.dim,
+                    { align: 'center' });
+                cv.fillRect(560, 330, 480, 2, withAlpha(t.text, 0.18));
+                cv.text('CREATED BY', cx, 370, 17, t.dim,
+                    { align: 'center', font: 'bold', spacing: 2 });
+                cv.text('dzooky', cx, 410, 30, t.text,
+                    { align: 'center', font: 'bold', spacing: 1.5 });
+                cv.text('Open source projects · github.com/dzooky/bmrmodz', cx, 460, 19, t.dim,
+                    { align: 'center' });
             }
 
             G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], page, []);
