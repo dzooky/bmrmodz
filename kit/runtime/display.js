@@ -473,7 +473,7 @@ class Display {
         else if (phase === 3) {
             const i = this.tabDown;
             this.tabDown = -1;
-            if (at && at.i === i && this.onTab) Promise.resolve().then(() => this.onTab(i)).catch((e) => this.log.error('tab', e));
+            if (at && at.i === i) Promise.resolve().then(() => this._openTab(i)).catch((e) => this.log.error('tab', e));
         }
     }
 
