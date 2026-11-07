@@ -379,8 +379,6 @@ mgu.run({
                 cv.text('AVERAGE TO 30°C', 960, 345, 18, t.dim, { font: 'bold' });
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
-            }
-
             } else {
                 // About page: compact author/project profile with the OSA mark centred at the top.
                 G.panel(cv, t, 24, 44, 1552, 468, null);
