@@ -4,7 +4,7 @@ Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
 
 ## Applications
 
-- **Oil Service Assistant (OSA)** — engine and transmission oil temperature monitoring. The transmission reader uses read-only UDS requests.
+- **Oil Service Assistant (OSA)** — An independent BMW MGU application designed to support engine and transmission oil service operations. It monitors vehicle parameters and provides an estimate of the time required to complete individual service procedures, helping users understand how long an oil service may take and when it is expected to be completed.
 - **DPF tools** — DPF is in build phase.
 
 ## Build
