@@ -355,7 +355,7 @@ mgu.run({
                 }
                 cv.text('One service mode at a time · HEAT / COOL', 952, 445, 18, t.dim);
                 if (transmission.error) cv.text(transmission.error, 952, 475, 17, t.warn, { maxWidth: 590 });
-            } else {
+            } else if (page === 2) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
                 const statsHistory = history.filter((x) => x.oilTarget === oilTarget && x.coolantTarget === coolantTarget);
                 cv.text('ENGINE WARM-UP HISTORY', 64, 95, 27, t.text, { font: 'bold', spacing: 2 });
@@ -381,18 +381,61 @@ mgu.run({
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics'], page, []);
+            } else {
+                // About page: compact author/project profile with the OSA mark centred at the top.
+                G.panel(cv, t, 24, 44, 1552, 468, null);
+                const cx = 800, cy = 158;
+                const gold = '#D7A642', silver = '#AEB7C2', red = '#E34848';
+
+                // Gear behind the oil drop.
+                for (let i = 0; i < 12; i++) {
+                    const a = i * Math.PI / 6;
+                    const x1 = cx - 28 + Math.cos(a) * 43, y1 = cy + Math.sin(a) * 43;
+                    const x2 = cx - 28 + Math.cos(a) * 58, y2 = cy + Math.sin(a) * 58;
+                    cv.line(x1, y1, x2, y2, 10, silver);
+                }
+                cv.arc(cx - 28, cy, 34, 45, 0, 360, silver);
+                cv.circle(cx - 28, cy, 23, t.bg);
+
+                // Oil drop.
+                cv.convex([[cx - 28, cy - 55], [cx - 62, cy - 5], [cx - 65, cy + 15],
+                    [cx - 58, cy + 37], [cx - 43, cy + 50], [cx - 28, cy + 54],
+                    [cx - 13, cy + 50], [cx + 2, cy + 37], [cx + 9, cy + 15],
+                    [cx + 6, cy - 5]], gold);
+                cv.arc(cx - 28, cy + 14, 27, 31, 0, 360, '#F2C96D');
+
+                // Thermometer at the right of the drop.
+                cv.roundRect(cx + 30, cy - 48, 20, 78, 10, silver);
+                cv.circle(cx + 40, cy + 38, 20, silver);
+                cv.roundRect(cx + 36, cy - 8, 8, 48, 4, red);
+                cv.circle(cx + 40, cy + 38, 11, red);
+                cv.circle(cx + 40, cy - 48, 4, '#F2F4F7');
+
+                cv.text('OIL SERVICE ASSISTANT', cx, 260, 34, t.text,
+                    { align: 'center', font: 'bold', spacing: 2.5 });
+                cv.text('Independent BMW MGU application', cx, 302, 23, t.dim,
+                    { align: 'center' });
+                cv.fillRect(560, 330, 480, 2, withAlpha(t.text, 0.18));
+                cv.text('CREATED BY', cx, 370, 17, t.dim,
+                    { align: 'center', font: 'bold', spacing: 2 });
+                cv.text('dzooky', cx, 410, 30, t.text,
+                    { align: 'center', font: 'bold', spacing: 1.5 });
+                cv.text('Open source projects · github.com/dzooky/bmrmodz', cx, 460, 19, t.dim,
+                    { align: 'center' });
+            }
+
+            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], page, []);
             return ui.image('MAIN_GFX', cv);
         }
 
         const switchPage = (next) => {
-            page = (next + 3) % 3;
+            page = (next + 4) % 4;
             return render();
         };
 
         ui.onClick('BTN_PAGE', () => switchPage(page + 1));
         ui.onClick('BTN_PREV', () => switchPage(page + 2));
-        ctx.onTab((i) => i !== page && i >= 0 && i < 3 && switchPage(i));
+        ctx.onTab((i) => i !== page && i >= 0 && i < 4 && switchPage(i));
 
         ui.onVisible((name, on) => {
             if (name === 'MAIN') transmission.setVisible(on);
