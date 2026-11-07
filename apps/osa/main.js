@@ -433,8 +433,9 @@ mgu.run({
         ui.onClick('BTN_PAGE', () => switchPage(page + 1));
         ui.onClick('BTN_PREV', () => switchPage(page + 2));
         ctx.onTab((i) => {
-            const target = i;
-            if (target !== page && target >= 0 && target <= 3) return switchPage(target);
+            // Display maps the visual header index back to the app tab index;
+            // About is app tab 3 whether Settings is appended or inserted before it.
+            if (i !== page && i >= 0 && i <= 3) return switchPage(i);
         });
 
         ui.onVisible((name, on) => {
