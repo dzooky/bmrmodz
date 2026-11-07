@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine and transmission oil temperature monitoring for service procedures",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "vendor": "custom",
   "loggingId": "OAA1",
   "iconGlyph": "temp",
@@ -23,6 +23,10 @@
         [
           "BTN_SETTINGS",
           "Settings"
+        ],
+        [
+          "BTN_ABOUT",
+          "About"
         ]
       ]
     }
