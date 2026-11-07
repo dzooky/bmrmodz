@@ -232,6 +232,8 @@ mgu.run({
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
+        function tbdTab(p) { return p === 3 ? 2 : (p < 2 ? p : -1); }
+
         function render() {
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
@@ -411,18 +413,15 @@ mgu.run({
 
                 cv.text('OIL SERVICE ASSISTANT', cx, 260, 34, t.text,
                     { align: 'center', font: 'bold', spacing: 2.5 });
-                cv.text('Independent BMW MGU application', cx, 302, 23, t.dim,
-                    { align: 'center' });
-                cv.fillRect(560, 330, 480, 2, withAlpha(t.text, 0.18));
-                cv.text('CREATED BY', cx, 370, 17, t.dim,
-                    { align: 'center', font: 'bold', spacing: 2 });
-                cv.text('dzooky', cx, 410, 30, t.text,
-                    { align: 'center', font: 'bold', spacing: 1.5 });
-                cv.text('Open source projects · github.com/dzooky/bmrmodz', cx, 460, 19, t.dim,
-                    { align: 'center' });
+                cv.text('An independent BMW MGU application', cx, 302, 22, t.dim, { align: 'center' });
+                cv.text('designed to support engine and transmission oil service.', cx, 334, 20, t.dim, { align: 'center' });
+                cv.text('It monitors vehicle parameters and estimates the time', cx, 366, 20, t.dim, { align: 'center' });
+                cv.text('required for individual service procedures, helping you', cx, 396, 20, t.dim, { align: 'center' });
+                cv.text('understand when an oil service is expected to be completed.', cx, 426, 20, t.dim, { align: 'center' });
+                cv.text('Autor: dzooky@bmrmodz', cx, 478, 20, t.text, { align: 'center', font: 'bold' });
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics'], page, []);
+            G.frame(cv, t, ['Engine', 'Transmission', 'About'], tbdTab(page), []);
             return ui.image('MAIN_GFX', cv);
         }
 
@@ -433,8 +432,10 @@ mgu.run({
 
         ui.onClick('BTN_PAGE', () => switchPage(page + 1));
         ui.onClick('BTN_PREV', () => switchPage(page + 2));
-        ui.onClick('BTN_ABOUT', () => switchPage(3));
-        ctx.onTab((i) => i !== page && i >= 0 && i < 4 && switchPage(i));
+        ctx.onTab((i) => {
+            const target = i === 2 ? 3 : i;
+            if (target !== page && (target === 0 || target === 1 || target === 3)) return switchPage(target);
+        });
 
         ui.onVisible((name, on) => {
             if (name === 'MAIN') transmission.setVisible(on);
