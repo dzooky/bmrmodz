@@ -760,9 +760,15 @@ function headerCompact(cv, t, x, y, w, h, title, tabs, sel, badges) {
     const badgesW = bws.reduce((a, b) => a + b + bh * 0.4, 0);
     const tsize = 32, titleW = title ? cv.textWidth(title, tsize) : 0;
     const room = w - 20 - (badgesW ? badgesW + 12 : 0);
-    const tw = tabWidths(cv, names, 18, opt, 132, 44, room - 20, 20);
+    // Keep every tab reachable. Previously the fixed minimum width let the final tab
+    // disappear when the header was crowded; that was harmless while Settings was last,
+    // but hid About after Settings was inserted before it.
+    let tabSize = 18, tw;
+    for (; tabSize >= 12; tabSize--) {
+        tw = tabWidths(cv, names, tabSize, opt, 72, 18, room - 20, 6);
+        if (tw.reduce((a, b) => a + b, 0) <= room - 20) break;
+    }
     const tabsW = tw.reduce((a, b) => a + b, 0);
-    // the tabs start 20 px in: the name shows only where every tab still fits after it (else the last tab, Settings, drops)
     const showTitle = title && 20 + titleW + 32 + tabsW <= room;
     // only as wide as the content: the rest of the strip stays the HMI's
     let end = x + 20 + (showTitle ? titleW + 32 : 0);
@@ -784,7 +790,7 @@ function headerCompact(cv, t, x, y, w, h, title, tabs, sel, badges) {
             cv.gradientRect(tx, y, bw, h, [[0, withAlpha(S, 0)], [1, withAlpha(S, 0.25)]]);
             cv.fillRect(tx, y + h - 4, bw, 4, S);
         }
-        cv.text(n, tx + bw / 2, y + h / 2 + 6, 18, on ? t.selText || '#ffffff' : t.dim, opt);
+        cv.text(n, tx + bw / 2, y + h / 2 + 6, tabSize, on ? t.selText || '#ffffff' : t.dim, opt);
         if (i < names.length - 1) cv.fillRect(tx + bw, y + h * 0.3, 1, h * 0.4, withAlpha('#ffffff', 0.14));
         tx += bw;
     });
