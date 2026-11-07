@@ -422,7 +422,7 @@ mgu.run({
                     { align: 'center' });
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], page, []);
+            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics'], page, []);
             return ui.image('MAIN_GFX', cv);
         }
 
@@ -433,6 +433,7 @@ mgu.run({
 
         ui.onClick('BTN_PAGE', () => switchPage(page + 1));
         ui.onClick('BTN_PREV', () => switchPage(page + 2));
+        ui.onClick('BTN_ABOUT', () => switchPage(3));
         ctx.onTab((i) => i !== page && i >= 0 && i < 4 && switchPage(i));
 
         ui.onVisible((name, on) => {
