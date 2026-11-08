@@ -232,7 +232,7 @@ mgu.run({
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
-        function tbdTab(p) { return p >= 0 && p <= 4 ? p : -1; }
+        function tbdTab(p) { return p >= 0 && p <= 3 ? p : -1; }
 
         function render() {
             const t = ctx.theme();
@@ -382,15 +382,6 @@ mgu.run({
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             } else if (page === 3) {
-                // Minimal Test page: plain text only, to isolate tab navigation from About rendering.
-                G.panel(cv, t, 24, 44, 1552, 468, null);
-                cv.text('TEST TAB OK', 800, 250, 42, t.text, {
-                    align: 'center', font: 'bold', spacing: 2
-                });
-                cv.text('If you can read this, the Test page opened.', 800, 300, 24, t.dim, {
-                    align: 'center'
-                });
-            } else if (page === 4) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
                     cv.text('OIL SERVICE ASSISTANT', 800, 330, 32, t.text,
                     { align: 'center', font: 'bold', spacing: 2.5 });
@@ -401,12 +392,12 @@ mgu.run({
                 cv.text('Developed by dzooky@bmrmodz', 800, 493, 18, t.text, { align: 'center', font: 'bold' });
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'Test', 'About'], tbdTab(page), []);
+            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], tbdTab(page), []);
             return ui.image('MAIN_GFX', cv);
         }
 
         const switchPage = (next) => {
-            page = (next + 5) % 5;
+            page = (next + 4) % 4;
             return render();
         };
 
