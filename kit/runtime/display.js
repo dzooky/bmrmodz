@@ -234,6 +234,8 @@ class Display {
     _openTab(i) {
         const tl = this._tabList();
         const selected = tl.tabs[i];
+        const baseTabs = this.tabInfo && this.tabInfo.tabs || [];
+        this.log.info('tab: open request i=' + i + ' selected=' + String(selected) + ' visual=' + JSON.stringify(tl.tabs) + ' base=' + JSON.stringify(baseTabs) + ' settings=' + tl.settings + ' sheet=' + !!this.sheet + ' onTab=' + !!this.onTab);
         // Resolve an app page by its original tab label, not by subtracting the
         // Settings slot. The visual header can insert Settings before the last
         // app tab; positional arithmetic is fragile when the header is rebuilt
@@ -242,15 +244,15 @@ class Display {
             if (!(this.sheet && this.sheet.settings)) this._click('BTN_SETTINGS');
             return;
         }
-        const baseTabs = this.tabInfo && this.tabInfo.tabs || [];
         const appIndex = baseTabs.indexOf(selected);
         if (appIndex < 0) {
-            this.log.warn('tab: cannot map visual tab ' + i + ' (' + selected + ') to an app tab');
+            this.log.warn('tab: cannot map visual tab ' + i + ' (' + selected + ') to an app tab; base=' + JSON.stringify(baseTabs));
             return;
         }
         const closed = !!this.sheet;
         this.closeSheet(false);
         if (this.onTab) {
+            this.log.info('tab: dispatch appIndex=' + appIndex + ' closedSheet=' + closed);
             try { Promise.resolve(this.onTab(appIndex, closed)).catch((e) => this.log.error('tab', e)); }
             catch (e) { this.log.error('tab', e); }
         } else if (closed) {
