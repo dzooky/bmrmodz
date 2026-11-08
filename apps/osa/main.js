@@ -11,7 +11,6 @@ const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { withAlpha } = require('./kit/canvas');
-const Png = require('./png');
 const TransmissionReader = require('./transmission');
 const fs = require('fs');
 const path = require('path');
@@ -22,9 +21,6 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let page = 0;
-        let aboutLogo = null;
-        try { aboutLogo = Png.decode(path.join(__dirname, 'osa_about_overlay_128.png'), 800, 260); }
-        catch (e) { log.warn('OSA About logo: ' + e); }
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
         let history = [];
@@ -396,8 +392,7 @@ mgu.run({
                 });
             } else if (page === 4) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
-                if (aboutLogo) cv.blit(aboutLogo, 400, 48);
-                cv.text('OIL SERVICE ASSISTANT', 800, 330, 32, t.text,
+                    cv.text('OIL SERVICE ASSISTANT', 800, 330, 32, t.text,
                     { align: 'center', font: 'bold', spacing: 2.5 });
                 cv.text('An independent BMW MGU application', 800, 370, 22, t.dim, { align: 'center' });
                 cv.text('Engine and transmission oil temperature monitoring.', 800, 405, 20, t.dim, { align: 'center' });
