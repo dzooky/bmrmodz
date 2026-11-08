@@ -14,6 +14,7 @@ const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
 const fs = require('fs');
 const path = require('path');
+const { decode: decodePng } = require('./png');
 
 const W = 1600, H = 520;
 
@@ -21,6 +22,10 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let page = 0;
+        // Decode the standalone About assets once; blit() preserves PNG alpha.
+        const aboutLogo = decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124);
+        const instagramQr = decodePng(path.join(__dirname, 'qr_instagram.png'), 116, 120);
+        const facebookQr = decodePng(path.join(__dirname, 'qr_facebook.png'), 116, 120);
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
         let history = [];
@@ -383,13 +388,14 @@ mgu.run({
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             } else if (page === 3) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
-                    cv.text('OIL SERVICE ASSISTANT', 800, 330, 32, t.text,
+                cv.blit(aboutLogo, 650, 58);
+                cv.text('OIL SERVICE ASSISTANT', 800, 225, 30, t.text,
                     { align: 'center', font: 'bold', spacing: 2.5 });
-                cv.text('An independent BMW MGU application', 800, 370, 22, t.dim, { align: 'center' });
-                cv.text('Engine and transmission oil temperature monitoring.', 800, 405, 20, t.dim, { align: 'center' });
-                cv.text('Designed to support oil service procedures and provide', 800, 435, 20, t.dim, { align: 'center' });
-                cv.text('insight into vehicle warm-up behaviour.', 800, 463, 20, t.dim, { align: 'center' });
-                cv.text('Developed by dzooky@bmrmodz', 800, 493, 18, t.text, { align: 'center', font: 'bold' });
+                cv.text('An independent BMW MGU application for engine and transmission oil service.', 800, 266, 19, t.dim, { align: 'center' });
+                cv.text('Temperature monitoring, warm-up estimates and service insights.', 800, 296, 19, t.dim, { align: 'center' });
+                cv.text('Developed by dzooky@bmrmodz', 800, 340, 18, t.text, { align: 'center', font: 'bold' });
+                cv.blit(instagramQr, 660, 375);
+                cv.blit(facebookQr, 824, 375);
             }
 
             G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], tbdTab(page), []);
