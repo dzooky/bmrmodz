@@ -238,7 +238,7 @@ class Display {
         // Settings slot. The visual header can insert Settings before the last
         // app tab; positional arithmetic is fragile when the header is rebuilt
         // while a Settings sheet is open. About must still resolve to app tab 3.
-        if (selected === 'Settings' || i === tl.settings) {
+        if (selected === 'Settings') {
             if (!(this.sheet && this.sheet.settings)) this._click('BTN_SETTINGS');
             return;
         }
