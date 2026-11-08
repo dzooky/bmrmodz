@@ -381,8 +381,16 @@ mgu.run({
                 cv.text('AVERAGE TO 30°C', 960, 345, 18, t.dim, { font: 'bold' });
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
-            } else if (page === 3 || page === 4) {
-                // Test and About intentionally render the exact same content for navigation diagnosis.
+            } else if (page === 3) {
+                // Minimal Test page: plain text only, to isolate tab navigation from About rendering.
+                G.panel(cv, t, 24, 44, 1552, 468, null);
+                cv.text('TEST TAB OK', 800, 250, 42, t.text, {
+                    align: 'center', font: 'bold', spacing: 2
+                });
+                cv.text('If you can read this, the Test page opened.', 800, 300, 24, t.dim, {
+                    align: 'center'
+                });
+            } else if (page === 4) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
                 const cx = 800, cy = 158;
                 const gold = '#D7A642', silver = '#AEB7C2', red = '#E34848';
