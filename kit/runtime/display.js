@@ -249,8 +249,14 @@ class Display {
             return;
         }
         const closed = !!this.sheet;
-        this.closeSheet();
-        if (this.onTab) try { Promise.resolve(this.onTab(appIndex, closed)).catch((e) => this.log.error('tab', e)); } catch (e) { this.log.error('tab', e); }
+        this.closeSheet(false);
+        if (this.onTab) {
+            try { Promise.resolve(this.onTab(appIndex, closed)).catch((e) => this.log.error('tab', e)); }
+            catch (e) { this.log.error('tab', e); }
+        } else if (closed) {
+            this._repaint();
+            this.tickHandlers.forEach((fn) => fn());
+        }
     }
     /**
      * What the controller's knob goes through, in order: the header's tabs, the page's targets, the bar. A
@@ -284,15 +290,20 @@ class Display {
         this._paintSheet();
         return true;
     }
-    closeSheet() {
+    closeSheet(redraw) {
         if (!this.sheet) return;
         const sh = this.sheet;
         this.sheet = null; this.sheetTargets = null; this.sheetHead = false;
         if (this.sheetTimer) { clearInterval(this.sheetTimer); this.sheetTimer = null; }
         if (this.saved) { this.app = this.saved; this.saved = null; }
         this.lastWords = null;
-        this._repaint();
-        this.tickHandlers.forEach((fn) => fn());         // the app draws its next frame
+        // When leaving Settings for another app tab, that tab's render replaces
+        // the saved frame immediately. Do not enqueue a redraw of the old page:
+        // its asynchronous image update can arrive after the newly selected tab.
+        if (redraw !== false) {
+            this._repaint();
+            this.tickHandlers.forEach((fn) => fn());
+        }
         if (sh.onClose) try { sh.onClose(); } catch (e) { this.log.error(e); }
     }
     /** Run fn (the sheet's press, back or a target's act; from the socket's data handler) and act on what it returns. */
