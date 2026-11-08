@@ -346,10 +346,13 @@ class Display {
             if (tilt === 'W') this._sheetResult(() => this.sheet.back());
             return;
         }
-        // pushed up / down / left / right: the nearest place that way; left with nothing there goes back (leaves the app)
+        // A directional deflection and the push-button edge can arrive in the same CCU
+        // update. Move focus first, but do not discard the confirmation that came with it.
         if (tilt) {
             const to = this._toward(tilt, here);
-            if (to) { this._focus(to); this._repaint(); } else if (tilt === 'W') this._back();
+            if (to) { this._focus(to); this._repaint(); }
+            else if (tilt === 'W') { this._back(); return; }
+            if (press) this._activate(to || this._ring().find((p) => p.k === this.focusKey));
             return;
         }
         // one row of places for the knob: the header's tabs, the page's buttons and rows, the bar
@@ -363,12 +366,17 @@ class Display {
             this._focus(ring[i]);
             this._repaint();
         }
-        if (press && i >= 0) {
-            const p = ring[i];
-            if (p.tab != null) this._openTab(p.tab);
-            else if (p.tgt) { try { Promise.resolve(p.tgt.run()).catch((e) => this.log.error('target', e)); } catch (e) { this.log.error('target', e); } this.pressed = p.k; this.pressedT = Date.now(); this._repaint(); }
-            else if (p.bar) this._click(p.bar);
-        }
+        if (press && i >= 0) this._activate(ring[i]);
+    }
+    /** Activate the focused place, shared by rotary and directional CCU input. */
+    _activate(p) {
+        if (!p) return;
+        if (p.tab != null) this._openTab(p.tab);
+        else if (p.tgt) {
+            try { Promise.resolve(p.tgt.run()).catch((e) => this.log.error('target', e)); }
+            catch (e) { this.log.error('target', e); }
+            this.pressed = p.k; this.pressedT = Date.now(); this._repaint();
+        } else if (p.bar) this._click(p.bar);
     }
     /** A scrolling page (ctx.onScroll) moved by dy logical px; false when it was at its end already. */
     _scrollBy(dy) {
