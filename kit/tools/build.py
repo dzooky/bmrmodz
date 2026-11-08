@@ -257,7 +257,8 @@ def build_ui(spec, language='en'):
                 bar.append((bid, bx, bc))
             if bar:
                 groups.append(('Bar', bar))
-        elif kind == 'settings':            items = []
+        elif kind == 'settings':
+            items = []
             settings_items(items)
             groups.append(('List', items))
         else:   # list / menu: components from "items" (a menu adds the settings after them)
