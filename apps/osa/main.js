@@ -22,10 +22,38 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let page = 0;
-        // Decode the standalone About assets once; blit() preserves PNG alpha.
-        const aboutLogo = decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124);
-        const instagramQr = decodePng(path.join(__dirname, 'qr_instagram.png'), 116, 120);
-        const facebookQr = decodePng(path.join(__dirname, 'qr_facebook.png'), 116, 120);
+        // PNGs are decoded to pixels, then converted to native drawing commands.
+        // The native mgu-render/1 transport does not support pixel-image uploads.
+        const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
+            const d = src.d, w = src.w, h = src.h;
+            for (let y = 0; y < h; y++) {
+                let run = -1, last = -1;
+                for (let x = 0; x <= w; x++) {
+                    let color = -1;
+                    if (x < w) {
+                        const p = (y * w + x) * 4;
+                        const a = Math.round(d[p + 3] / 17) * 17;
+                        if (a >= 32) {
+                            const r = Math.round(d[p] / 17) * 17;
+                            const g = Math.round(d[p + 1] / 17) * 17;
+                            const b = Math.round(d[p + 2] / 17) * 17;
+                            color = (((r & 255) << 24) | ((g & 255) << 16) | ((b & 255) << 8) | (a & 255)) >>> 0;
+                        }
+                    }
+                    if (color !== last) {
+                        if (last !== -1) c.fillRect(run, y, x - run, 1, last);
+                        run = color === -1 ? -1 : x;
+                        last = color;
+                    }
+                }
+            }
+        }, 1);
+        const aboutLogoPixels = decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124);
+        const instagramPixels = decodePng(path.join(__dirname, 'qr_instagram.png'), 116, 120);
+        const facebookPixels = decodePng(path.join(__dirname, 'qr_facebook.png'), 116, 120);
+        const aboutLogo = rasterLayer('osa_about_logo', aboutLogoPixels);
+        const instagramQr = rasterLayer('osa_about_instagram', instagramPixels);
+        const facebookQr = rasterLayer('osa_about_facebook', facebookPixels);
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
         let history = [];
