@@ -232,7 +232,7 @@ mgu.run({
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
-        function tbdTab(p) { return p >= 0 && p <= 3 ? p : -1; }
+        function tbdTab(p) { return p >= 0 && p <= 4 ? p : -1; }
 
         function render() {
             const t = ctx.theme();
@@ -381,8 +381,8 @@ mgu.run({
                 cv.text('AVERAGE TO 30°C', 960, 345, 18, t.dim, { font: 'bold' });
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
-            } else {
-                // About page: compact author/project profile with the OSA mark centred at the top.
+            } else if (page === 3 || page === 4) {
+                // Test and About intentionally render the exact same content for navigation diagnosis.
                 G.panel(cv, t, 24, 44, 1552, 468, null);
                 const cx = 800, cy = 158;
                 const gold = '#D7A642', silver = '#AEB7C2', red = '#E34848';
@@ -421,12 +421,12 @@ mgu.run({
                 cv.text('Autor: dzooky@bmrmodz', cx, 478, 20, t.text, { align: 'center', font: 'bold' });
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], tbdTab(page), []);
+            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'Test', 'About'], tbdTab(page), []);
             return ui.image('MAIN_GFX', cv);
         }
 
         const switchPage = (next) => {
-            page = (next + 4) % 4;
+            page = (next + 5) % 5;
             return render();
         };
 
@@ -434,8 +434,8 @@ mgu.run({
         ui.onClick('BTN_PREV', () => switchPage(page + 2));
         ctx.onTab((i) => {
             // Display maps the visual header index back to the app tab index;
-            // About is app tab 3 whether Settings is appended or inserted before it.
-            if (i !== page && i >= 0 && i <= 3) return switchPage(i);
+            // App tabs map directly; Test is tab 3 and About is tab 4.
+            if (i !== page && i >= 0 && i <= 4) return switchPage(i);
         });
 
         ui.onVisible((name, on) => {
