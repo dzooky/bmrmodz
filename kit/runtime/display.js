@@ -366,7 +366,12 @@ class Display {
             this._focus(ring[i]);
             this._repaint();
         }
-        if (press && i >= 0) this._activate(ring[i]);
+        if (press && this.focusTab != null) {
+            // Confirm the visually focused header tab directly. In particular,
+            // About follows the kit-inserted Settings tab and has a visual index
+            // one greater than its app page index.
+            this._openTab(this.focusTab);
+        } else if (press && i >= 0) this._activate(ring[i]);
     }
     /** Activate the focused place, shared by rotary and directional CCU input. */
     _activate(p) {
@@ -400,6 +405,15 @@ class Display {
      */
     _toward(dir, here) {
         const ring = this._ring().filter((p) => !p.scroll || this.focusKey === 'scroll');
+        // Header tabs are a strict left-to-right sequence. Do not use geometric
+        // nearest-neighbour navigation for them: compressed tab hitboxes and the
+        // Settings insertion can make About unreachable with a directional tilt.
+        if ((dir === 'E' || dir === 'W') && this.focusTab != null) {
+            const tabs = ring.filter((p) => p.tab != null);
+            const at = tabs.findIndex((p) => p.tab === this.focusTab);
+            const next = tabs[at + (dir === 'E' ? 1 : -1)];
+            if (at >= 0) return next || null;
+        }
         const cur = ring.find((p) => p.k === this.focusKey), cr = cur && this._rectOf(cur);
         if (!cr) return dir === 'W' ? null : ring.find((p) => p.tab === here) || ring[0] || null;
         const cx = cr.x + cr.w / 2, cy = cr.y + cr.h / 2;
