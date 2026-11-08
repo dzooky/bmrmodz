@@ -233,10 +233,23 @@ class Display {
     /** Open header tab i: the app's page, or the settings (Settings tab). */
     _openTab(i) {
         const tl = this._tabList();
-        if (i === tl.settings) { if (!(this.sheet && this.sheet.settings)) this._click('BTN_SETTINGS'); return; }
+        const selected = tl.tabs[i];
+        // Resolve an app page by its original tab label, not by subtracting the
+        // Settings slot. The visual header can insert Settings before the last
+        // app tab; positional arithmetic is fragile when the header is rebuilt
+        // while a Settings sheet is open. About must still resolve to app tab 3.
+        if (selected === 'Settings' || i === tl.settings) {
+            if (!(this.sheet && this.sheet.settings)) this._click('BTN_SETTINGS');
+            return;
+        }
+        const baseTabs = this.tabInfo && this.tabInfo.tabs || [];
+        const appIndex = baseTabs.indexOf(selected);
+        if (appIndex < 0) {
+            this.log.warn('tab: cannot map visual tab ' + i + ' (' + selected + ') to an app tab');
+            return;
+        }
         const closed = !!this.sheet;
         this.closeSheet();
-        const appIndex = tl.settings >= 0 && i > tl.settings ? i - 1 : i;
         if (this.onTab) try { Promise.resolve(this.onTab(appIndex, closed)).catch((e) => this.log.error('tab', e)); } catch (e) { this.log.error('tab', e); }
     }
     /**
