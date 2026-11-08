@@ -11,6 +11,7 @@ const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { withAlpha } = require('./kit/canvas');
+const Png = require('./png');
 const TransmissionReader = require('./transmission');
 const fs = require('fs');
 const path = require('path');
@@ -21,6 +22,9 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let page = 0;
+        let aboutLogo = null;
+        try { aboutLogo = Png.decode(path.join(__dirname, 'osa_about_overlay_128.png'), 800, 260); }
+        catch (e) { log.warn('OSA About logo: ' + e); }
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
         let history = [];
@@ -392,41 +396,14 @@ mgu.run({
                 });
             } else if (page === 4) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
-                const cx = 800, cy = 158;
-                const gold = '#D7A642', silver = '#AEB7C2', red = '#E34848';
-
-                // Gear behind the oil drop.
-                for (let i = 0; i < 12; i++) {
-                    const a = i * Math.PI / 6;
-                    const x1 = cx - 28 + Math.cos(a) * 43, y1 = cy + Math.sin(a) * 43;
-                    const x2 = cx - 28 + Math.cos(a) * 58, y2 = cy + Math.sin(a) * 58;
-                    cv.line(x1, y1, x2, y2, 10, silver);
-                }
-                cv.arc(cx - 28, cy, 34, 45, 0, 360, silver);
-                cv.circle(cx - 28, cy, 23, t.bg);
-
-                // Oil drop.
-                cv.convex([[cx - 28, cy - 55], [cx - 62, cy - 5], [cx - 65, cy + 15],
-                    [cx - 58, cy + 37], [cx - 43, cy + 50], [cx - 28, cy + 54],
-                    [cx - 13, cy + 50], [cx + 2, cy + 37], [cx + 9, cy + 15],
-                    [cx + 6, cy - 5]], gold);
-                cv.arc(cx - 28, cy + 14, 27, 31, 0, 360, '#F2C96D');
-
-                // Thermometer at the right of the drop.
-                cv.roundRect(cx + 30, cy - 48, 20, 78, 10, silver);
-                cv.circle(cx + 40, cy + 38, 20, silver);
-                cv.roundRect(cx + 36, cy - 8, 8, 48, 4, red);
-                cv.circle(cx + 40, cy + 38, 11, red);
-                cv.circle(cx + 40, cy - 48, 4, '#F2F4F7');
-
-                cv.text('OIL SERVICE ASSISTANT', cx, 260, 34, t.text,
+                if (aboutLogo) cv.blit(aboutLogo, 400, 48);
+                cv.text('OIL SERVICE ASSISTANT', 800, 330, 32, t.text,
                     { align: 'center', font: 'bold', spacing: 2.5 });
-                cv.text('An independent BMW MGU application', cx, 302, 22, t.dim, { align: 'center' });
-                cv.text('designed to support engine and transmission oil service.', cx, 334, 20, t.dim, { align: 'center' });
-                cv.text('It monitors vehicle parameters and estimates the time', cx, 366, 20, t.dim, { align: 'center' });
-                cv.text('required for individual service procedures, helping you', cx, 396, 20, t.dim, { align: 'center' });
-                cv.text('understand when an oil service is expected to be completed.', cx, 426, 20, t.dim, { align: 'center' });
-                cv.text('Autor: dzooky@bmrmodz', cx, 478, 20, t.text, { align: 'center', font: 'bold' });
+                cv.text('An independent BMW MGU application', 800, 370, 22, t.dim, { align: 'center' });
+                cv.text('Engine and transmission oil temperature monitoring.', 800, 405, 20, t.dim, { align: 'center' });
+                cv.text('Designed to support oil service procedures and provide', 800, 435, 20, t.dim, { align: 'center' });
+                cv.text('insight into vehicle warm-up behaviour.', 800, 463, 20, t.dim, { align: 'center' });
+                cv.text('Developed by dzooky@bmrmodz', 800, 493, 18, t.text, { align: 'center', font: 'bold' });
             }
 
             G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'Test', 'About'], tbdTab(page), []);
