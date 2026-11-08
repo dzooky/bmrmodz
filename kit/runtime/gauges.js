@@ -764,15 +764,23 @@ function headerCompact(cv, t, x, y, w, h, title, tabs, sel, badges) {
     // disappear when the header was crowded; that was harmless while Settings was last,
     // but hid About after Settings was inserted before it.
     let tabSize = 18, tw;
+    const tabRoom = Math.max(0, room - 20);
     for (; tabSize >= 12; tabSize--) {
-        tw = tabWidths(cv, names, tabSize, opt, 72, 18, room - 20, 6);
-        if (tw.reduce((a, b) => a + b, 0) <= room - 20) break;
+        tw = tabWidths(cv, names, tabSize, opt, 72, 18, tabRoom, 6);
+        if (tw.reduce((a, b) => a + b, 0) <= tabRoom) break;
     }
-    const tabsW = tw.reduce((a, b) => a + b, 0);
+    // Even at the smallest font, tabWidths can exceed the available space
+    // (its minimum padding is intentional for normal layouts). Compress the
+    // hit areas as a last resort instead of silently dropping the final tabs.
+    let tabsW = tw.reduce((a, b) => a + b, 0);
+    if (tabsW > tabRoom && tabsW > 0) {
+        const k = tabRoom / tabsW;
+        tw = tw.map((v) => v * k);
+        tabsW = tabRoom;
+    }
     const showTitle = title && 20 + titleW + 32 + tabsW <= room;
     // only as wide as the content: the rest of the strip stays the HMI's
-    let end = x + 20 + (showTitle ? titleW + 32 : 0);
-    names.forEach((n, i) => { if (end + tw[i] <= x + room) end += tw[i]; });
+    let end = x + 20 + (showTitle ? titleW + 32 : 0) + tabsW;
     end = Math.min(x + w, end + (badgesW ? 12 + badgesW : 0) + 16);
     cv.fillRect(x, y, end - x, h, t.bg);
     cv.fillRect(x, y + h - 2, end - x, 2, withAlpha('#ffffff', 0.22));
@@ -784,7 +792,6 @@ function headerCompact(cv, t, x, y, w, h, title, tabs, sel, badges) {
     cv.tabRects = [];
     names.forEach((n, i) => {
         const on = i === sel, bw = tw[i];
-        if (tx + bw > x + room) return;
         cv.tabRects.push({ i, x: tx, y, w: bw, h });
         if (on) {
             cv.gradientRect(tx, y, bw, h, [[0, withAlpha(S, 0)], [1, withAlpha(S, 0.25)]]);
