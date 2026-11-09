@@ -1,6 +1,8 @@
-<p align="center">
-  <img src="assets/brmodz_logo.svg" alt="BMRMODZ logo" width="220">
-</p>
+<table align="center" bgcolor="#111111" border="0">
+  <tr><td align="center">
+    <img src="apps/osa/brmodz_logo.png" alt="BMRMODZ logo" width="220">
+  </td></tr>
+</table>
 
 # BMRMODZ — BMW MGU Apps
 
