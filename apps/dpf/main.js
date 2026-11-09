@@ -25,6 +25,40 @@ mgu.run({
         let units = [];
         let scannedAt = 0;
         let scanning = false;
+        let selected = -1;
+        let testing = false;
+        let testLines = [];
+        const dids = [['SOOT',0x44BE,2,0.01525902],['ASH',0x44BD,2,0.01525902],['SINCE',0x44BF,4,1],['AVERAGE',0x4B2F,4,1]];
+        const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
+        async function testSelected() {
+            if(testing || scanning || selected < 0 || !units[selected]) return;
+            testing = true;
+            testLines = [];
+            const address = units[selected].address;
+            link.wake(address);
+            try {
+                for(const [name,did,len,factor] of dids) {
+                    const response = await link.read(address,did,1800);
+                    let result = 'TIMEOUT';
+                    if(response) {
+                        if(response[0] === 0x7F) result = 'NRC '+hexBytes(response);
+                        else if(response[0] === 0x62 && response[1] === (did>>8) && response[2] === (did&255)) {
+                            const bytes = response.slice(3);
+                            if(bytes.length === len) {
+                                let raw = 0;
+                                for(const b of bytes) raw = raw*256+b;
+                                result = hexBytes(bytes)+' = '+(raw*factor).toFixed(factor===1?0:2);
+                            } else result = 'LEN '+bytes.length+' '+hexBytes(bytes);
+                        } else result = 'UNEXPECTED '+hexBytes(response);
+                    }
+                    const line = name+' '+did.toString(16).toUpperCase()+': '+result;
+                    testLines.push(line);
+                    log.info('DPF READ ECU '+address.toString(16)+' '+line);
+                }
+            } catch(e) {log.warn('DPF test: '+String(e));}
+            finally {testing = false;}
+        }
+
 
         const scan = async () => {
             if (scanning) return;
@@ -39,6 +73,8 @@ mgu.run({
                     return;
                 }
                 const found = await link.discover({ idleMs: 1800, maxMs: 10000 });
+                selected = -1;
+                testLines = [];
                 units = Array.from(found.entries())
                     .map(([address, sgbd]) => ({ address, sgbd: sgbd || 'IDENTIFICATION REFUSED' }))
                     .sort((a, b) => a.address - b.address);
@@ -92,26 +128,11 @@ mgu.run({
             cv.text('REGEN REQUEST', 836, 383, 18, t.dim, { font: 'bold' });
             cv.text('UNKNOWN', 1532, 383, 20, t.warn, { font: 'bold', align: 'right' });
 
-            cv.text('ECU DISCOVERY', 48, 425, 17, t.text, { font: 'bold', spacing: 1.5 });
-            cv.text('ADDRESS', 48, 448, 14, t.dim, { font: 'bold' });
-            cv.text('SGBD IDENTIFICATION', 190, 448, 14, t.dim, { font: 'bold' });
 
-            const visible = units.slice(0, 1);
-            visible.forEach((unit, i) => {
-                const y = 480 + i * 24;
-                cv.text('0x' + unit.address.toString(16).toUpperCase().padStart(2, '0'), 48, y, 17, t.text, { font: 'num' });
-                cv.text(unit.sgbd, 190, y, 17, t.text, { font: 'num' });
-            });
-            if (!units.length && scanState !== 'SCANNING' && scanState !== 'CONNECTING') {
-                cv.text(scanError || 'No ECU identification data received.', 48, 482, 17, t.dim);
-            }
-            if (units.length > 1) {
-                cv.text('+' + (units.length - 1) + ' more ECUs', 450, 480, 15, t.dim);
-            }
-            if (scannedAt) {
-                cv.text('Last scan: ' + new Date(scannedAt).toLocaleTimeString(), 1552, 425, 16, t.dim, { align: 'right' });
-            }
-
+            cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
+            cv.text(selected < 0 ? 'SELECT ECU WITH NEXT ECU BUTTON' : 'SELECTED ECU 0x'+units[selected].address.toString(16).toUpperCase()+' / '+units[selected].sgbd,48,451,16,t.warn);
+            cv.text(testing ? 'READING...' : 'DISCOVERED '+units.length+' ECUS',850,451,16,t.dim);
+            testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,480+Math.floor(i/2)*24,15,t.text,{font:'num'}));
             return ui.image('MAIN_GFX', cv);
         }
 
@@ -119,6 +140,15 @@ mgu.run({
             scan().then(() => render()).catch((e) => log.warn('DPF scan: ' + e));
         });
 
+        ui.onClick('BTN_NEXT_ECU', () => {
+            if(scanning || testing || !units.length) return;
+            selected = (selected+1)%units.length;
+            testLines = [];
+            render();
+        });
+        ui.onClick('BTN_TEST_DPF', () => {
+            testSelected().then(render).catch(e=>log.warn('DPF test: '+e));
+        });
         ctx.loop('MAIN', 4, render);
         await scan();
         render()
