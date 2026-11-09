@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/brmodz_logo_github.svg" alt="BMRMODZ logo" width="220">
+  <img src="apps/osa/brmodz_logo.png" alt="BMRMODZ logo" width="220">
 </p>
 
 # BMRMODZ — BMW MGU Apps
