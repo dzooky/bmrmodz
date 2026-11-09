@@ -11,7 +11,12 @@
       "name": "MAIN",
       "kind": "canvas",
       "title": "DPF Status",
-      "buttons": []
+      "buttons": [
+        [
+          "BTN_SCAN",
+          "Scan ECUs"
+        ]
+      ]
     }
   ],
   "signals": {}
