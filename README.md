@@ -14,7 +14,12 @@ Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
 
 ## Applications
 
-- **Oil Service Assistant (OSA)** — An independent BMW MGU application designed to support engine and transmission oil service operations. It monitors vehicle parameters and provides an estimate of the time required to complete individual service procedures, helping users understand how long an oil service may take and when it is expected to be completed.
+- **Oil Service Assistant (OSA)** — An independent BMW MGU application for monitoring engine oil, engine coolant and transmission oil temperatures during service procedures.
+
+  - **Engine warm-up:** Monitors engine oil and coolant temperatures, displays live estimates for reaching the selected target temperatures, and compares the current warm-up with previous sessions under similar starting conditions.
+  - **Transmission temperature:** Monitors transmission oil temperature and records warm-up and cool-down times to provide useful service-temperature information.
+  - **Local history:** OSA records starting temperatures, outside temperature and the time taken to reach target temperatures. Transmission warm-up and cool-down observations are recorded as well. This history is stored locally on the BMW head unit and is used for historical comparisons; it is not uploaded to a cloud service.
+  - **Live estimates:** Estimates are based on current temperature trends and driving conditions, while the locally stored history provides a reference from comparable previous sessions.
 - **DPF tools** — DPF is in build phase.
 
 ## Build
