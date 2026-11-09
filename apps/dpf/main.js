@@ -15,7 +15,6 @@ const { ReadOnlyDiag } = require('./kit/readonly-diag');
 
 const W = 1600;
 const H = 520;
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 mgu.run({
     async start(ctx) {
@@ -72,8 +71,8 @@ mgu.run({
             const cards = [
                 ['SOOT MASS', '--', 'g'],
                 ['ASH LOAD', '--', ''],
-                ['DIFFERENTIAL PRESSURE', '--', 'mbar'],
-                ['DISTANCE SINCE REGEN', '--', 'km']
+                ['DISTANCE SINCE REGEN', '--', 'km'],
+                ['AVG REGEN INTERVAL', '--', 'km']
             ];
             const cardW = 354;
             cards.forEach((item, i) => {
@@ -84,24 +83,33 @@ mgu.run({
                 if (item[2]) cv.text(item[2], x + 82, 310, 18, t.dim);
             });
 
-            cv.text('ECU DISCOVERY', 48, 382, 19, t.text, { font: 'bold', spacing: 1.5 });
-            cv.text('ADDRESS', 48, 415, 14, t.dim, { font: 'bold' });
-            cv.text('SGBD IDENTIFICATION', 190, 415, 14, t.dim, { font: 'bold' });
+            // Independent DDE flags: request pending is not the same as regeneration active.
+            // Neither is inferred from soot load or temperature.
+            cv.roundRect(48, 352, 736, 48, 9, t.panel || t.bg);
+            cv.roundRect(816, 352, 736, 48, 9, t.panel || t.bg);
+            cv.text('REGENERATION', 68, 383, 18, t.dim, { font: 'bold' });
+            cv.text('UNKNOWN', 764, 383, 20, t.warn, { font: 'bold', align: 'right' });
+            cv.text('REGEN REQUEST', 836, 383, 18, t.dim, { font: 'bold' });
+            cv.text('UNKNOWN', 1532, 383, 20, t.warn, { font: 'bold', align: 'right' });
 
-            const visible = units.slice(0, 2);
+            cv.text('ECU DISCOVERY', 48, 425, 17, t.text, { font: 'bold', spacing: 1.5 });
+            cv.text('ADDRESS', 48, 448, 14, t.dim, { font: 'bold' });
+            cv.text('SGBD IDENTIFICATION', 190, 448, 14, t.dim, { font: 'bold' });
+
+            const visible = units.slice(0, 1);
             visible.forEach((unit, i) => {
-                const y = 448 + i * 24;
+                const y = 480 + i * 24;
                 cv.text('0x' + unit.address.toString(16).toUpperCase().padStart(2, '0'), 48, y, 17, t.text, { font: 'num' });
                 cv.text(unit.sgbd, 190, y, 17, t.text, { font: 'num' });
             });
             if (!units.length && scanState !== 'SCANNING' && scanState !== 'CONNECTING') {
-                cv.text(scanError || 'No ECU identification data received.', 48, 454, 17, t.dim);
+                cv.text(scanError || 'No ECU identification data received.', 48, 482, 17, t.dim);
             }
-            if (units.length > 3) {
-                cv.text('+' + (units.length - 2) + ' more ECUs', 450, 488, 15, t.dim);
+            if (units.length > 1) {
+                cv.text('+' + (units.length - 1) + ' more ECUs', 450, 480, 15, t.dim);
             }
             if (scannedAt) {
-                cv.text('Last scan: ' + new Date(scannedAt).toLocaleTimeString(), 1552, 382, 16, t.dim, { align: 'right' });
+                cv.text('Last scan: ' + new Date(scannedAt).toLocaleTimeString(), 1552, 425, 16, t.dim, { align: 'right' });
             }
 
             return ui.image('MAIN_GFX', cv);
