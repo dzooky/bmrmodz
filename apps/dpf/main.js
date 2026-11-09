@@ -3,8 +3,8 @@
 /**
  * DPF Status
  *
- * Read-only DDE monitor. The first stage discovers ECUs through the permitted
- * UDS 22 F1 50 identification request. DPF measurements remain unavailable
+ * Read-only DDE monitor. Identifies DDE 0x12 via physical UDS 22 F1 50.
+ * DPF measurements remain unavailable
  * until their B57/DDE 8.32 identifiers and decoding have been verified.
  *
  * No diagnostic service other than the read-only services exposed by
@@ -19,7 +19,16 @@ const H = 520;
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
-        const link = new ReadOnlyDiag(ctx.signals, log, { gapMs: 50, busyMs: 500 });
+        let transportStatus = 'NOT STARTED';
+        const link = new ReadOnlyDiag(ctx.signals, log, {
+            gapMs: 50, busyMs: 500,
+            onDebug: message => {
+                if (/^(SENDING|TRANSPORT|FRAME|NO MATCHING RESPONSE|REPLY|SKIPPED)/.test(message)) {
+                    transportStatus = message.slice(0, 100);
+                    log.info('DPF TASU ' + transportStatus);
+                }
+            }
+        });
         const DDE = 0x12;
         const EXPECTED = '0F1FE8';
         let scanState = 'CONNECTING';
@@ -69,6 +78,7 @@ mgu.run({
         const identify = async () => {
             scanState = 'IDENTIFYING DDE';
             scanError = '';
+            transportStatus = 'STARTING IDENTIFICATION';
             identified = false;
             try {
                 if (!link.ready) await link.init();
@@ -144,6 +154,7 @@ mgu.run({
             cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
             cv.text('DDE 0x12 / '+EXPECTED,48,451,16,t.warn);
             cv.text(testing ? testProgress : (testProgress || scanError || scanState),850,451,16,t.dim);
+            cv.text(transportStatus,850,425,14,t.warn);
             testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,480+Math.floor(i/2)*24,15,t.text,{font:'num'}));
             return ui.image('MAIN_GFX', cv);
         }
