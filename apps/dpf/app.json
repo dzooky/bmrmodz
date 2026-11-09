@@ -2,7 +2,7 @@
   "id": "dpf",
   "title": "DPF Status",
   "description": "Read-only diesel particulate filter status monitoring",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "vendor": "custom",
   "loggingId": "DPF1",
   "iconGlyph": "temp",
