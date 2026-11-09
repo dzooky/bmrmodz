@@ -1,0 +1,23 @@
+name: Temporary README logo export
+on:
+  push:
+    branches:
+      - temp/logo-readme-export
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pillow
+      - run: python tools/export_readme_logo.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: readme-logo
+          path: brmodz_logo_github.png
+          if-no-files-found: error
