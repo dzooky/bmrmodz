@@ -1,11 +1,46 @@
 # BMRMODZ — BMW MGU Apps
 
+<p align="center">
+  <img src="apps/osa/osa_about_overlay_128.png" alt="BMR MODZ — OIL SERVICE ASSISTANT" width="256">
+</p>
+
+<p align="center">
+  <a href="https://www.instagram.com/bmrmodz">Instagram</a>
+  ·
+  <a href="https://www.facebook.com/profile.php?id=61590181470490">Facebook</a>
+  ·
+  <a href="https://github.com/dzooky">GitHub</a>
+</p>
+
 Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
 
 ## Applications
 
 - **Oil Service Assistant (OSA)** — An independent BMW MGU application designed to support engine and transmission oil service operations. It monitors vehicle parameters and provides an estimate of the time required to complete individual service procedures, helping users understand how long an oil service may take and when it is expected to be completed.
 - **DPF tools** — DPF is in build phase.
+
+## Find BMRMODZ
+
+Follow the project on social media, or scan the QR codes below to open the pages directly.
+
+<table>
+  <tr>
+    <th align="center">Instagram</th>
+    <th align="center">Facebook</th>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://www.instagram.com/bmrmodz">
+        <img src="apps/osa/qr_instagram.png" alt="BMRMODZ Instagram QR code" width="180">
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://www.facebook.com/profile.php?id=61590181470490">
+        <img src="apps/osa/qr_facebook.png" alt="BMRMODZ Facebook QR code" width="180">
+      </a>
+    </td>
+  </tr>
+</table>
 
 ## Build
 
