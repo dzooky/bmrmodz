@@ -322,8 +322,26 @@ def make_icon(spec, out):
     if os.path.exists(src):
         shutil.copy(src, out)
         return
-    # rendered by the kit's own canvas (node) so no extra tooling is needed
-    os.system(f'node "{os.path.join(HERE, "make_icon.js")}" "{spec.get("iconGlyph", spec["title"][:2])}" "{out}"')
+    # Some source repositories intentionally omit icon.png. Generate a valid
+    # placeholder using only Python's standard library: the Store build checkout
+    # may not contain the original make_icon.js helper.
+    import struct, zlib
+    width = height = 128
+    rows = []
+    for y in range(height):
+        row = bytearray([0])
+        for x in range(width):
+            inside = 12 <= x < 116 and 12 <= y < 116
+            row.extend((25, 34, 48, 255) if inside else (0, 0, 0, 0))
+        rows.append(bytes(row))
+    def chunk(tag, data):
+        return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff)
+    png = (b'\\x89PNG\\r\\n\\x1a\\n'
+           + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0))
+           + chunk(b'IDAT', zlib.compress(b''.join(rows), 9))
+           + chunk(b'IEND', b''))
+    with open(out, 'wb') as file:
+        file.write(png)
 
 
 WIDGET_COMPONENT_ID = 501
