@@ -37,6 +37,9 @@ mgu.run({
         let testing = false;
         let testLines = [];
         let testProgress = '';
+        const readings = {};
+        let lastReadAt = 0;
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
         const dids = [['SOOT',0x44BE,2,0.01525902],['ASH',0x44BD,2,0.01525902],['SINCE',0x44BF,4,1],['AVERAGE',0x4B2F,4,1]];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
@@ -64,6 +67,11 @@ mgu.run({
                                 result = hexBytes(bytes)+' = '+(raw*factor).toFixed(factor===1?0:2);
                             } else result = 'LEN '+bytes.length+' '+hexBytes(bytes);
                         } else result = 'UNEXPECTED '+hexBytes(response);
+                    }
+                    if (response && response[0] === 0x62 && response[1] === (did >> 8) && response[2] === (did & 255) && response.length === len + 3) {
+                        let raw = 0;
+                        for (const b of response.slice(3)) raw = raw * 256 + b;
+                        readings[name] = { raw, value: raw * factor, at: Date.now() };
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     testLines.push(line);
@@ -126,11 +134,14 @@ mgu.run({
             cv.roundRect(48, 145, 1504, 54, 9, t.panel || t.bg);
             cv.text(scanState, 72, 180, 23, stateColor, { font: 'bold', spacing: 1.5 });
 
+            const fresh = key => readings[key] && Date.now() - readings[key].at < 60000;
+            const number = key => fresh(key) ? readings[key].value.toFixed(2) : '--';
+            const raw = key => fresh(key) ? String(readings[key].raw) : '--';
             const cards = [
-                ['SOOT MASS', '--', 'g'],
-                ['ASH LOAD', '--', ''],
-                ['DISTANCE SINCE REGEN', '--', 'km'],
-                ['AVG REGEN INTERVAL', '--', 'km']
+                ['SOOT MASS', number('SOOT'), 'g'],
+                ['ASH LOAD', number('ASH'), 'raw scaled'],
+                ['SINCE REGEN · RAW', raw('SINCE'), 'unverified'],
+                ['AVG REGEN · RAW', raw('AVERAGE'), 'unverified']
             ];
             const cardW = 354;
             cards.forEach((item, i) => {
@@ -138,7 +149,7 @@ mgu.run({
                 cv.roundRect(x, 220, cardW, 118, 10, t.panel || t.bg);
                 cv.text(item[0], x + 20, 253, 16, t.dim, { font: 'bold', spacing: 1 });
                 cv.text(item[1], x + 20, 310, 38, t.dim, { font: 'num' });
-                if (item[2]) cv.text(item[2], x + 82, 310, 18, t.dim);
+                if (item[2]) cv.text(item[2], x + 20, 330, 14, t.dim);
             });
 
             // Independent DDE flags: request pending is not the same as regeneration active.
@@ -164,6 +175,13 @@ mgu.run({
         });
         ctx.loop('MAIN', 4, render);
         await identify();
+        // Read-only periodic updates while the page is visible; never overlap requests.
+        (async () => {
+            while (true) {
+                await sleep(20000);
+                if (identified && !testing && ui.isVisible('MAIN')) await testSelected();
+            }
+        })().catch(e => log.warn('DPF polling: ' + e));
         render()
             .then(() => log.info('DPF Status first frame rendered'))
             .catch((e) => log.warn('DPF Status first render: ' + e));
