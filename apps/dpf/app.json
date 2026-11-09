@@ -15,6 +15,14 @@
         [
           "BTN_SCAN",
           "Scan ECUs"
+        ],
+        [
+          "BTN_NEXT_ECU",
+          "Next ECU"
+        ],
+        [
+          "BTN_TEST_DPF",
+          "Test DPF DIDs"
         ]
       ]
     }
