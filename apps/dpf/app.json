@@ -2,7 +2,7 @@
   "id": "dpf",
   "title": "DPF Status",
   "description": "Read-only diesel particulate filter status monitoring",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "vendor": "custom",
   "loggingId": "DPF1",
   "iconGlyph": "temp",
@@ -27,5 +27,15 @@
       ]
     }
   ],
-  "signals": {}
+  "signals": {
+    "com.harman.infotainment.systemfunctions.tasu.tasu.InternalTasu": {
+      "_instances": "SystemFunctionsInternalTasuInst1",
+      "_methods": [
+        "sendTasuRequest"
+      ],
+      "_broadcasts": [
+        "sendTasuResponse"
+      ]
+    }
+  }
 }
