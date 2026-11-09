@@ -2,7 +2,7 @@
   <img src="brmodz_logo_github.png" alt="BMRMODZ logo" width="220">
 </p>
 
-# BMRMODZ — BMW MGU Apps
+<h1 align="center">BMRMODZ — BMW MGU Apps</h1>
 
 <p align="center">
   <a href="https://www.instagram.com/bmrmodz">Instagram</a>
