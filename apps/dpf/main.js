@@ -88,9 +88,9 @@ mgu.run({
             cv.text('ADDRESS', 48, 415, 14, t.dim, { font: 'bold' });
             cv.text('SGBD IDENTIFICATION', 190, 415, 14, t.dim, { font: 'bold' });
 
-            const visible = units.slice(0, 3);
+            const visible = units.slice(0, 2);
             visible.forEach((unit, i) => {
-                const y = 448 + i * 22;
+                const y = 448 + i * 24;
                 cv.text('0x' + unit.address.toString(16).toUpperCase().padStart(2, '0'), 48, y, 17, t.text, { font: 'num' });
                 cv.text(unit.sgbd, 190, y, 17, t.text, { font: 'num' });
             });
@@ -98,13 +98,12 @@ mgu.run({
                 cv.text(scanError || 'No ECU identification data received.', 48, 454, 17, t.dim);
             }
             if (units.length > 3) {
-                cv.text('+' + (units.length - 3) + ' more ECUs', 450, 470, 15, t.dim);
+                cv.text('+' + (units.length - 2) + ' more ECUs', 450, 488, 15, t.dim);
             }
             if (scannedAt) {
                 cv.text('Last scan: ' + new Date(scannedAt).toLocaleTimeString(), 1552, 382, 16, t.dim, { align: 'right' });
             }
 
-            cv.text('DPF values are intentionally blank until B57 DDE parameters and scaling are verified.', 48, 500, 16, t.dim);
             return ui.image('MAIN_GFX', cv);
         }
 
