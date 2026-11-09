@@ -20,30 +20,30 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         const link = new ReadOnlyDiag(ctx.signals, log, { gapMs: 50, busyMs: 500 });
+        const DDE = 0x12;
+        const EXPECTED = '0F1FE8';
         let scanState = 'CONNECTING';
         let scanError = '';
-        let units = [];
-        let scannedAt = 0;
-        let scanning = false;
-        let selected = -1;
+        let identified = false;
         let testing = false;
         let testLines = [];
         let testProgress = '';
+        const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
         const dids = [['SOOT',0x44BE,2,0.01525902],['ASH',0x44BD,2,0.01525902],['SINCE',0x44BF,4,1],['AVERAGE',0x4B2F,4,1]];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         async function testSelected() {
-            if(testing || scanning || selected < 0 || !units[selected]) return;
+            if(testing || !identified) return;
             testing = true;
             testLines = [];
             testProgress = 'STARTING';
-            const address = units[selected].address;
+            const address = DDE;
             link.wake(address);
             try {
                 for(const [name,did,len,factor] of dids) {
                     testProgress = 'READING '+name+' '+did.toString(16).toUpperCase();
                     const response = await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
                         u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) || (u[0] === 0x7F && u[1] === 0x22)),
-                        { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
+                        requestOptions);
                     let result = 'TIMEOUT';
                     if(response) {
                         if(response[0] === 0x7F) result = 'NRC '+hexBytes(response);
@@ -66,34 +66,39 @@ mgu.run({
         }
 
 
-        const scan = async () => {
-            if (scanning) return;
-            scanning = true;
-            scanState = 'SCANNING';
+        const identify = async () => {
+            scanState = 'IDENTIFYING DDE';
             scanError = '';
+            identified = false;
             try {
                 if (!link.ready) await link.init();
                 if (!link.available) {
                     scanState = 'NO DIAGNOSTIC LINK';
-                    scanError = link.error || 'TASU diagnostic transport is unavailable';
+                    scanError = link.error || 'TASU unavailable';
                     return;
                 }
-                const found = await link.discover({ idleMs: 1800, maxMs: 10000 });
-                selected = -1;
-                testLines = [];
-                testProgress = '';
-                units = Array.from(found.entries())
-                    .map(([address, sgbd]) => ({ address, sgbd: sgbd || 'IDENTIFICATION REFUSED' }))
-                    .sort((a, b) => a.address - b.address);
-                scannedAt = Date.now();
-                scanState = units.length ? 'SCAN COMPLETE' : 'NO ECUS FOUND';
-                log.info('DPF ECU discovery complete: ' + units.length + ' units');
+                link.wake(DDE);
+                const u = await link.physical(DDE, 0x22, [0xF1, 0x50], 1800,
+                    b => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50) || (b[0] === 0x7F && b[1] === 0x22)),
+                    requestOptions);
+                if (!u) { scanState = 'DDE NO RESPONSE'; return; }
+                if (u[0] !== 0x62 || u.length < 6) {
+                    scanState = 'DDE IDENTIFICATION REFUSED';
+                    scanError = hexBytes(u);
+                    return;
+                }
+                const actual = hexBytes(u.slice(3, 6)).replace(/ /g, '');
+                if (actual !== EXPECTED) {
+                    scanState = 'UNEXPECTED DDE';
+                    scanError = actual + ' (expected ' + EXPECTED + ')';
+                    return;
+                }
+                identified = true;
+                scanState = 'DDE IDENTIFIED';
             } catch (e) {
-                scanState = 'SCAN ERROR';
+                scanState = 'DDE LINK ERROR';
                 scanError = String(e.message || e);
-                log.warn('DPF ECU discovery: ' + scanError);
-            } finally {
-                scanning = false;
+                log.warn('DPF identify: ' + scanError);
             }
         };
 
@@ -106,8 +111,8 @@ mgu.run({
                 font: 'bold', spacing: 1
             });
 
-            const stateColor = scanState === 'SCAN COMPLETE' ? t.ok
-                : (scanState === 'SCANNING' || scanState === 'CONNECTING' ? t.warn : t.dim);
+            const stateColor = scanState === 'DDE IDENTIFIED' ? t.ok
+                : (scanState === 'IDENTIFYING DDE' || scanState === 'CONNECTING' ? t.warn : t.dim);
             cv.roundRect(48, 145, 1504, 54, 9, t.panel || t.bg);
             cv.text(scanState, 72, 180, 23, stateColor, { font: 'bold', spacing: 1.5 });
 
@@ -137,28 +142,17 @@ mgu.run({
 
 
             cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
-            cv.text(selected < 0 ? 'SELECT ECU WITH NEXT ECU BUTTON' : 'SELECTED ECU 0x'+units[selected].address.toString(16).toUpperCase()+' / '+units[selected].sgbd,48,451,16,t.warn);
-            cv.text(testing ? testProgress : (testProgress || 'DISCOVERED '+units.length+' ECUS'),850,451,16,t.dim);
+            cv.text('DDE 0x12 / '+EXPECTED,48,451,16,t.warn);
+            cv.text(testing ? testProgress : (testProgress || scanError || scanState),850,451,16,t.dim);
             testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,480+Math.floor(i/2)*24,15,t.text,{font:'num'}));
             return ui.image('MAIN_GFX', cv);
         }
 
-        ui.onClick('BTN_SCAN', () => {
-            scan().then(() => render()).catch((e) => log.warn('DPF scan: ' + e));
-        });
-
-        ui.onClick('BTN_NEXT_ECU', () => {
-            if(scanning || testing || !units.length) return;
-            selected = (selected+1)%units.length;
-            testLines = [];
-            testProgress = '';
-            render();
-        });
         ui.onClick('BTN_TEST_DPF', () => {
             testSelected().then(render).catch(e=>log.warn('DPF test: '+e));
         });
         ctx.loop('MAIN', 4, render);
-        await scan();
+        await identify();
         render()
             .then(() => log.info('DPF Status first frame rendered'))
             .catch((e) => log.warn('DPF Status first render: ' + e));
