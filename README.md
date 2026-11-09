@@ -1,11 +1,13 @@
+<p align="center">
+  <img src="apps/osa/brmodz_logo.png" alt="BMRMODZ logo" width="220">
+</p>
+
 # BMRMODZ — BMW MGU Apps
 
 <p align="center">
   <a href="https://www.instagram.com/bmrmodz">Instagram</a>
   ·
   <a href="https://www.facebook.com/profile.php?id=61590181470490">Facebook</a>
-  ·
-  <a href="https://github.com/dzooky">GitHub</a>
 </p>
 
 Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
