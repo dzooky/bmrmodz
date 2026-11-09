@@ -28,16 +28,19 @@ mgu.run({
         let selected = -1;
         let testing = false;
         let testLines = [];
+        let testProgress = '';
         const dids = [['SOOT',0x44BE,2,0.01525902],['ASH',0x44BD,2,0.01525902],['SINCE',0x44BF,4,1],['AVERAGE',0x4B2F,4,1]];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         async function testSelected() {
             if(testing || scanning || selected < 0 || !units[selected]) return;
             testing = true;
             testLines = [];
+            testProgress = 'STARTING';
             const address = units[selected].address;
             link.wake(address);
             try {
                 for(const [name,did,len,factor] of dids) {
+                    testProgress = 'READING '+name+' '+did.toString(16).toUpperCase();
                     const response = await link.read(address,did,1800);
                     let result = 'TIMEOUT';
                     if(response) {
@@ -53,10 +56,11 @@ mgu.run({
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     testLines.push(line);
+                    testProgress = 'DONE '+testLines.length+'/'+dids.length;
                     log.info('DPF READ ECU '+address.toString(16)+' '+line);
                 }
-            } catch(e) {log.warn('DPF test: '+String(e));}
-            finally {testing = false;}
+            } catch(e) {testLines.push('ERROR: '+String(e).slice(0,95));log.warn('DPF test: '+String(e));}
+            finally {testing = false;testProgress = 'TEST FINISHED '+testLines.length+'/'+dids.length;}
         }
 
 
@@ -75,6 +79,7 @@ mgu.run({
                 const found = await link.discover({ idleMs: 1800, maxMs: 10000 });
                 selected = -1;
                 testLines = [];
+                testProgress = '';
                 units = Array.from(found.entries())
                     .map(([address, sgbd]) => ({ address, sgbd: sgbd || 'IDENTIFICATION REFUSED' }))
                     .sort((a, b) => a.address - b.address);
@@ -131,7 +136,7 @@ mgu.run({
 
             cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
             cv.text(selected < 0 ? 'SELECT ECU WITH NEXT ECU BUTTON' : 'SELECTED ECU 0x'+units[selected].address.toString(16).toUpperCase()+' / '+units[selected].sgbd,48,451,16,t.warn);
-            cv.text(testing ? 'READING...' : 'DISCOVERED '+units.length+' ECUS',850,451,16,t.dim);
+            cv.text(testing ? testProgress : (testProgress || 'DISCOVERED '+units.length+' ECUS'),850,451,16,t.dim);
             testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,480+Math.floor(i/2)*24,15,t.text,{font:'num'}));
             return ui.image('MAIN_GFX', cv);
         }
@@ -144,6 +149,7 @@ mgu.run({
             if(scanning || testing || !units.length) return;
             selected = (selected+1)%units.length;
             testLines = [];
+            testProgress = '';
             render();
         });
         ui.onClick('BTN_TEST_DPF', () => {
