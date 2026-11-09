@@ -1,10 +1,6 @@
 # BMRMODZ — BMW MGU Apps
 
 <p align="center">
-  <img src="apps/osa/osa_about_overlay_128.png" alt="BMR MODZ — OIL SERVICE ASSISTANT" width="256">
-</p>
-
-<p align="center">
   <a href="https://www.instagram.com/bmrmodz">Instagram</a>
   ·
   <a href="https://www.facebook.com/profile.php?id=61590181470490">Facebook</a>
