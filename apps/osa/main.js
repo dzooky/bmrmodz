@@ -419,11 +419,11 @@ mgu.run({
                 cv.blit(aboutLogo, 650, 58);
                 cv.text('OIL SERVICE ASSISTANT', 800, 225, 30, t.text,
                     { align: 'center', font: 'bold', spacing: 2.5 });
-                cv.text('Monitors engine oil, coolant and transmission oil temperatures during service.', 800, 266, 19, t.dim, { align: 'center' });
-                cv.text('Live estimates show the expected time to reach the selected target temperature.', 800, 296, 19, t.dim, { align: 'center' });
-                cv.text('Starting conditions and completed warm-up times are stored locally on the head unit.', 800, 326, 19, t.dim, { align: 'center' });
-                cv.text('Previous sessions provide historical comparisons; data is never uploaded to the cloud.', 800, 356, 19, t.dim, { align: 'center' });
-                cv.text('Developed by dzooky@bmrmodz', 800, 392, 18, t.text, { align: 'center', font: 'bold' });
+                cv.text('Monitors engine oil, coolant and transmission oil temperatures during service.', 800, 258, 19, t.dim, { align: 'center' });
+                cv.text('Live estimates show the expected time to reach the selected target temperature.', 800, 285, 19, t.dim, { align: 'center' });
+                cv.text('Starting conditions and completed warm-up times are stored locally on the head unit.', 800, 312, 19, t.dim, { align: 'center' });
+                cv.text('Previous sessions provide historical comparisons; data is never uploaded to the cloud.', 800, 339, 19, t.dim, { align: 'center' });
+                cv.text('Developed by dzooky@bmrmodz', 800, 372, 18, t.text, { align: 'center', font: 'bold' });
                 cv.blit(instagramQr, 660, 390);
                 cv.blit(facebookQr, 824, 390);
             }
