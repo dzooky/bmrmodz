@@ -336,7 +336,7 @@ def make_icon(spec, out):
         rows.append(bytes(row))
     def chunk(tag, data):
         return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff)
-    png = (b'\\x89PNG\\r\\n\\x1a\\n'
+    png = (bytes.fromhex('89504e470d0a1a0a')
            + chunk(b'IHDR', struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0))
            + chunk(b'IDAT', zlib.compress(b''.join(rows), 9))
            + chunk(b'IEND', b''))
