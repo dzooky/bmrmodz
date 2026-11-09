@@ -19,7 +19,7 @@ const H = 520;
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
-        const link = new ReadOnlyDiag(ctx.signals, log, { gapMs: 50 });
+        const link = new ReadOnlyDiag(ctx.signals, log, { gapMs: 50, busyMs: 500 });
         let scanState = 'CONNECTING';
         let scanError = '';
         let units = [];
@@ -41,7 +41,9 @@ mgu.run({
             try {
                 for(const [name,did,len,factor] of dids) {
                     testProgress = 'READING '+name+' '+did.toString(16).toUpperCase();
-                    const response = await link.read(address,did,1800);
+                    const response = await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
+                        u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) || (u[0] === 0x7F && u[1] === 0x22)),
+                        { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
                     let result = 'TIMEOUT';
                     if(response) {
                         if(response[0] === 0x7F) result = 'NRC '+hexBytes(response);
