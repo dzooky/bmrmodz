@@ -134,14 +134,17 @@ mgu.run({
             cv.roundRect(48, 145, 1504, 54, 9, t.panel || t.bg);
             cv.text(scanState, 72, 180, 23, stateColor, { font: 'bold', spacing: 1.5 });
 
-            const fresh = key => readings[key] && Date.now() - readings[key].at < 60000;
-            const number = key => fresh(key) ? readings[key].value.toFixed(2) : '--';
-            const raw = key => fresh(key) ? String(readings[key].raw) : '--';
+            // Preserve the last successful measurement through diagnostic timeouts.
+            // An old value is explicitly marked STALE rather than shown as live.
+            const hasReading = key => !!readings[key];
+            const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
+            const number = key => hasReading(key) ? readings[key].value.toFixed(2) : '--';
+            const raw = key => hasReading(key) ? String(readings[key].raw) : '--';
             const cards = [
-                ['SOOT MASS', number('SOOT'), 'g'],
-                ['ASH LOAD', number('ASH'), 'raw scaled'],
-                ['SINCE REGEN · RAW', raw('SINCE'), 'unverified'],
-                ['AVG REGEN · RAW', raw('AVERAGE'), 'unverified']
+                ['SOOT MASS', number('SOOT'), 'g', 'SOOT'],
+                ['ASH LOAD', number('ASH'), 'raw scaled', 'ASH'],
+                ['SINCE REGEN · RAW', raw('SINCE'), 'unverified', 'SINCE'],
+                ['AVG REGEN · RAW', raw('AVERAGE'), 'unverified', 'AVERAGE']
             ];
             const cardW = 354;
             cards.forEach((item, i) => {
@@ -150,6 +153,7 @@ mgu.run({
                 cv.text(item[0], x + 20, 253, 16, t.dim, { font: 'bold', spacing: 1 });
                 cv.text(item[1], x + 20, 310, 38, t.dim, { font: 'num' });
                 if (item[2]) cv.text(item[2], x + 20, 330, 14, t.dim);
+                if (stale(item[3])) cv.text('STALE', x + cardW - 16, 253, 14, t.warn, { font: 'bold', align: 'right' });
             });
 
             // Independent DDE flags: request pending is not the same as regeneration active.
