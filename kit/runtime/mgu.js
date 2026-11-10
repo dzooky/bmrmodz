@@ -283,10 +283,21 @@ class Ui {
                 rb.destroyResourceHandles([old]).catch((e) => { if (!st.destroyWarned) { st.destroyWarned = true; log.warn('destroy handle: ' + e); } });
             }
         };
+        // A stalled HMI resource promise used to leave st.busy pending forever,
+        // which also stops ctx.loop because it awaits the image push. Do not
+        // clear busy and start another push while the first one may still own
+        // HMI handles: fail the app instead, so it can be opened cleanly again.
+        // The timer is cleared only when the entire queued push chain settles.
+        let watchdog;
         st.busy = run(img).catch((e) => log.warn('image ' + name + ': ' + e)).then(() => {
             st.busy = null;
             if (st.next) { const n = st.next; st.next = null; return this._image(name, n, cell); }
         });
+        watchdog = setTimeout(() => {
+            log.error('image ' + name + ': HMI push stalled for 12000 ms; exiting to avoid a permanently frozen UI');
+            process.exit(1);
+        }, 12000);
+        st.busy.then(() => clearTimeout(watchdog), () => clearTimeout(watchdog));
         return st.busy;
     }
 }
