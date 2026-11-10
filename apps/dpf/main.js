@@ -178,7 +178,7 @@ mgu.run({
         // Read-only periodic updates while the page is visible; never overlap requests.
         (async () => {
             while (true) {
-                await sleep(20000);
+                await sleep(60000);
                 if (identified && !testing && ui.isVisible('MAIN')) await testSelected();
             }
         })().catch(e => log.warn('DPF polling: ' + e));
