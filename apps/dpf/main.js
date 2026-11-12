@@ -38,7 +38,8 @@ mgu.run({
         let testing = false;
         const readings = {};
         let page = 'overview';
-        let detailReadPending = false;
+        let readPending = false;
+        let detailReadAttempted = false;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
         const dids = [
@@ -59,15 +60,16 @@ mgu.run({
             ['REMAINING', 0x4C78, 2, 10]
         ];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-        async function testSelected(includeDetails = page === 'detail') {
-            if (!identified) return;
+        async function testSelected() {
+            if (!identified || page === 'about') return;
             if (testing) {
-                if (includeDetails) detailReadPending = true;
+                readPending = true;
                 return;
             }
             testing = true;
             const address = DDE;
-            const selected = includeDetails ? dids.concat(detailDids) : dids;
+            const readingPage = page;
+            const selected = readingPage === 'detail' ? detailDids : dids;
             try {
                 link.wake(address);
                 for (const [name, did, len, factor, offset = 0] of selected) {
@@ -95,14 +97,16 @@ mgu.run({
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     log.info('DPF READ ECU '+address.toString(16)+' '+line);
+                    if (readPending && page !== readingPage) break;
                 }
             } catch (e) { log.warn('DPF read: ' + String(e)); }
             finally {
                 testing = false;
-                readAttempted = true;
-                if (detailReadPending) {
-                    detailReadPending = false;
-                    if (page === 'detail') await testSelected(true);
+                if (readingPage === 'detail') detailReadAttempted = true;
+                else readAttempted = true;
+                if (readPending) {
+                    readPending = false;
+                    if (page !== readingPage && ui.isVisible('MAIN')) await testSelected();
                 }
             }
         }
@@ -138,6 +142,7 @@ mgu.run({
 
         const hasReading = key => !!readings[key];
         const hasMeasurements = () => ['SOOT', 'ASH', 'SINCE', 'AVERAGE'].some(hasReading);
+        const hasDetailMeasurements = () => detailDids.some(([key]) => hasReading(key) && !stale(key));
         const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
 
         const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
@@ -185,6 +190,11 @@ mgu.run({
 
         function renderDetail(cv, t) {
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
+            if (!hasDetailMeasurements()) {
+                const loading = identifying || (identified && !detailReadAttempted);
+                cv.text(loading ? 'LOADING DETAIL DATA' : 'NO DETAIL DATA',
+                    1552, 75, 18, loading ? t.dim : t.warn, { align: 'right', font: 'bold' });
+            }
             const measurement = (key, digits, unit) => hasReading(key)
                 ? readings[key].value.toFixed(digits) + ' ' + unit : '--';
             const runtime = hasReading('RUNTIME') ? readings.RUNTIME.raw : undefined;
@@ -313,7 +323,7 @@ mgu.run({
         function openPage(next) {
             const openingDetail = next === 'detail' && page !== 'detail';
             page = next;
-            if (openingDetail || (next === 'overview' && !readAttempted)) testSelected();
+            if (openingDetail || next === 'overview') testSelected();
             return render();
         }
 
@@ -322,7 +332,8 @@ mgu.run({
             if (next && next !== page) return openPage(next);
         });
         ui.onVisible((name, visible) => {
-            if (name === 'MAIN' && visible && identified && !readAttempted && page !== 'about') {
+            if (name === 'MAIN' && visible && identified && !testing
+                && (page === 'detail' ? !hasDetailMeasurements() : !readAttempted)) {
                 testSelected();
             }
         });
@@ -334,7 +345,8 @@ mgu.run({
             if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
             // Retry startup failures promptly while the data screen is open.
             while (true) {
-                await sleep(hasMeasurements() ? 60000 : 5000);
+                const dataReady = page === 'detail' ? hasDetailMeasurements() : hasMeasurements();
+                await sleep(dataReady ? 60000 : 5000);
                 if (testing || page === 'about' || !ui.isVisible('MAIN')) continue;
                 if (!identified) await identify();
                 if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
