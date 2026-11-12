@@ -33,6 +33,8 @@ mgu.run({
         const DDE = 0x12;
         const EXPECTED = '0F1FE8';
         let identified = false;
+        let identifying = true;
+        let readAttempted = false;
         let testing = false;
         const readings = {};
         let page = 'overview';
@@ -97,6 +99,7 @@ mgu.run({
             } catch (e) { log.warn('DPF read: ' + String(e)); }
             finally {
                 testing = false;
+                readAttempted = true;
                 if (detailReadPending) {
                     detailReadPending = false;
                     if (page === 'detail') await testSelected(true);
@@ -232,6 +235,7 @@ mgu.run({
             const statusWidth = W - 24 - statusX;
 
             const gaugeColor = t.hotRamp[0];
+            const loading = identifying || (identified && (!readAttempted || testing));
 
             function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
                 const reading = readings[key];
@@ -256,7 +260,7 @@ mgu.run({
                 }
             } else {
                 gauge('SINCE', 'Since last regen', 'km', 800, 50, 200, 1, distanceX, 44);
-                if (!stale('SINCE')) cv.text('AVG UNAVAILABLE', distanceX + 18, 110, 15, t.dim, { font: 'bold' });
+                if (!loading && !stale('SINCE')) cv.text('AVG UNAVAILABLE', distanceX + 18, 110, 15, t.dim, { font: 'bold' });
             }
             gauge('AVERAGE', 'Avg regen interval', 'km', 800, 50, 200, 1, distanceX, 286);
 
@@ -292,6 +296,11 @@ mgu.run({
                 });
             }
 
+            if (!dids.some(([key]) => hasReading(key))) {
+                cv.text(loading ? 'LOADING DPF DATA' : 'NO DPF DATA',
+                    statusX + 18, 438, 18, loading ? t.dim : t.warn, { font: 'bold' });
+            }
+
             G.frame(cv, t, TABS, 0, []);
             return ui.image('MAIN_GFX', cv);
         }
@@ -299,7 +308,7 @@ mgu.run({
         function openPage(next) {
             const openingDetail = next === 'detail' && page !== 'detail';
             page = next;
-            if (openingDetail) testSelected();
+            if (openingDetail || (next === 'overview' && !readAttempted)) testSelected();
             return render();
         }
 
@@ -307,10 +316,16 @@ mgu.run({
             const next = ['overview', 'detail', 'about'][index];
             if (next && next !== page) return openPage(next);
         });
+        ui.onVisible((name, visible) => {
+            if (name === 'MAIN' && visible && identified && !readAttempted && page !== 'about') {
+                testSelected();
+            }
+        });
         ctx.loop('MAIN', 4, render);
         // Let the app initialize while the diagnostic link is connecting.
         (async () => {
             await identify();
+            identifying = false;
             if (!identified) return;
             if (page !== 'about' && ui.isVisible('MAIN')) await testSelected();
             // Read-only periodic updates while the page is visible.
