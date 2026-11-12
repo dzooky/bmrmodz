@@ -37,7 +37,8 @@ mgu.run({
         let testLines = [];
         let testProgress = '';
         const readings = {};
-        let lastReadAt = 0;
+        let page = 'overview';
+        let detailReadPending = false;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
         const dids = [
@@ -48,16 +49,30 @@ mgu.run({
             ['REQUEST', 0x44BB, 1, 1],
             ['MODE', 0x467E, 4, 1]
         ];
+        // D83BX7C0A ReadDataByIdentifier scalings and offsets.
+        const detailDids = [
+            ['PRESSURE', 0x44EB, 2, 0.03814755, 500],
+            ['TEMP', 0x44EF, 2, 0.03128099, -50],
+            ['RUNTIME', 0x44B7, 4, 1],
+            ['LOCK', 0x44C2, 1, 1],
+            ['AVG TEMP', 0x4B4A, 2, 0.1, -3276.7],
+            ['REMAINING', 0x4C78, 2, 10]
+        ];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-        async function testSelected() {
-            if(testing || !identified) return;
+        async function testSelected(includeDetails = page === 'detail') {
+            if (!identified) return;
+            if (testing) {
+                if (includeDetails) detailReadPending = true;
+                return;
+            }
             testing = true;
             testLines = [];
             testProgress = 'STARTING';
             const address = DDE;
-            link.wake(address);
+            const selected = includeDetails ? dids.concat(detailDids) : dids;
             try {
-                for(const [name,did,len,factor] of dids) {
+                link.wake(address);
+                for (const [name, did, len, factor, offset = 0] of selected) {
                     testProgress = 'READING '+name+' '+did.toString(16).toUpperCase();
                     const response = await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
                         u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) || (u[0] === 0x7F && u[1] === 0x22)),
@@ -70,24 +85,31 @@ mgu.run({
                             if(bytes.length === len) {
                                 let raw = 0;
                                 for(const b of bytes) raw = raw*256+b;
-                                result = hexBytes(bytes)+' = '+(raw*factor).toFixed(factor===1?0:2);
+                                result = hexBytes(bytes)+' = '+(raw * factor + offset).toFixed(Number.isInteger(factor) ? 0 : 2);
                             } else result = 'LEN '+bytes.length+' '+hexBytes(bytes);
                         } else result = 'UNEXPECTED '+hexBytes(response);
                     }
                     if (response && response[0] === 0x62 && response[1] === (did >> 8) && response[2] === (did & 255) && response.length === len + 3) {
                         let raw = 0;
                         for (const b of response.slice(3)) raw = raw * 256 + b;
-                        readings[name] = { raw, value: raw * factor, at: Date.now() };
-                    } else if (name === 'REQUEST' || name === 'MODE') {
+                        readings[name] = { raw, value: raw * factor + offset, at: Date.now() };
+                    } else if (name === 'REQUEST' || name === 'MODE' || name === 'LOCK') {
                         delete readings[name];
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     testLines.push(line);
-                    testProgress = 'DONE '+testLines.length+'/'+dids.length;
+                    testProgress = 'DONE '+testLines.length+'/'+selected.length;
                     log.info('DPF READ ECU '+address.toString(16)+' '+line);
                 }
             } catch(e) {testLines.push('ERROR: '+String(e).slice(0,95));log.warn('DPF test: '+String(e));}
-            finally {testing = false;testProgress = 'TEST FINISHED '+testLines.length+'/'+dids.length;}
+            finally {
+                testing = false;
+                testProgress = 'TEST FINISHED ' + testLines.length + '/' + selected.length;
+                if (detailReadPending) {
+                    detailReadPending = false;
+                    if (page === 'detail') await testSelected(true);
+                }
+            }
         }
 
 
@@ -128,11 +150,57 @@ mgu.run({
             }
         };
 
+        const hasReading = key => !!readings[key];
+        const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
+
+        function renderDetail(cv, t) {
+            cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
+            const measurement = (key, digits, unit) => hasReading(key)
+                ? readings[key].value.toFixed(digits) + ' ' + unit : '--';
+            const runtime = readings.RUNTIME?.raw;
+            const duration = runtime === undefined ? '--' : [
+                Math.floor(runtime / 3600),
+                Math.floor(runtime / 60) % 60,
+                runtime % 60
+            ].map(part => String(part).padStart(2, '0')).join(':');
+            const release = hasReading('LOCK') && !stale('LOCK')
+                ? (readings.LOCK.raw === 0 ? 'ON' : 'OFF') : 'UNKNOWN';
+            const rows = [
+                ['PRESSURE BEFORE DPF', measurement('PRESSURE', 1, 'hPa'), 'PRESSURE'],
+                ['TEMPERATURE BEFORE DPF', measurement('TEMP', 1, '°C'), 'TEMP'],
+                ['ENGINE TIME SINCE REGEN', duration, 'RUNTIME'],
+                ['REGEN RELEASE', release],
+                ['AVG TEMP DURING REGEN', measurement('AVG TEMP', 1, '°C'), 'AVG TEMP'],
+                ['AVG REGEN DURATION / 100 KM', 'UNAVAILABLE'],
+                ['EST. FILTER DISTANCE LEFT', measurement('REMAINING', 0, 'km'), 'REMAINING']
+            ];
+            rows.forEach(([label, value, key], i) => {
+                const x = 48 + (i % 2) * 768;
+                const y = 94 + Math.floor(i / 2) * 48;
+                cv.roundRect(x, y, 736, 42, 8, t.panel || t.bg);
+                cv.text(label, x + 16, y + 27, 16, t.dim, { font: 'bold' });
+                cv.text(value, x + 716, y + 27, 20, t.text, { align: 'right' });
+                if (stale(key)) cv.text('STALE', x + 470, y + 27, 14, t.warn);
+            });
+
+            cv.text('DDE READ-ONLY TEST', 48, 322, 17, t.text, { font: 'bold' });
+            cv.text('DDE 0x12 / ' + EXPECTED, 48, 347, 16, t.warn);
+            cv.text(testProgress || scanError || scanState, 816, 347, 16, t.dim);
+            cv.text(transportStatus, 816, 322, 14, t.warn);
+            testLines.forEach((line, i) =>
+                cv.text(line, 48 + (i % 2) * 768, 375 + Math.floor(i / 2) * 22, 15, t.text, { font: 'num' }));
+        }
+
         function render() {
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
 
-            cv.text('DPF STATUS', 48, 78, 32, t.text, { font: 'bold', spacing: 2 });
+            if (page === 'detail') {
+                renderDetail(cv, t);
+                return ui.image('MAIN_GFX', cv);
+            }
+
+            cv.text('DPF OVERVIEW', 48, 78, 32, t.text, { font: 'bold', spacing: 2 });
             cv.text('READ-ONLY DIESEL PARTICULATE FILTER MONITOR', 48, 112, 17, t.dim, {
                 font: 'bold', spacing: 1
             });
@@ -144,8 +212,6 @@ mgu.run({
 
             // Preserve the last successful measurement through diagnostic timeouts.
             // An old value is explicitly marked STALE rather than shown as live.
-            const hasReading = key => !!readings[key];
-            const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
             const mass = key => hasReading(key) ? readings[key].value.toFixed(2) : '--';
             const distance = key => hasReading(key) ? (readings[key].raw / 1000).toFixed(1) : '--';
             const cards = [
@@ -180,19 +246,26 @@ mgu.run({
             cv.text(requestText, 1532, 383, 20, requestColor, { font: 'bold', align: 'right' });
 
 
-            cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
-            cv.text('DDE 0x12 / '+EXPECTED,48,451,16,t.warn);
-            cv.text(testing ? testProgress : (testProgress || scanError || scanState),850,451,16,t.dim);
-            cv.text(transportStatus,850,425,14,t.warn);
-            testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,475+Math.floor(i/2)*18,15,t.text,{font:'num'}));
             return ui.image('MAIN_GFX', cv);
         }
 
+        ui.onClick('BTN_OVERVIEW', () => {
+            page = 'overview';
+            return render();
+        });
+        ui.onClick('BTN_DETAIL', () => {
+            const opening = page !== 'detail';
+            page = 'detail';
+            if (opening) testSelected();
+            return render();
+        });
         ui.onClick('BTN_TEST_DPF', () => {
-            testSelected().then(render).catch(e=>log.warn('DPF test: '+e));
+            page = 'detail';
+            return testSelected(true).then(render).catch(e => log.warn('DPF test: ' + e));
         });
         ctx.loop('MAIN', 4, render);
         await identify();
+        if (ui.isVisible('MAIN')) testSelected();
         // Read-only periodic updates while the page is visible; never overlap requests.
         (async () => {
             while (true) {
