@@ -12,6 +12,8 @@
       "kind": "canvas",
       "title": "DPF Status",
       "buttons": [
+        ["BTN_OVERVIEW", "Overview"],
+        ["BTN_DETAIL", "Detail"],
         [
           "BTN_TEST_DPF",
           "Test DPF DIDs"
