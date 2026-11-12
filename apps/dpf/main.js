@@ -253,51 +253,45 @@ mgu.run({
                 return ui.image('MAIN_GFX', cv);
             }
 
-            cv.text('DPF OVERVIEW', 48, 78, 32, t.text, { font: 'bold', spacing: 2 });
-            cv.text('READ-ONLY DIESEL PARTICULATE FILTER MONITOR', 48, 112, 17, t.dim, {
-                font: 'bold', spacing: 1
-            });
+            const gutter = 16;
+            const columnWidth = (W - 48 - 2 * gutter) * 0.4;
+            const massX = 24;
+            const distanceX = massX + columnWidth + gutter;
+            const statusX = distanceX + columnWidth + gutter;
+            const statusWidth = W - 24 - statusX;
 
-            const stateColor = scanState === 'DDE IDENTIFIED' ? t.ok
-                : (scanState === 'IDENTIFYING DDE' || scanState === 'CONNECTING' ? t.warn : t.dim);
-            cv.roundRect(48, 145, 1504, 54, 9, t.panel || t.bg);
-            cv.text(scanState, 72, 180, 23, stateColor, { font: 'bold', spacing: 1.5 });
+            function gauge(key, label, unit, max, step, tick, decimals, x, y) {
+                const reading = readings[key];
+                const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
+                G.segBar(cv, t, x, y, columnWidth, 222, {
+                    label, value, unit, decimals,
+                    min: 0, max, step,
+                    scale: { every: tick }
+                });
+                if (stale(key)) cv.text('STALE', x + 18, y + 66, 15, t.warn, { font: 'bold' });
+            }
 
-            // Preserve the last successful measurement through diagnostic timeouts.
-            // An old value is explicitly marked STALE rather than shown as live.
-            const mass = key => hasReading(key) ? readings[key].value.toFixed(2) : '--';
-            const distance = key => hasReading(key) ? (readings[key].raw / 1000).toFixed(1) : '--';
-            const cards = [
-                ['SOOT MASS', mass('SOOT'), 'g', 'SOOT'],
-                ['ASH MASS', mass('ASH'), 'g', 'ASH'],
-                ['SINCE REGEN', distance('SINCE'), 'km', 'SINCE'],
-                ['AVG REGEN', distance('AVERAGE'), 'km', 'AVERAGE']
-            ];
-            const cardW = 354;
-            cards.forEach((item, i) => {
-                const x = 48 + i * 384;
-                cv.roundRect(x, 220, cardW, 118, 10, t.panel || t.bg);
-                cv.text(item[0], x + 20, 253, 16, t.dim, { font: 'bold', spacing: 1 });
-                cv.text(item[1], x + 20, 310, 38, t.dim, { font: 'num' });
-                if (item[2]) cv.text(item[2], x + 20, 330, 14, t.dim);
-                if (stale(item[3])) cv.text('STALE', x + cardW - 16, 253, 14, t.warn, { font: 'bold', align: 'right' });
-            });
+            // ISTA reference scales for soot and average regeneration distance.
+            // The companion gauges use the same display scale for their units.
+            gauge('SOOT', 'Soot mass', 'g', 100, 5, 20, 2, massX, 44);
+            gauge('ASH', 'Ash mass', 'g', 100, 5, 20, 2, massX, 286);
+            gauge('SINCE', 'Since last regen', 'km', 800, 50, 200, 1, distanceX, 44);
+            gauge('AVERAGE', 'Avg regen interval', 'km', 800, 50, 200, 1, distanceX, 286);
 
+            G.panel(cv, t, statusX, 44, statusWidth, 464, null);
+            cv.text('REGENERATION', statusX + 18, 83, 20, t.text, { font: 'bold' });
             // D83BX7C0A STATUS_REGENERATION_CSF decoding, using direct ReadDataByIdentifier.
             // PFltRgn_numRgn modes 4–6 mean requested. CoEOM_stOpModeAct bit 1 means active.
-            const regenStatus = (key, isOn) => {
-                if (!hasReading(key) || stale(key)) return ['UNKNOWN', t.warn];
-                return isOn(readings[key].raw) ? ['ON', t.ok] : ['OFF', t.dim];
-            };
-            const [activeText, activeColor] = regenStatus('MODE', mode => (mode & 0x02) !== 0);
-            const [requestText, requestColor] = regenStatus('REQUEST', mode => mode >= 4 && mode <= 6);
-            cv.roundRect(48, 352, 736, 48, 9, t.panel || t.bg);
-            cv.roundRect(816, 352, 736, 48, 9, t.panel || t.bg);
-            cv.text('REGEN IN PROGRESS', 68, 383, 18, t.dim, { font: 'bold' });
-            cv.text(activeText, 764, 383, 20, activeColor, { font: 'bold', align: 'right' });
-            cv.text('REGEN REQUEST', 836, 383, 18, t.dim, { font: 'bold' });
-            cv.text(requestText, 1532, 383, 20, requestColor, { font: 'bold', align: 'right' });
-
+            function regenStatus(label, key, isOn, y) {
+                const known = hasReading(key) && !stale(key);
+                const active = known && isOn(readings[key].raw);
+                const color = known ? (active ? t.ok : t.dim) : t.warn;
+                cv.text(label, statusX + 18, y, 17, t.dim, { font: 'bold' });
+                cv.text(known ? (active ? 'ON' : 'OFF') : 'UNKNOWN',
+                    statusX + 18, y + 52, 34, color, { font: 'bold' });
+            }
+            regenStatus('IN PROGRESS', 'MODE', mode => (mode & 0x02) !== 0, 145);
+            regenStatus('REQUESTED', 'REQUEST', mode => mode >= 4 && mode <= 6, 269);
 
             G.frame(cv, t, TABS, 0, []);
             return ui.image('MAIN_GFX', cv);
