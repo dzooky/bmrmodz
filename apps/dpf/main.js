@@ -22,24 +22,18 @@ const TABS = ['Overview', 'Detail', 'About'];
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
-        let transportStatus = 'NOT STARTED';
         const link = new ReadOnlyDiag(ctx.signals, log, {
             gapMs: 50, busyMs: 500,
             onDebug: message => {
                 if (/^(SENDING|TRANSPORT|FRAME|NO MATCHING RESPONSE|REPLY|SKIPPED)/.test(message)) {
-                    transportStatus = message.slice(0, 100);
-                    log.info('DPF TASU ' + transportStatus);
+                    log.info('DPF TASU ' + message.slice(0, 100));
                 }
             }
         });
         const DDE = 0x12;
         const EXPECTED = '0F1FE8';
-        let scanState = 'CONNECTING';
-        let scanError = '';
         let identified = false;
         let testing = false;
-        let testLines = [];
-        let testProgress = '';
         const readings = {};
         let page = 'overview';
         let detailReadPending = false;
@@ -70,14 +64,11 @@ mgu.run({
                 return;
             }
             testing = true;
-            testLines = [];
-            testProgress = 'STARTING';
             const address = DDE;
             const selected = includeDetails ? dids.concat(detailDids) : dids;
             try {
                 link.wake(address);
                 for (const [name, did, len, factor, offset = 0] of selected) {
-                    testProgress = 'READING '+name+' '+did.toString(16).toUpperCase();
                     const response = await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
                         u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) || (u[0] === 0x7F && u[1] === 0x22)),
                         requestOptions);
@@ -101,14 +92,11 @@ mgu.run({
                         delete readings[name];
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
-                    testLines.push(line);
-                    testProgress = 'DONE '+testLines.length+'/'+selected.length;
                     log.info('DPF READ ECU '+address.toString(16)+' '+line);
                 }
-            } catch(e) {testLines.push('ERROR: '+String(e).slice(0,95));log.warn('DPF test: '+String(e));}
+            } catch (e) { log.warn('DPF read: ' + String(e)); }
             finally {
                 testing = false;
-                testProgress = 'TEST FINISHED ' + testLines.length + '/' + selected.length;
                 if (detailReadPending) {
                     detailReadPending = false;
                     if (page === 'detail') await testSelected(true);
@@ -118,39 +106,30 @@ mgu.run({
 
 
         const identify = async () => {
-            scanState = 'IDENTIFYING DDE';
-            scanError = '';
-            transportStatus = 'STARTING IDENTIFICATION';
             identified = false;
             try {
                 if (!link.ready) await link.init();
                 if (!link.available) {
-                    scanState = 'NO DIAGNOSTIC LINK';
-                    scanError = link.error || 'TASU unavailable';
+                    log.warn('DPF diagnostic link unavailable: ' + (link.error || 'TASU unavailable'));
                     return;
                 }
                 link.wake(DDE);
                 const u = await link.physical(DDE, 0x22, [0xF1, 0x50], 1800,
                     b => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50) || (b[0] === 0x7F && b[1] === 0x22)),
                     requestOptions);
-                if (!u) { scanState = 'DDE NO RESPONSE'; return; }
+                if (!u) { log.warn('DPF DDE did not respond'); return; }
                 if (u[0] !== 0x62 || u.length < 6) {
-                    scanState = 'DDE IDENTIFICATION REFUSED';
-                    scanError = hexBytes(u);
+                    log.warn('DPF DDE identification refused: ' + hexBytes(u));
                     return;
                 }
                 const actual = hexBytes(u.slice(3, 6)).replace(/ /g, '');
                 if (actual !== EXPECTED) {
-                    scanState = 'UNEXPECTED DDE';
-                    scanError = actual + ' (expected ' + EXPECTED + ')';
+                    log.warn('DPF unexpected DDE: ' + actual + ' (expected ' + EXPECTED + ')');
                     return;
                 }
                 identified = true;
-                scanState = 'DDE IDENTIFIED';
             } catch (e) {
-                scanState = 'DDE LINK ERROR';
-                scanError = String(e.message || e);
-                log.warn('DPF identify: ' + scanError);
+                log.warn('DPF identify: ' + String(e.message || e));
             }
         };
 
@@ -211,31 +190,23 @@ mgu.run({
                 runtime % 60
             ].map(part => String(part).padStart(2, '0')).join(':');
             const release = hasReading('LOCK') && !stale('LOCK')
-                ? (readings.LOCK.raw === 0 ? 'ON' : 'OFF') : 'UNKNOWN';
+                ? (readings.LOCK.raw === 0 ? 'ALLOWED' : 'BLOCKED') : 'UNKNOWN';
             const rows = [
                 ['PRESSURE BEFORE DPF', measurement('PRESSURE', 1, 'hPa'), 'PRESSURE'],
                 ['TEMPERATURE BEFORE DPF', measurement('TEMP', 1, '°C'), 'TEMP'],
                 ['ENGINE TIME SINCE REGEN', duration, 'RUNTIME'],
-                ['REGEN RELEASE', release],
+                ['REGENERATION PERMISSION', release],
                 ['AVG TEMP DURING REGEN', measurement('AVG TEMP', 1, '°C'), 'AVG TEMP'],
-                ['AVG REGEN DURATION / 100 KM', 'UNAVAILABLE'],
                 ['EST. FILTER DISTANCE LEFT', measurement('REMAINING', 0, 'km'), 'REMAINING']
             ];
             rows.forEach(([label, value, key], i) => {
                 const x = 48 + (i % 2) * 768;
-                const y = 94 + Math.floor(i / 2) * 48;
-                cv.roundRect(x, y, 736, 42, 8, t.panel || t.bg);
-                cv.text(label, x + 16, y + 27, 16, t.dim, { font: 'bold' });
-                cv.text(value, x + 716, y + 27, 20, t.text, { align: 'right' });
-                if (stale(key)) cv.text('STALE', x + 470, y + 27, 14, t.warn);
+                const y = 96 + Math.floor(i / 2) * 128;
+                cv.roundRect(x, y, 736, 108, 8, t.panel || t.bg);
+                cv.text(label, x + 16, y + 32, 18, t.dim, { font: 'bold' });
+                cv.text(value, x + 716, y + 80, 35, t.text, { align: 'right' });
+                if (stale(key)) cv.text('STALE', x + 16, y + 80, 14, t.warn);
             });
-
-            cv.text('DDE READ-ONLY TEST', 48, 322, 17, t.text, { font: 'bold' });
-            cv.text('DDE 0x12 / ' + EXPECTED, 48, 347, 16, t.warn);
-            cv.text(testProgress || scanError || scanState, 816, 347, 16, t.dim);
-            cv.text(transportStatus, 816, 322, 14, t.warn);
-            testLines.forEach((line, i) =>
-                cv.text(line, 48 + (i % 2) * 768, 375 + Math.floor(i / 2) * 22, 15, t.text, { font: 'num' }));
         }
 
         function render() {
