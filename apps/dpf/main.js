@@ -205,9 +205,19 @@ mgu.run({
                 });
             }
             G.panel(cv, t, 24, 44, 1552, 468, null);
-            // Draw the logo directly to avoid sampling a cached renderer layer.
-            aboutLogoRuns.forEach(run =>
-                cv.fillRect(650 + run.x, 58 + run.y, run.width, run.height, run.color));
+            // Full-screen iDrive scales the canvas. Align adjacent runs to the
+            // same display-pixel boundaries so fractional edges cannot leave seams.
+            const scale = cv.place ? cv.place.scale : 1;
+            const pixelEdge = coordinate => Math.round(coordinate * scale) / scale;
+            aboutLogoRuns.forEach(run => {
+                const x = 650 + run.x;
+                const y = 58 + run.y;
+                const left = pixelEdge(x);
+                const top = pixelEdge(y);
+                const right = pixelEdge(x + run.width);
+                const bottom = pixelEdge(y + run.height);
+                cv.fillRect(left, top, right - left, bottom - top, run.color);
+            });
             aboutLayers.forEach(([layer, x, y]) => cv.blit(layer, x, y));
             cv.text('DPF STATUS', 800, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
