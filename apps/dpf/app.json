@@ -2,7 +2,7 @@
   "id": "dpf",
   "title": "DPF Status",
   "description": "Read-only diesel particulate filter status monitoring",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "vendor": "custom",
   "loggingId": "DPF1",
   "iconGlyph": "temp",
@@ -10,15 +10,7 @@
     {
       "name": "MAIN",
       "kind": "canvas",
-      "title": "DPF Status",
-      "buttons": [
-        ["BTN_OVERVIEW", "Overview"],
-        ["BTN_DETAIL", "Detail"],
-        [
-          "BTN_TEST_DPF",
-          "Test DPF DIDs"
-        ]
-      ]
+      "title": "DPF Status"
     }
   ],
   "signals": {

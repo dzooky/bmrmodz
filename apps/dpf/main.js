@@ -330,15 +330,9 @@ mgu.run({
             return render();
         }
 
-        ui.onClick('BTN_OVERVIEW', () => openPage('overview'));
-        ui.onClick('BTN_DETAIL', () => openPage('detail'));
         ctx.onTab(index => {
             const next = ['overview', 'detail', 'about'][index];
             if (next && next !== page) return openPage(next);
-        });
-        ui.onClick('BTN_TEST_DPF', () => {
-            page = 'detail';
-            return testSelected(true).then(render).catch(e => log.warn('DPF test: ' + e));
         });
         ctx.loop('MAIN', 4, render);
         // Let the app initialize while the diagnostic link is connecting.
