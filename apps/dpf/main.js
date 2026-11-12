@@ -4,17 +4,20 @@
  * DPF Status
  *
  * Read-only DDE monitor. Identifies DDE 0x12 via physical UDS 22 F1 50.
- * DPF measurements remain unavailable
- * until their B57/DDE 8.32 identifiers and decoding have been verified.
+ * Displays DPF measurements for the identified B57 DDE.
  *
  * No diagnostic service other than the read-only services exposed by
  * ReadOnlyDiag can be sent by this app.
  */
 const mgu = require('./kit/mgu');
+const G = require('./kit/gauges');
+const path = require('path');
+const { decode: decodePng } = require('./png');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 
 const W = 1600;
 const H = 520;
+const TABS = ['Overview', 'Detail', 'About'];
 
 mgu.run({
     async start(ctx) {
@@ -38,20 +41,42 @@ mgu.run({
         let testLines = [];
         let testProgress = '';
         const readings = {};
-        let lastReadAt = 0;
+        let page = 'overview';
+        let detailReadPending = false;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
-        const dids = [['SOOT',0x44BE,2,0.01525902],['ASH',0x44BD,2,0.01525902],['SINCE',0x44BF,4,1],['AVERAGE',0x4B2F,4,1]];
+        const dids = [
+            ['SOOT', 0x44BE, 2, 0.01525902],
+            ['ASH', 0x44BD, 2, 0.01525902],
+            ['SINCE', 0x44BF, 4, 1],
+            ['AVERAGE', 0x4B2F, 4, 1],
+            ['REQUEST', 0x44BB, 1, 1],
+            ['MODE', 0x467E, 4, 1]
+        ];
+        // D83BX7C0A ReadDataByIdentifier scalings and offsets.
+        const detailDids = [
+            ['PRESSURE', 0x44EB, 2, 0.03814755, 500],
+            ['TEMP', 0x44EF, 2, 0.03128099, -50],
+            ['RUNTIME', 0x44B7, 4, 1],
+            ['LOCK', 0x44C2, 1, 1],
+            ['AVG TEMP', 0x4B4A, 2, 0.1, -3276.7],
+            ['REMAINING', 0x4C78, 2, 10]
+        ];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-        async function testSelected() {
-            if(testing || !identified) return;
+        async function testSelected(includeDetails = page === 'detail') {
+            if (!identified) return;
+            if (testing) {
+                if (includeDetails) detailReadPending = true;
+                return;
+            }
             testing = true;
             testLines = [];
             testProgress = 'STARTING';
             const address = DDE;
-            link.wake(address);
+            const selected = includeDetails ? dids.concat(detailDids) : dids;
             try {
-                for(const [name,did,len,factor] of dids) {
+                link.wake(address);
+                for (const [name, did, len, factor, offset = 0] of selected) {
                     testProgress = 'READING '+name+' '+did.toString(16).toUpperCase();
                     const response = await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
                         u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) || (u[0] === 0x7F && u[1] === 0x22)),
@@ -64,22 +89,31 @@ mgu.run({
                             if(bytes.length === len) {
                                 let raw = 0;
                                 for(const b of bytes) raw = raw*256+b;
-                                result = hexBytes(bytes)+' = '+(raw*factor).toFixed(factor===1?0:2);
+                                result = hexBytes(bytes)+' = '+(raw * factor + offset).toFixed(Number.isInteger(factor) ? 0 : 2);
                             } else result = 'LEN '+bytes.length+' '+hexBytes(bytes);
                         } else result = 'UNEXPECTED '+hexBytes(response);
                     }
                     if (response && response[0] === 0x62 && response[1] === (did >> 8) && response[2] === (did & 255) && response.length === len + 3) {
                         let raw = 0;
                         for (const b of response.slice(3)) raw = raw * 256 + b;
-                        readings[name] = { raw, value: raw * factor, at: Date.now() };
+                        readings[name] = { raw, value: raw * factor + offset, at: Date.now() };
+                    } else if (name === 'REQUEST' || name === 'MODE' || name === 'LOCK') {
+                        delete readings[name];
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     testLines.push(line);
-                    testProgress = 'DONE '+testLines.length+'/'+dids.length;
+                    testProgress = 'DONE '+testLines.length+'/'+selected.length;
                     log.info('DPF READ ECU '+address.toString(16)+' '+line);
                 }
             } catch(e) {testLines.push('ERROR: '+String(e).slice(0,95));log.warn('DPF test: '+String(e));}
-            finally {testing = false;testProgress = 'TEST FINISHED '+testLines.length+'/'+dids.length;}
+            finally {
+                testing = false;
+                testProgress = 'TEST FINISHED ' + testLines.length + '/' + selected.length;
+                if (detailReadPending) {
+                    detailReadPending = false;
+                    if (page === 'detail') await testSelected(true);
+                }
+            }
         }
 
 
@@ -120,70 +154,200 @@ mgu.run({
             }
         };
 
+        const hasReading = key => !!readings[key];
+        const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
+
+        const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
+            const d = src.d, w = src.w, h = src.h;
+            for (let y = 0; y < h; y++) {
+                let run = -1, last = -1;
+                for (let x = 0; x <= w; x++) {
+                    let color = -1;
+                    if (x < w) {
+                        const p = (y * w + x) * 4;
+                        const a = Math.round(d[p + 3] / 17) * 17;
+                        if (a >= 32) {
+                            const r = Math.round(d[p] / 17) * 17;
+                            const g = Math.round(d[p + 1] / 17) * 17;
+                            const b = Math.round(d[p + 2] / 17) * 17;
+                            color = (((r & 255) << 24) | ((g & 255) << 16) | ((b & 255) << 8) | (a & 255)) >>> 0;
+                        }
+                    }
+                    if (color !== last) {
+                        if (last !== -1) c.fillRect(run, y, x - run, 1, last);
+                        run = color === -1 ? -1 : x;
+                        last = color;
+                    }
+                }
+            }
+        }, 1);
+        let aboutLayers;
+        function renderAbout(cv, t) {
+            if (!aboutLayers) {
+                aboutLayers = [
+                    ['dpf_about_logo', 'brmodz_logo.png', 300, 124, 650, 58],
+                    ['dpf_about_instagram', 'qr_instagram.png', 116, 120, 660, 390],
+                    ['dpf_about_facebook', 'qr_facebook.png', 116, 120, 824, 390]
+                ].map(([key, file, width, height, x, y]) =>
+                    [rasterLayer(key, decodePng(path.join(__dirname, file), width, height)), x, y]);
+            }
+            G.panel(cv, t, 24, 44, 1552, 468, null);
+            aboutLayers.forEach(([layer, x, y]) => cv.blit(layer, x, y));
+            cv.text('DPF STATUS', 800, 225, 30, t.text,
+                { align: 'center', font: 'bold', spacing: 2.5 });
+            cv.text('Read-only diesel particulate filter monitor', 800, 258, 19, t.dim, { align: 'center' });
+            cv.text('Developed by dzooky@bmrmodz', 800, 372, 18, t.text,
+                { align: 'center', font: 'bold' });
+        }
+
+        function renderDetail(cv, t) {
+            cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
+            const measurement = (key, digits, unit) => hasReading(key)
+                ? readings[key].value.toFixed(digits) + ' ' + unit : '--';
+            const runtime = readings.RUNTIME?.raw;
+            const duration = runtime === undefined ? '--' : [
+                Math.floor(runtime / 3600),
+                Math.floor(runtime / 60) % 60,
+                runtime % 60
+            ].map(part => String(part).padStart(2, '0')).join(':');
+            const release = hasReading('LOCK') && !stale('LOCK')
+                ? (readings.LOCK.raw === 0 ? 'ON' : 'OFF') : 'UNKNOWN';
+            const rows = [
+                ['PRESSURE BEFORE DPF', measurement('PRESSURE', 1, 'hPa'), 'PRESSURE'],
+                ['TEMPERATURE BEFORE DPF', measurement('TEMP', 1, '°C'), 'TEMP'],
+                ['ENGINE TIME SINCE REGEN', duration, 'RUNTIME'],
+                ['REGEN RELEASE', release],
+                ['AVG TEMP DURING REGEN', measurement('AVG TEMP', 1, '°C'), 'AVG TEMP'],
+                ['AVG REGEN DURATION / 100 KM', 'UNAVAILABLE'],
+                ['EST. FILTER DISTANCE LEFT', measurement('REMAINING', 0, 'km'), 'REMAINING']
+            ];
+            rows.forEach(([label, value, key], i) => {
+                const x = 48 + (i % 2) * 768;
+                const y = 94 + Math.floor(i / 2) * 48;
+                cv.roundRect(x, y, 736, 42, 8, t.panel || t.bg);
+                cv.text(label, x + 16, y + 27, 16, t.dim, { font: 'bold' });
+                cv.text(value, x + 716, y + 27, 20, t.text, { align: 'right' });
+                if (stale(key)) cv.text('STALE', x + 470, y + 27, 14, t.warn);
+            });
+
+            cv.text('DDE READ-ONLY TEST', 48, 322, 17, t.text, { font: 'bold' });
+            cv.text('DDE 0x12 / ' + EXPECTED, 48, 347, 16, t.warn);
+            cv.text(testProgress || scanError || scanState, 816, 347, 16, t.dim);
+            cv.text(transportStatus, 816, 322, 14, t.warn);
+            testLines.forEach((line, i) =>
+                cv.text(line, 48 + (i % 2) * 768, 375 + Math.floor(i / 2) * 22, 15, t.text, { font: 'num' }));
+        }
+
         function render() {
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
 
-            cv.text('DPF STATUS', 48, 78, 32, t.text, { font: 'bold', spacing: 2 });
-            cv.text('READ-ONLY DIESEL PARTICULATE FILTER MONITOR', 48, 112, 17, t.dim, {
-                font: 'bold', spacing: 1
-            });
+            if (page === 'detail') {
+                renderDetail(cv, t);
+                G.frame(cv, t, TABS, 1, []);
+                return ui.image('MAIN_GFX', cv);
+            }
+            if (page === 'about') {
+                renderAbout(cv, t);
+                G.frame(cv, t, TABS, 2, []);
+                return ui.image('MAIN_GFX', cv);
+            }
 
-            const stateColor = scanState === 'DDE IDENTIFIED' ? t.ok
-                : (scanState === 'IDENTIFYING DDE' || scanState === 'CONNECTING' ? t.warn : t.dim);
-            cv.roundRect(48, 145, 1504, 54, 9, t.panel || t.bg);
-            cv.text(scanState, 72, 180, 23, stateColor, { font: 'bold', spacing: 1.5 });
+            const gutter = 16;
+            const columnWidth = (W - 48 - 2 * gutter) * 0.4;
+            const massX = 24;
+            const distanceX = massX + columnWidth + gutter;
+            const statusX = distanceX + columnWidth + gutter;
+            const statusWidth = W - 24 - statusX;
 
-            // Preserve the last successful measurement through diagnostic timeouts.
-            // An old value is explicitly marked STALE rather than shown as live.
-            const hasReading = key => !!readings[key];
-            const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
-            const number = key => hasReading(key) ? readings[key].value.toFixed(2) : '--';
-            const raw = key => hasReading(key) ? String(readings[key].raw) : '--';
-            const cards = [
-                ['SOOT MASS', number('SOOT'), 'g', 'SOOT'],
-                ['ASH LOAD', number('ASH'), 'raw scaled', 'ASH'],
-                ['SINCE REGEN · RAW', raw('SINCE'), 'unverified', 'SINCE'],
-                ['AVG REGEN · RAW', raw('AVERAGE'), 'unverified', 'AVERAGE']
-            ];
-            const cardW = 354;
-            cards.forEach((item, i) => {
-                const x = 48 + i * 384;
-                cv.roundRect(x, 220, cardW, 118, 10, t.panel || t.bg);
-                cv.text(item[0], x + 20, 253, 16, t.dim, { font: 'bold', spacing: 1 });
-                cv.text(item[1], x + 20, 310, 38, t.dim, { font: 'num' });
-                if (item[2]) cv.text(item[2], x + 20, 330, 14, t.dim);
-                if (stale(item[3])) cv.text('STALE', x + cardW - 16, 253, 14, t.warn, { font: 'bold', align: 'right' });
-            });
+            function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
+                const reading = readings[key];
+                const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
+                G.segBar(cv, t, x, y, columnWidth, 222, {
+                    label, value, unit, decimals,
+                    min: 0, max, step,
+                    scale: { every: tick, decimals: scaleDecimals }
+                });
+                if (stale(key)) cv.text('STALE', x + 18, y + 66, 15, t.warn, { font: 'bold' });
+            }
 
-            // Independent DDE flags: request pending is not the same as regeneration active.
-            // Neither is inferred from soot load or temperature.
-            cv.roundRect(48, 352, 736, 48, 9, t.panel || t.bg);
-            cv.roundRect(816, 352, 736, 48, 9, t.panel || t.bg);
-            cv.text('REGENERATION', 68, 383, 18, t.dim, { font: 'bold' });
-            cv.text('UNKNOWN', 764, 383, 20, t.warn, { font: 'bold', align: 'right' });
-            cv.text('REGEN REQUEST', 836, 383, 18, t.dim, { font: 'bold' });
-            cv.text('UNKNOWN', 1532, 383, 20, t.warn, { font: 'bold', align: 'right' });
+            gauge('SOOT', 'Soot mass', 'g', 100, 5, 20, 2, massX, 44);
+            gauge('ASH', 'Ash mass', 'g', 100, 5, 20, 2, massX, 286);
 
+            const averageKm = readings.AVERAGE ? readings.AVERAGE.raw / 1000 : 0;
+            if (averageKm > 0) {
+                gauge('SINCE', 'Since last regen', 'km', averageKm, averageKm / 16,
+                    averageKm / 2, 1, distanceX, 44, 1);
+                if (stale('AVERAGE') && !stale('SINCE')) {
+                    cv.text('AVG STALE', distanceX + 18, 110, 15, t.warn, { font: 'bold' });
+                }
+            } else {
+                gauge('SINCE', 'Since last regen', 'km', 800, 50, 200, 1, distanceX, 44);
+                if (!stale('SINCE')) cv.text('AVG UNAVAILABLE', distanceX + 18, 110, 15, t.dim, { font: 'bold' });
+            }
+            gauge('AVERAGE', 'Avg regen interval', 'km', 800, 50, 200, 1, distanceX, 286);
 
-            cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
-            cv.text('DDE 0x12 / '+EXPECTED,48,451,16,t.warn);
-            cv.text(testing ? testProgress : (testProgress || scanError || scanState),850,451,16,t.dim);
-            cv.text(transportStatus,850,425,14,t.warn);
-            testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,480+Math.floor(i/2)*24,15,t.text,{font:'num'}));
+            G.panel(cv, t, statusX, 44, statusWidth, 464, null);
+            cv.text('REGENERATION', statusX + 18, 83, 20, t.text, { font: 'bold' });
+            // D83BX7C0A STATUS_REGENERATION_CSF decoding, using direct ReadDataByIdentifier.
+            const modeKnown = hasReading('MODE') && !stale('MODE');
+            const requestKnown = hasReading('REQUEST') && !stale('REQUEST');
+            const inProgress = modeKnown && (readings.MODE.raw & 0x02) !== 0;
+            let statusText = 'UNKNOWN';
+            let statusColor = t.warn;
+            if (inProgress) {
+                statusText = 'IN PROGRESS';
+                statusColor = t.ok;
+            } else if (modeKnown && requestKnown) {
+                const request = readings.REQUEST.raw;
+                const requested = request >= 4 && request <= 6;
+                statusText = requested ? 'REQUESTED' : 'NOT NEEDED';
+                statusColor = requested ? t.warn : t.dim;
+            }
+            cv.text(statusText, statusX + 18, 150, 30, statusColor, { font: 'bold' });
+
+            const estimateAvailable = !inProgress && averageKm > 0 && !stale('AVERAGE')
+                && hasReading('SINCE') && !stale('SINCE');
+            const sinceKm = estimateAvailable ? readings.SINCE.raw / 1000 : null;
+            const remainingKm = estimateAvailable ? Math.max(0, averageKm - sinceKm) : null;
+            cv.text('EST. DISTANCE TO REGEN', statusX + 18, 252, 16, t.dim, { font: 'bold' });
+            cv.text(remainingKm === null ? '--' : remainingKm.toFixed(1) + ' km',
+                statusX + 18, 315, 42, t.text, { font: 'num' });
+            if (estimateAvailable) {
+                G.segBar(cv, t, statusX + 18, 342, statusWidth - 36, 26, {
+                    panel: false, min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
+                });
+            }
+
+            G.frame(cv, t, TABS, 0, []);
             return ui.image('MAIN_GFX', cv);
         }
 
+        function openPage(next) {
+            const openingDetail = next === 'detail' && page !== 'detail';
+            page = next;
+            if (openingDetail) testSelected();
+            return render();
+        }
+
+        ui.onClick('BTN_OVERVIEW', () => openPage('overview'));
+        ui.onClick('BTN_DETAIL', () => openPage('detail'));
+        ctx.onTab(index => {
+            const next = ['overview', 'detail', 'about'][index];
+            if (next && next !== page) return openPage(next);
+        });
         ui.onClick('BTN_TEST_DPF', () => {
-            testSelected().then(render).catch(e=>log.warn('DPF test: '+e));
+            page = 'detail';
+            return testSelected(true).then(render).catch(e => log.warn('DPF test: ' + e));
         });
         ctx.loop('MAIN', 4, render);
         await identify();
+        if (ui.isVisible('MAIN')) testSelected();
         // Read-only periodic updates while the page is visible; never overlap requests.
         (async () => {
             while (true) {
                 await sleep(60000);
-                if (identified && !testing && ui.isVisible('MAIN')) await testSelected();
+                if (identified && !testing && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
             }
         })().catch(e => log.warn('DPF polling: ' + e));
         render()
