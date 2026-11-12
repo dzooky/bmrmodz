@@ -40,7 +40,14 @@ mgu.run({
         let lastReadAt = 0;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
-        const dids = [['SOOT',0x44BE,2,0.01525902],['ASH',0x44BD,2,0.01525902],['SINCE',0x44BF,4,1],['AVERAGE',0x4B2F,4,1]];
+        const dids = [
+            ['SOOT', 0x44BE, 2, 0.01525902],
+            ['ASH', 0x44BD, 2, 0.01525902],
+            ['SINCE', 0x44BF, 4, 1],
+            ['AVERAGE', 0x4B2F, 4, 1],
+            ['REQUEST', 0x44BB, 1, 1],
+            ['MODE', 0x467E, 4, 1]
+        ];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         async function testSelected() {
             if(testing || !identified) return;
@@ -71,6 +78,8 @@ mgu.run({
                         let raw = 0;
                         for (const b of response.slice(3)) raw = raw * 256 + b;
                         readings[name] = { raw, value: raw * factor, at: Date.now() };
+                    } else if (name === 'REQUEST' || name === 'MODE') {
+                        delete readings[name];
                     }
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     testLines.push(line);
@@ -155,20 +164,27 @@ mgu.run({
                 if (stale(item[3])) cv.text('STALE', x + cardW - 16, 253, 14, t.warn, { font: 'bold', align: 'right' });
             });
 
-            // These states require verified DDE signals before they can show live values.
+            // D83BX7C0A STATUS_REGENERATION_CSF decoding, using direct ReadDataByIdentifier.
+            // PFltRgn_numRgn modes 4–6 mean requested. CoEOM_stOpModeAct bit 1 means active.
+            const regenStatus = (key, isOn) => {
+                if (!hasReading(key) || stale(key)) return ['UNKNOWN', t.warn];
+                return isOn(readings[key].raw) ? ['ON', t.ok] : ['OFF', t.dim];
+            };
+            const [activeText, activeColor] = regenStatus('MODE', mode => (mode & 0x02) !== 0);
+            const [requestText, requestColor] = regenStatus('REQUEST', mode => mode >= 4 && mode <= 6);
             cv.roundRect(48, 352, 736, 48, 9, t.panel || t.bg);
             cv.roundRect(816, 352, 736, 48, 9, t.panel || t.bg);
             cv.text('REGEN IN PROGRESS', 68, 383, 18, t.dim, { font: 'bold' });
-            cv.text('UNKNOWN', 764, 383, 20, t.warn, { font: 'bold', align: 'right' });
+            cv.text(activeText, 764, 383, 20, activeColor, { font: 'bold', align: 'right' });
             cv.text('REGEN REQUEST', 836, 383, 18, t.dim, { font: 'bold' });
-            cv.text('UNKNOWN', 1532, 383, 20, t.warn, { font: 'bold', align: 'right' });
+            cv.text(requestText, 1532, 383, 20, requestColor, { font: 'bold', align: 'right' });
 
 
             cv.text('DDE READ-ONLY TEST',48,425,17,t.text,{font:'bold'});
             cv.text('DDE 0x12 / '+EXPECTED,48,451,16,t.warn);
             cv.text(testing ? testProgress : (testProgress || scanError || scanState),850,451,16,t.dim);
             cv.text(transportStatus,850,425,14,t.warn);
-            testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,480+Math.floor(i/2)*24,15,t.text,{font:'num'}));
+            testLines.forEach((line,i)=>cv.text(line,48+(i%2)*770,475+Math.floor(i/2)*18,15,t.text,{font:'num'}));
             return ui.image('MAIN_GFX', cv);
         }
 
