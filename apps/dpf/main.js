@@ -137,6 +137,7 @@ mgu.run({
         };
 
         const hasReading = key => !!readings[key];
+        const hasMeasurements = () => ['SOOT', 'ASH', 'SINCE', 'AVERAGE'].some(hasReading);
         const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
 
         const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
@@ -235,7 +236,7 @@ mgu.run({
             const statusWidth = W - 24 - statusX;
 
             const gaugeColor = t.hotRamp[0];
-            const loading = identifying || (identified && (!readAttempted || testing));
+            const loading = !readAttempted && (identifying || identified);
 
             function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
                 const reading = readings[key];
@@ -296,7 +297,7 @@ mgu.run({
                 });
             }
 
-            if (!dids.some(([key]) => hasReading(key))) {
+            if (!hasMeasurements()) {
                 cv.text(loading ? 'LOADING DPF DATA' : 'NO DPF DATA',
                     statusX + 18, 438, 18, loading ? t.dim : t.warn, { font: 'bold' });
             }
@@ -326,12 +327,13 @@ mgu.run({
         (async () => {
             await identify();
             identifying = false;
-            if (!identified) return;
-            if (page !== 'about' && ui.isVisible('MAIN')) await testSelected();
-            // Read-only periodic updates while the page is visible.
+            if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
+            // Retry startup failures promptly while the data screen is open.
             while (true) {
-                await sleep(60000);
-                if (!testing && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
+                await sleep(hasMeasurements() ? 60000 : 5000);
+                if (testing || page === 'about' || !ui.isVisible('MAIN')) continue;
+                if (!identified) await identify();
+                if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
             }
         })().catch(e => log.warn('DPF polling: ' + e));
         render()
