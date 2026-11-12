@@ -204,7 +204,7 @@ mgu.run({
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
             const measurement = (key, digits, unit) => hasReading(key)
                 ? readings[key].value.toFixed(digits) + ' ' + unit : '--';
-            const runtime = readings.RUNTIME?.raw;
+            const runtime = hasReading('RUNTIME') ? readings.RUNTIME.raw : undefined;
             const duration = runtime === undefined ? '--' : [
                 Math.floor(runtime / 3600),
                 Math.floor(runtime / 60) % 60,
@@ -341,13 +341,15 @@ mgu.run({
             return testSelected(true).then(render).catch(e => log.warn('DPF test: ' + e));
         });
         ctx.loop('MAIN', 4, render);
-        await identify();
-        if (ui.isVisible('MAIN')) testSelected();
-        // Read-only periodic updates while the page is visible; never overlap requests.
+        // Let the app initialize while the diagnostic link is connecting.
         (async () => {
+            await identify();
+            if (!identified) return;
+            if (page !== 'about' && ui.isVisible('MAIN')) await testSelected();
+            // Read-only periodic updates while the page is visible.
             while (true) {
                 await sleep(60000);
-                if (identified && !testing && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
+                if (!testing && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
             }
         })().catch(e => log.warn('DPF polling: ' + e));
         render()
