@@ -145,11 +145,12 @@ mgu.run({
         const hasDetailMeasurements = () => detailDids.some(([key]) => hasReading(key) && !stale(key));
         const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
 
-        const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
+        const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
             // Join matching runs across rows to avoid seams inside solid areas.
             let previousRuns = new Map();
-            const drawRun = run => c.fillRect(run.x, run.y, run.width, run.height, run.color);
+            const runs = [];
+            const keepRun = run => runs.push(run);
             for (let y = 0; y < h; y++) {
                 const currentRuns = new Map();
                 let run = -1, last = -1;
@@ -181,26 +182,38 @@ mgu.run({
                         last = color;
                     }
                 }
-                previousRuns.forEach(drawRun);
+                previousRuns.forEach(keepRun);
                 previousRuns = currentRuns;
             }
-            previousRuns.forEach(drawRun);
-        }, 1);
+            previousRuns.forEach(keepRun);
+            return runs;
+        };
+        let aboutLogoRuns;
         let aboutLayers;
         function renderAbout(cv, t) {
             if (!aboutLayers) {
+                aboutLogoRuns = rasterRuns(decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124));
                 aboutLayers = [
-                    ['dpf_about_logo', 'brmodz_logo.png', 300, 124, 650, 58],
                     ['dpf_about_instagram', 'qr_instagram.png', 116, 120, 660, 390],
                     ['dpf_about_facebook', 'qr_facebook.png', 116, 120, 824, 390]
-                ].map(([key, file, width, height, x, y]) =>
-                    [rasterLayer(key, decodePng(path.join(__dirname, file), width, height)), x, y]);
+                ].map(([key, file, width, height, x, y]) => {
+                    const runs = rasterRuns(decodePng(path.join(__dirname, file), width, height));
+                    const layer = G.layer(key, width, height, canvas => {
+                        runs.forEach(run => canvas.fillRect(run.x, run.y, run.width, run.height, run.color));
+                    }, 1);
+                    return [layer, x, y];
+                });
             }
             G.panel(cv, t, 24, 44, 1552, 468, null);
+            // Draw the logo directly to avoid sampling a cached renderer layer.
+            aboutLogoRuns.forEach(run =>
+                cv.fillRect(650 + run.x, 58 + run.y, run.width, run.height, run.color));
             aboutLayers.forEach(([layer, x, y]) => cv.blit(layer, x, y));
             cv.text('DPF STATUS', 800, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
-            cv.text('Read-only diesel particulate filter monitor', 800, 258, 19, t.dim, { align: 'center' });
+            cv.text('Read-only diesel particulate filter monitor for BMW iDrive 7.', 800, 258, 19, t.dim, { align: 'center' });
+            cv.text('Shows soot and ash mass, regeneration distances and status, plus detailed DPF measurements.', 800, 285, 19, t.dim, { align: 'center' });
+            cv.text('Reads data from supported B57 DDE units.', 800, 312, 19, t.dim, { align: 'center' });
             cv.text('Developed by dzooky@bmrmodz', 800, 372, 18, t.text,
                 { align: 'center', font: 'bold' });
         }

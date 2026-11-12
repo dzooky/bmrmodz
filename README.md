@@ -20,7 +20,7 @@ Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
   - **Transmission temperature:** Monitors transmission oil temperature and records warm-up and cool-down times to provide useful service-temperature information.
   - **Local history:** OSA records starting temperatures, outside temperature and the time taken to reach target temperatures. Transmission warm-up and cool-down observations are recorded as well. This history is stored locally on the BMW head unit and is used for historical comparisons; it is not uploaded to a cloud service.
   - **Live estimates:** Estimates are based on current temperature trends and driving conditions, while the locally stored history provides a reference from comparable previous sessions.
-- **DPF Status** — A read-only BMW MGU monitor in active development. The current build includes diagnostic ECU discovery through the restricted read-only transport. DPF measurements will be enabled only after the B57 DDE parameters and their scaling are verified. No regeneration commands, ECU writes, fault clearing, coding or vehicle-control functions are provided.
+- **DPF Status** — Read-only diesel particulate filter monitor for BMW iDrive 7. Shows soot and ash mass, regeneration distances and status, plus detailed DPF measurements. Reads data from supported B57 DDE units.
 
 ## Build
 
