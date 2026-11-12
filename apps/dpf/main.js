@@ -147,7 +147,11 @@ mgu.run({
 
         const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
             const d = src.d, w = src.w, h = src.h;
+            // Join matching runs across rows to avoid seams inside solid areas.
+            let previousRuns = new Map();
+            const drawRun = run => c.fillRect(run.x, run.y, run.width, run.height, run.color);
             for (let y = 0; y < h; y++) {
+                const currentRuns = new Map();
                 let run = -1, last = -1;
                 for (let x = 0; x <= w; x++) {
                     let color = -1;
@@ -162,12 +166,25 @@ mgu.run({
                         }
                     }
                     if (color !== last) {
-                        if (last !== -1) c.fillRect(run, y, x - run, 1, last);
+                        if (last !== -1) {
+                            const id = run + ':' + x + ':' + last;
+                            const rect = previousRuns.get(id);
+                            if (rect) {
+                                rect.height++;
+                                previousRuns.delete(id);
+                                currentRuns.set(id, rect);
+                            } else {
+                                currentRuns.set(id, { x: run, y, width: x - run, height: 1, color: last });
+                            }
+                        }
                         run = color === -1 ? -1 : x;
                         last = color;
                     }
                 }
+                previousRuns.forEach(drawRun);
+                previousRuns = currentRuns;
             }
+            previousRuns.forEach(drawRun);
         }, 1);
         let aboutLayers;
         function renderAbout(cv, t) {
