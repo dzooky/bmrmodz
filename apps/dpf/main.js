@@ -4,8 +4,7 @@
  * DPF Status
  *
  * Read-only DDE monitor. Identifies DDE 0x12 via physical UDS 22 F1 50.
- * DPF measurements remain unavailable
- * until their B57/DDE 8.32 identifiers and decoding have been verified.
+ * Displays DPF measurements for the identified B57 DDE.
  *
  * No diagnostic service other than the read-only services exposed by
  * ReadOnlyDiag can be sent by this app.
@@ -138,13 +137,13 @@ mgu.run({
             // An old value is explicitly marked STALE rather than shown as live.
             const hasReading = key => !!readings[key];
             const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
-            const number = key => hasReading(key) ? readings[key].value.toFixed(2) : '--';
-            const raw = key => hasReading(key) ? String(readings[key].raw) : '--';
+            const mass = key => hasReading(key) ? readings[key].value.toFixed(2) : '--';
+            const distance = key => hasReading(key) ? (readings[key].raw / 1000).toFixed(1) : '--';
             const cards = [
-                ['SOOT MASS', number('SOOT'), 'g', 'SOOT'],
-                ['ASH LOAD', number('ASH'), 'raw scaled', 'ASH'],
-                ['SINCE REGEN · RAW', raw('SINCE'), 'unverified', 'SINCE'],
-                ['AVG REGEN · RAW', raw('AVERAGE'), 'unverified', 'AVERAGE']
+                ['SOOT MASS', mass('SOOT'), 'g', 'SOOT'],
+                ['ASH MASS', mass('ASH'), 'g', 'ASH'],
+                ['SINCE REGEN', distance('SINCE'), 'km', 'SINCE'],
+                ['AVG REGEN', distance('AVERAGE'), 'km', 'AVERAGE']
             ];
             const cardW = 354;
             cards.forEach((item, i) => {
@@ -156,11 +155,10 @@ mgu.run({
                 if (stale(item[3])) cv.text('STALE', x + cardW - 16, 253, 14, t.warn, { font: 'bold', align: 'right' });
             });
 
-            // Independent DDE flags: request pending is not the same as regeneration active.
-            // Neither is inferred from soot load or temperature.
+            // These states require verified DDE signals before they can show live values.
             cv.roundRect(48, 352, 736, 48, 9, t.panel || t.bg);
             cv.roundRect(816, 352, 736, 48, 9, t.panel || t.bg);
-            cv.text('REGENERATION', 68, 383, 18, t.dim, { font: 'bold' });
+            cv.text('REGEN IN PROGRESS', 68, 383, 18, t.dim, { font: 'bold' });
             cv.text('UNKNOWN', 764, 383, 20, t.warn, { font: 'bold', align: 'right' });
             cv.text('REGEN REQUEST', 836, 383, 18, t.dim, { font: 'bold' });
             cv.text('UNKNOWN', 1532, 383, 20, t.warn, { font: 'bold', align: 'right' });
