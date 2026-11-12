@@ -10,10 +10,14 @@
  * ReadOnlyDiag can be sent by this app.
  */
 const mgu = require('./kit/mgu');
+const G = require('./kit/gauges');
+const path = require('path');
+const { decode: decodePng } = require('./png');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 
 const W = 1600;
 const H = 520;
+const TABS = ['Overview', 'Detail', 'About'];
 
 mgu.run({
     async start(ctx) {
@@ -153,6 +157,49 @@ mgu.run({
         const hasReading = key => !!readings[key];
         const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
 
+        const rasterLayer = (key, src) => G.layer(key, src.w, src.h, (c) => {
+            const d = src.d, w = src.w, h = src.h;
+            for (let y = 0; y < h; y++) {
+                let run = -1, last = -1;
+                for (let x = 0; x <= w; x++) {
+                    let color = -1;
+                    if (x < w) {
+                        const p = (y * w + x) * 4;
+                        const a = Math.round(d[p + 3] / 17) * 17;
+                        if (a >= 32) {
+                            const r = Math.round(d[p] / 17) * 17;
+                            const g = Math.round(d[p + 1] / 17) * 17;
+                            const b = Math.round(d[p + 2] / 17) * 17;
+                            color = (((r & 255) << 24) | ((g & 255) << 16) | ((b & 255) << 8) | (a & 255)) >>> 0;
+                        }
+                    }
+                    if (color !== last) {
+                        if (last !== -1) c.fillRect(run, y, x - run, 1, last);
+                        run = color === -1 ? -1 : x;
+                        last = color;
+                    }
+                }
+            }
+        }, 1);
+        let aboutLayers;
+        function renderAbout(cv, t) {
+            if (!aboutLayers) {
+                aboutLayers = [
+                    ['dpf_about_logo', 'brmodz_logo.png', 300, 124, 650, 58],
+                    ['dpf_about_instagram', 'qr_instagram.png', 116, 120, 660, 390],
+                    ['dpf_about_facebook', 'qr_facebook.png', 116, 120, 824, 390]
+                ].map(([key, file, width, height, x, y]) =>
+                    [rasterLayer(key, decodePng(path.join(__dirname, file), width, height)), x, y]);
+            }
+            G.panel(cv, t, 24, 44, 1552, 468, null);
+            aboutLayers.forEach(([layer, x, y]) => cv.blit(layer, x, y));
+            cv.text('DPF STATUS', 800, 225, 30, t.text,
+                { align: 'center', font: 'bold', spacing: 2.5 });
+            cv.text('Read-only diesel particulate filter monitor', 800, 258, 19, t.dim, { align: 'center' });
+            cv.text('Developed by dzooky@bmrmodz', 800, 372, 18, t.text,
+                { align: 'center', font: 'bold' });
+        }
+
         function renderDetail(cv, t) {
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
             const measurement = (key, digits, unit) => hasReading(key)
@@ -197,6 +244,12 @@ mgu.run({
 
             if (page === 'detail') {
                 renderDetail(cv, t);
+                G.frame(cv, t, TABS, 1, []);
+                return ui.image('MAIN_GFX', cv);
+            }
+            if (page === 'about') {
+                renderAbout(cv, t);
+                G.frame(cv, t, TABS, 2, []);
                 return ui.image('MAIN_GFX', cv);
             }
 
@@ -246,18 +299,22 @@ mgu.run({
             cv.text(requestText, 1532, 383, 20, requestColor, { font: 'bold', align: 'right' });
 
 
+            G.frame(cv, t, TABS, 0, []);
             return ui.image('MAIN_GFX', cv);
         }
 
-        ui.onClick('BTN_OVERVIEW', () => {
-            page = 'overview';
+        function openPage(next) {
+            const openingDetail = next === 'detail' && page !== 'detail';
+            page = next;
+            if (openingDetail) testSelected();
             return render();
-        });
-        ui.onClick('BTN_DETAIL', () => {
-            const opening = page !== 'detail';
-            page = 'detail';
-            if (opening) testSelected();
-            return render();
+        }
+
+        ui.onClick('BTN_OVERVIEW', () => openPage('overview'));
+        ui.onClick('BTN_DETAIL', () => openPage('detail'));
+        ctx.onTab(index => {
+            const next = ['overview', 'detail', 'about'][index];
+            if (next && next !== page) return openPage(next);
         });
         ui.onClick('BTN_TEST_DPF', () => {
             page = 'detail';
@@ -270,7 +327,7 @@ mgu.run({
         (async () => {
             while (true) {
                 await sleep(60000);
-                if (identified && !testing && ui.isVisible('MAIN')) await testSelected();
+                if (identified && !testing && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
             }
         })().catch(e => log.warn('DPF polling: ' + e));
         render()
