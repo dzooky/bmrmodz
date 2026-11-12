@@ -260,22 +260,31 @@ mgu.run({
             const statusX = distanceX + columnWidth + gutter;
             const statusWidth = W - 24 - statusX;
 
-            function gauge(key, label, unit, max, step, tick, decimals, x, y) {
+            function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
                 const reading = readings[key];
                 const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
                 G.segBar(cv, t, x, y, columnWidth, 222, {
                     label, value, unit, decimals,
                     min: 0, max, step,
-                    scale: { every: tick }
+                    scale: { every: tick, decimals: scaleDecimals }
                 });
                 if (stale(key)) cv.text('STALE', x + 18, y + 66, 15, t.warn, { font: 'bold' });
             }
 
-            // ISTA reference scales for soot and average regeneration distance.
-            // The companion gauges use the same display scale for their units.
             gauge('SOOT', 'Soot mass', 'g', 100, 5, 20, 2, massX, 44);
             gauge('ASH', 'Ash mass', 'g', 100, 5, 20, 2, massX, 286);
-            gauge('SINCE', 'Since last regen', 'km', 800, 50, 200, 1, distanceX, 44);
+
+            const averageKm = readings.AVERAGE ? readings.AVERAGE.raw / 1000 : 0;
+            if (averageKm > 0) {
+                gauge('SINCE', 'Since last regen', 'km', averageKm, averageKm / 16,
+                    averageKm / 2, 1, distanceX, 44, 1);
+                if (stale('AVERAGE') && !stale('SINCE')) {
+                    cv.text('AVG STALE', distanceX + 18, 110, 15, t.warn, { font: 'bold' });
+                }
+            } else {
+                gauge('SINCE', 'Since last regen', 'km', 800, 50, 200, 1, distanceX, 44);
+                if (!stale('SINCE')) cv.text('AVG UNAVAILABLE', distanceX + 18, 110, 15, t.dim, { font: 'bold' });
+            }
             gauge('AVERAGE', 'Avg regen interval', 'km', 800, 50, 200, 1, distanceX, 286);
 
             G.panel(cv, t, statusX, 44, statusWidth, 464, null);
