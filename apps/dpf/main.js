@@ -231,12 +231,14 @@ mgu.run({
             const statusX = distanceX + columnWidth + gutter;
             const statusWidth = W - 24 - statusX;
 
+            const gaugeColor = t.hotRamp[0];
+
             function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
                 const reading = readings[key];
                 const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
                 G.segBar(cv, t, x, y, columnWidth, 222, {
                     label, value, unit, decimals,
-                    min: 0, max, step,
+                    color: gaugeColor, min: 0, max, step,
                     scale: { every: tick, decimals: scaleDecimals }
                 });
                 if (stale(key)) cv.text('STALE', x + 18, y + 66, 15, t.warn, { font: 'bold' });
@@ -286,7 +288,7 @@ mgu.run({
                 statusX + 18, 315, 42, t.text, { font: 'num' });
             if (estimateAvailable) {
                 G.segBar(cv, t, statusX + 18, 342, statusWidth - 36, 26, {
-                    panel: false, min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
+                    panel: false, color: gaugeColor, min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
                 });
             }
 
