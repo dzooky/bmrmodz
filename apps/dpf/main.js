@@ -235,7 +235,6 @@ mgu.run({
             const statusX = distanceX + columnWidth + gutter;
             const statusWidth = W - 24 - statusX;
 
-            const gaugeColor = t.hotRamp[0];
             const loading = !readAttempted && (identifying || identified);
 
             function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
@@ -243,7 +242,12 @@ mgu.run({
                 const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
                 G.segBar(cv, t, x, y, columnWidth, 222, {
                     label, value, unit, decimals,
-                    color: gaugeColor, min: 0, max, step,
+                    min: 0, max, step,
+                    ramp: 'hot', limit: max,
+                    zones: [
+                        { from: max * (90 / 150), to: max * (110 / 150), color: 'warn' },
+                        { from: max * (110 / 150), to: max, color: 'crit' }
+                    ],
                     scale: { every: tick, decimals: scaleDecimals }
                 });
                 if (stale(key)) cv.text('STALE', x + 18, y + 66, 15, t.warn, { font: 'bold' });
@@ -293,7 +297,7 @@ mgu.run({
                 statusX + 18, 315, 42, t.text, { font: 'num' });
             if (estimateAvailable) {
                 G.segBar(cv, t, statusX + 18, 342, statusWidth - 36, 26, {
-                    panel: false, color: gaugeColor, min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
+                    panel: false, ramp: 'hot', min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
                 });
             }
 
