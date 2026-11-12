@@ -290,17 +290,34 @@ mgu.run({
             G.panel(cv, t, statusX, 44, statusWidth, 464, null);
             cv.text('REGENERATION', statusX + 18, 83, 20, t.text, { font: 'bold' });
             // D83BX7C0A STATUS_REGENERATION_CSF decoding, using direct ReadDataByIdentifier.
-            // PFltRgn_numRgn modes 4–6 mean requested. CoEOM_stOpModeAct bit 1 means active.
-            function regenStatus(label, key, isOn, y) {
-                const known = hasReading(key) && !stale(key);
-                const active = known && isOn(readings[key].raw);
-                const color = known ? (active ? t.ok : t.dim) : t.warn;
-                cv.text(label, statusX + 18, y, 17, t.dim, { font: 'bold' });
-                cv.text(known ? (active ? 'ON' : 'OFF') : 'UNKNOWN',
-                    statusX + 18, y + 52, 34, color, { font: 'bold' });
+            const modeKnown = hasReading('MODE') && !stale('MODE');
+            const requestKnown = hasReading('REQUEST') && !stale('REQUEST');
+            const inProgress = modeKnown && (readings.MODE.raw & 0x02) !== 0;
+            let statusText = 'UNKNOWN';
+            let statusColor = t.warn;
+            if (inProgress) {
+                statusText = 'IN PROGRESS';
+                statusColor = t.ok;
+            } else if (modeKnown && requestKnown) {
+                const request = readings.REQUEST.raw;
+                const requested = request >= 4 && request <= 6;
+                statusText = requested ? 'REQUESTED' : 'NOT NEEDED';
+                statusColor = requested ? t.warn : t.dim;
             }
-            regenStatus('IN PROGRESS', 'MODE', mode => (mode & 0x02) !== 0, 145);
-            regenStatus('REQUESTED', 'REQUEST', mode => mode >= 4 && mode <= 6, 269);
+            cv.text(statusText, statusX + 18, 150, 30, statusColor, { font: 'bold' });
+
+            const estimateAvailable = !inProgress && averageKm > 0 && !stale('AVERAGE')
+                && hasReading('SINCE') && !stale('SINCE');
+            const sinceKm = estimateAvailable ? readings.SINCE.raw / 1000 : null;
+            const remainingKm = estimateAvailable ? Math.max(0, averageKm - sinceKm) : null;
+            cv.text('EST. DISTANCE TO REGEN', statusX + 18, 252, 16, t.dim, { font: 'bold' });
+            cv.text(remainingKm === null ? '--' : remainingKm.toFixed(1) + ' km',
+                statusX + 18, 315, 42, t.text, { font: 'num' });
+            if (estimateAvailable) {
+                G.segBar(cv, t, statusX + 18, 342, statusWidth - 36, 26, {
+                    panel: false, min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
+                });
+            }
 
             G.frame(cv, t, TABS, 0, []);
             return ui.image('MAIN_GFX', cv);
