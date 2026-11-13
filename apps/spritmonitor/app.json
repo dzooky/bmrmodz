@@ -1,0 +1,94 @@
+{
+  "id": "spritmonitor",
+  "title": "Spritmonitor",
+  "description": "Log fuel and AdBlue fill-ups in Spritmonitor directly from BMW iDrive 7.",
+  "version": "0.1.5",
+  "vendor": "custom",
+  "loggingId": "SPR1",
+  "screens": [
+    {
+      "name": "MAIN",
+      "kind": "canvas",
+      "title": "Spritmonitor",
+      "buttons": [
+        [
+          "BTN_FUEL",
+          "Add Fuel"
+        ],
+        [
+          "BTN_ADBLUE",
+          "Add AdBlue"
+        ],
+        [
+          "BTN_SETTINGS",
+          "Settings"
+        ]
+      ]
+    }
+  ],
+  "settingsBeforeLast": true,
+  "settings": [
+    {
+      "key": "theme",
+      "label": "Colour theme",
+      "type": "choice",
+      "default": "m_tricolour",
+      "options": [
+        [
+          "m_red",
+          "M Red"
+        ],
+        [
+          "m_tricolour",
+          "M Tricolour"
+        ],
+        [
+          "ice",
+          "Ice White"
+        ],
+        [
+          "amber",
+          "Night Amber"
+        ]
+      ]
+    },
+    {
+      "key": "layout",
+      "label": "Screen layout",
+      "type": "choice",
+      "default": "full",
+      "options": [
+        [
+          "full",
+          "Full screen"
+        ],
+        [
+          "standard",
+          "Standard"
+        ]
+      ]
+    },
+    {
+      "key": "renderer",
+      "label": "Renderer",
+      "type": "choice",
+      "default": "auto",
+      "options": [
+        [
+          "auto",
+          "Auto"
+        ],
+        [
+          "software",
+          "Software"
+        ]
+      ]
+    },
+    {
+      "key": "resetTripAfterFuelUpload",
+      "label": "Reset trip, avg. speed and consumption after fuel upload",
+      "type": "bool",
+      "default": false
+    }
+  ]
+}
