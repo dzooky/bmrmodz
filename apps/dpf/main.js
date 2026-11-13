@@ -195,8 +195,8 @@ mgu.run({
             if (!aboutLayers) {
                 aboutLogoRuns = rasterRuns(decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124));
                 const feedback = [
-                    ['dpf_about_bug', 'qr_report_bug.png', 104, 104, 826, 383, 'Report a bug'],
-                    ['dpf_about_feature', 'qr_request_feature.png', 104, 104, 990, 383, 'Request a feature']
+                    ['dpf_about_bug', 'qr_report_bug.png', 102, 102, 827, 384, 'Report a bug'],
+                    ['dpf_about_feature', 'qr_request_feature.png', 102, 102, 991, 384, 'Request a feature']
                 ];
                 const hasFeedback = feedback.every(([, file]) => fs.existsSync(path.join(__dirname, file)));
                 const y = hasFeedback ? 375 : 390;
@@ -228,20 +228,34 @@ mgu.run({
             };
             drawRuns(aboutLogoRuns, 650, 58);
             aboutLayers.forEach(({ runs, x, y, width, height, label, feedback }) => {
-                if (feedback) {
-                    // The QR PNG contains only modules. Add a quiet zone on screen.
-                    const quietZone = 16;
-                    drawRect(x - quietZone, y - quietZone,
-                        width + 2 * quietZone, height + 2 * quietZone, 0xffffffff);
-                }
+                if (feedback) drawRect(x, y, width, height, 0xffffffff);
                 drawRuns(runs, x, y);
-                if (label) cv.text(label, x + width / 2, 518, 15, t.text, { align: 'center' });
+                if (label) cv.text(label, x + width / 2, 512, 15, t.text, { align: 'center' });
             });
-            cv.text('DPF STATUS', 800, 225, 30, t.text,
+            cv.text('DPF STATUS', 640, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
-            cv.text('Read-only diesel particulate filter monitor for BMW iDrive 7.', 800, 258, 19, t.dim, { align: 'center' });
-            cv.text('Shows soot and ash mass, regeneration distances and status, plus detailed DPF measurements.', 800, 285, 19, t.dim, { align: 'center' });
-            cv.text('Reads data from supported B57 DDE units.', 800, 312, 19, t.dim, { align: 'center' });
+            cv.text('Read-only diesel particulate filter monitor for BMW iDrive 7.', 640, 258, 19, t.dim, { align: 'center' });
+            cv.text('Shows soot and ash mass, regeneration distances and status,', 640, 285, 19, t.dim, { align: 'center' });
+            cv.text('plus detailed measurements from supported B57 DDE units.', 640, 312, 19, t.dim, { align: 'center' });
+
+            const newsX = 1120;
+            const milestones = [
+                ['0.1.24', 'Equal-height gauges on Overview'],
+                ['0.1.23', 'Milestones and clearer regen estimate'],
+                ['0.1.21', 'Feedback QR codes in About'],
+                ['0.1.17', 'Faster loading of Detail measurements'],
+                ['0.1.16', 'Colour gauges'],
+                ['0.1.9', 'Three tabs, regen status and distance estimate'],
+                ['0.1.6', 'Live readings and periodic refresh'],
+                ['0.1.0', 'First read-only DPF diagnostics']
+            ];
+            cv.text('DPF MILESTONES', newsX, 191, 22, t.text, { font: 'bold' });
+            milestones.forEach(([version, label], index) => {
+                const y = 215 + index * 22;
+                cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
+                cv.text(label, newsX + 66, y, 14, t.dim);
+            });
+
             cv.text('Developed by dzooky@bmrmodz', 800, aboutLayers.length > 2 ? 352 : 372, 18, t.text,
                 { align: 'center', font: 'bold' });
         }
@@ -303,12 +317,14 @@ mgu.run({
             const statusX = distanceX + columnWidth + gutter;
             const statusWidth = W - 24 - statusX;
 
+            // Keep both rows below the kit's automatic panel stretch threshold.
+            const gaugeHeight = 213;
             const loading = !readAttempted && (identifying || identified);
 
             function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
                 const reading = readings[key];
                 const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
-                G.segBar(cv, t, x, y, columnWidth, 222, {
+                G.segBar(cv, t, x, y, columnWidth, gaugeHeight, {
                     label, value, unit, decimals,
                     min: 0, max, step,
                     ramp: 'hot', limit: max,
@@ -361,6 +377,8 @@ mgu.run({
             const sinceKm = estimateAvailable ? readings.SINCE.raw / 1000 : null;
             const remainingKm = estimateAvailable ? Math.max(0, averageKm - sinceKm) : null;
             cv.text('EST. DISTANCE TO REGEN', statusX + 18, 252, 16, t.dim, { font: 'bold' });
+            cv.text('Based on average distance between regenerations',
+                statusX + 18, 273, 12, t.dim);
             cv.text(remainingKm === null ? '--' : remainingKm.toFixed(1) + ' km',
                 statusX + 18, 315, 42, t.text, { font: 'num' });
             if (estimateAvailable) {
