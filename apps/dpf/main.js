@@ -195,14 +195,14 @@ mgu.run({
             if (!aboutLayers) {
                 aboutLogoRuns = rasterRuns(decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124));
                 const feedback = [
-                    ['dpf_about_bug', 'qr_report_bug.png', 102, 102, 827, 384, 'Report a bug'],
-                    ['dpf_about_feature', 'qr_request_feature.png', 102, 102, 991, 384, 'Request a feature']
+                    ['dpf_about_bug', 'qr_report_bug.png', 102, 102, 667, 384, 'Report a bug'],
+                    ['dpf_about_feature', 'qr_request_feature.png', 102, 102, 831, 384, 'Request a feature']
                 ];
                 const hasFeedback = feedback.every(([, file]) => fs.existsSync(path.join(__dirname, file)));
                 const y = hasFeedback ? 375 : 390;
                 const links = [
-                    ['dpf_about_instagram', 'qr_instagram.png', 116, 120, hasFeedback ? 492 : 660, y, hasFeedback ? 'Instagram' : null],
-                    ['dpf_about_facebook', 'qr_facebook.png', 116, 120, hasFeedback ? 656 : 824, y, hasFeedback ? 'Facebook' : null]
+                    ['dpf_about_instagram', 'qr_instagram.png', 116, 120, hasFeedback ? 332 : 500, y, hasFeedback ? 'Instagram' : null],
+                    ['dpf_about_facebook', 'qr_facebook.png', 116, 120, hasFeedback ? 496 : 664, y, hasFeedback ? 'Facebook' : null]
                 ];
                 aboutLayers = links.concat(hasFeedback ? feedback : []).map(([key, file, width, height, x, y, label]) => {
                     const runs = rasterRuns(decodePng(path.join(__dirname, file), width, height));
@@ -226,7 +226,7 @@ mgu.run({
             const drawRuns = (runs, x, y) => {
                 runs.forEach(run => drawRect(x + run.x, y + run.y, run.width, run.height, run.color));
             };
-            drawRuns(aboutLogoRuns, 650, 58);
+            drawRuns(aboutLogoRuns, 490, 58);
             aboutLayers.forEach(({ runs, x, y, width, height, label, feedback }) => {
                 if (feedback) drawRect(x, y, width, height, 0xffffffff);
                 drawRuns(runs, x, y);
@@ -249,14 +249,14 @@ mgu.run({
                 ['0.1.6', 'Live readings and periodic refresh'],
                 ['0.1.0', 'First read-only DPF diagnostics']
             ];
-            cv.text('DPF MILESTONES', newsX, 191, 22, t.text, { font: 'bold' });
+            cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 215 + index * 22;
+                const y = 104 + index * 20;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
 
-            cv.text('Developed by dzooky@bmrmodz', 800, aboutLayers.length > 2 ? 352 : 372, 18, t.text,
+            cv.text('Developed by dzooky@bmrmodz', 640, aboutLayers.length > 2 ? 363 : 372, 18, t.text,
                 { align: 'center', font: 'bold' });
         }
 
