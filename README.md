@@ -14,6 +14,8 @@ Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
 
 ## Applications
 
+![BMRMODZ applications](docs/bmrmodz_apps.png)
+
 - **Oil Service Assistant (OSA)** — An independent BMW MGU application for monitoring engine oil, engine coolant and transmission oil temperatures during service procedures.
 
   - **Engine warm-up:** Monitors engine oil and coolant temperatures, displays live estimates for reaching the selected target temperatures, and compares the current warm-up with previous sessions under similar starting conditions.
