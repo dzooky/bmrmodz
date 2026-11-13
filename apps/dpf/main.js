@@ -11,6 +11,7 @@
  */
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
+const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
