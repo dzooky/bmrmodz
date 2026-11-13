@@ -70,15 +70,21 @@ mgu.run({
         function renderAbout(cv, t) {
             if (!aboutLayers) {
                 aboutLogoRuns = rasterRuns(decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124));
-                aboutLayers = [
-                    ['osa_about_instagram', 'qr_instagram.png', 116, 120, 660, 390],
-                    ['osa_about_facebook', 'qr_facebook.png', 116, 120, 824, 390]
-                ].map(([key, file, width, height, x, y]) => {
+                const feedback = [
+                    ['osa_about_bug', 'qr_report_bug.png', 104, 104, 826, 383, 'Report a bug'],
+                    ['osa_about_feature', 'qr_request_feature.png', 104, 104, 990, 383, 'Request a feature']
+                ];
+                const hasFeedback = feedback.every(([, file]) => fs.existsSync(path.join(__dirname, file)));
+                const y = hasFeedback ? 375 : 390;
+                const links = [
+                    ['osa_about_instagram', 'qr_instagram.png', 116, 120, hasFeedback ? 492 : 660, y, hasFeedback ? 'Instagram' : null],
+                    ['osa_about_facebook', 'qr_facebook.png', 116, 120, hasFeedback ? 656 : 824, y, hasFeedback ? 'Facebook' : null]
+                ];
+                aboutLayers = links.concat(hasFeedback ? feedback : []).map(([key, file, width, height, x, y, label]) => {
                     const runs = rasterRuns(decodePng(path.join(__dirname, file), width, height));
-                    const layer = G.layer(key, width, height, canvas => {
-                        runs.forEach(run => canvas.fillRect(run.x, run.y, run.width, run.height, run.color));
-                    }, 1);
-                    return [layer, x, y];
+                    const feedback = key === 'osa_about_bug' || key === 'osa_about_feature';
+                    return { runs: feedback ? runs.filter(run => run.color !== 0xffffffff) : runs,
+                        x, y, width, height, label, feedback };
                 });
             }
             G.panel(cv, t, 24, 44, 1552, 468, null);
@@ -86,23 +92,29 @@ mgu.run({
             // same display-pixel boundaries so fractional edges cannot leave seams.
             const scale = cv.place ? cv.place.scale : 1;
             const pixelEdge = coordinate => Math.round(coordinate * scale) / scale;
-            aboutLogoRuns.forEach(run => {
-                const x = 650 + run.x;
-                const y = 58 + run.y;
+            const drawRect = (x, y, width, height, color) => {
                 const left = pixelEdge(x);
                 const top = pixelEdge(y);
-                const right = pixelEdge(x + run.width);
-                const bottom = pixelEdge(y + run.height);
-                cv.fillRect(left, top, right - left, bottom - top, run.color);
+                const right = pixelEdge(x + width);
+                const bottom = pixelEdge(y + height);
+                cv.fillRect(left, top, right - left, bottom - top, color);
+            };
+            const drawRuns = (runs, x, y) => {
+                runs.forEach(run => drawRect(x + run.x, y + run.y, run.width, run.height, run.color));
+            };
+            drawRuns(aboutLogoRuns, 650, 58);
+            aboutLayers.forEach(({ runs, x, y, width, height, label, feedback }) => {
+                if (feedback) drawRect(x, y, width, height, 0xffffffff);
+                drawRuns(runs, x, y);
+                if (label) cv.text(label, x + width / 2, 512, 15, t.text, { align: 'center' });
             });
-            aboutLayers.forEach(([layer, x, y]) => cv.blit(layer, x, y));
             cv.text('OIL SERVICE ASSISTANT', 800, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
             cv.text('Monitors engine oil, coolant and transmission oil temperatures during service.', 800, 258, 19, t.dim, { align: 'center' });
             cv.text('Live estimates show the expected time to reach the selected target temperature.', 800, 285, 19, t.dim, { align: 'center' });
             cv.text('Starting conditions and completed warm-up times are stored locally on the head unit.', 800, 312, 19, t.dim, { align: 'center' });
             cv.text('Previous sessions provide historical comparisons; data is never uploaded to the cloud.', 800, 339, 19, t.dim, { align: 'center' });
-            cv.text('Developed by dzooky@bmrmodz', 800, 372, 18, t.text, { align: 'center', font: 'bold' });
+            cv.text('Developed by dzooky@bmrmodz', 800, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
         }
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
@@ -419,7 +431,6 @@ mgu.run({
                     font: 'num'
                 });
                 cv.text('°C', value === null ? 1010 : 1018, 245, 27, t.dim);
-                cv.text(transmission.sgbd ? ('EGS ' + transmission.sgbd + ' · DID 6000') : 'EGS · DID 6000', 952, 285, 18, t.dim);
 
                 const engineRunning = G.isNum(d.rpm) && d.rpm >= 300;
                 const atfMode = value !== null && value < 30 ? 'heat'

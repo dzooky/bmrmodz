@@ -193,15 +193,21 @@ mgu.run({
         function renderAbout(cv, t) {
             if (!aboutLayers) {
                 aboutLogoRuns = rasterRuns(decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124));
-                aboutLayers = [
-                    ['dpf_about_instagram', 'qr_instagram.png', 116, 120, 660, 390],
-                    ['dpf_about_facebook', 'qr_facebook.png', 116, 120, 824, 390]
-                ].map(([key, file, width, height, x, y]) => {
+                const feedback = [
+                    ['dpf_about_bug', 'qr_report_bug.png', 104, 104, 826, 383, 'Report a bug'],
+                    ['dpf_about_feature', 'qr_request_feature.png', 104, 104, 990, 383, 'Request a feature']
+                ];
+                const hasFeedback = feedback.every(([, file]) => fs.existsSync(path.join(__dirname, file)));
+                const y = hasFeedback ? 375 : 390;
+                const links = [
+                    ['dpf_about_instagram', 'qr_instagram.png', 116, 120, hasFeedback ? 492 : 660, y, hasFeedback ? 'Instagram' : null],
+                    ['dpf_about_facebook', 'qr_facebook.png', 116, 120, hasFeedback ? 656 : 824, y, hasFeedback ? 'Facebook' : null]
+                ];
+                aboutLayers = links.concat(hasFeedback ? feedback : []).map(([key, file, width, height, x, y, label]) => {
                     const runs = rasterRuns(decodePng(path.join(__dirname, file), width, height));
-                    const layer = G.layer(key, width, height, canvas => {
-                        runs.forEach(run => canvas.fillRect(run.x, run.y, run.width, run.height, run.color));
-                    }, 1);
-                    return [layer, x, y];
+                    const feedback = key === 'dpf_about_bug' || key === 'dpf_about_feature';
+                    return { runs: feedback ? runs.filter(run => run.color !== 0xffffffff) : runs,
+                        x, y, width, height, label, feedback };
                 });
             }
             G.panel(cv, t, 24, 44, 1552, 468, null);
@@ -209,22 +215,33 @@ mgu.run({
             // same display-pixel boundaries so fractional edges cannot leave seams.
             const scale = cv.place ? cv.place.scale : 1;
             const pixelEdge = coordinate => Math.round(coordinate * scale) / scale;
-            aboutLogoRuns.forEach(run => {
-                const x = 650 + run.x;
-                const y = 58 + run.y;
+            const drawRect = (x, y, width, height, color) => {
                 const left = pixelEdge(x);
                 const top = pixelEdge(y);
-                const right = pixelEdge(x + run.width);
-                const bottom = pixelEdge(y + run.height);
-                cv.fillRect(left, top, right - left, bottom - top, run.color);
+                const right = pixelEdge(x + width);
+                const bottom = pixelEdge(y + height);
+                cv.fillRect(left, top, right - left, bottom - top, color);
+            };
+            const drawRuns = (runs, x, y) => {
+                runs.forEach(run => drawRect(x + run.x, y + run.y, run.width, run.height, run.color));
+            };
+            drawRuns(aboutLogoRuns, 650, 58);
+            aboutLayers.forEach(({ runs, x, y, width, height, label, feedback }) => {
+                if (feedback) {
+                    // The QR PNG contains only modules. Add a quiet zone on screen.
+                    const quietZone = 16;
+                    drawRect(x - quietZone, y - quietZone,
+                        width + 2 * quietZone, height + 2 * quietZone, 0xffffffff);
+                }
+                drawRuns(runs, x, y);
+                if (label) cv.text(label, x + width / 2, 518, 15, t.text, { align: 'center' });
             });
-            aboutLayers.forEach(([layer, x, y]) => cv.blit(layer, x, y));
             cv.text('DPF STATUS', 800, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
             cv.text('Read-only diesel particulate filter monitor for BMW iDrive 7.', 800, 258, 19, t.dim, { align: 'center' });
             cv.text('Shows soot and ash mass, regeneration distances and status, plus detailed DPF measurements.', 800, 285, 19, t.dim, { align: 'center' });
             cv.text('Reads data from supported B57 DDE units.', 800, 312, 19, t.dim, { align: 'center' });
-            cv.text('Developed by dzooky@bmrmodz', 800, 372, 18, t.text,
+            cv.text('Developed by dzooky@bmrmodz', 800, aboutLayers.length > 2 ? 352 : 372, 18, t.text,
                 { align: 'center', font: 'bold' });
         }
 

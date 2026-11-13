@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brmodz_logo_github.png" alt="BMRMODZ logo" width="220">
+  <img src="docs/brmodz_logo_github.png" alt="BMRMODZ logo" width="220">
 </p>
 
 <h1 align="center">BMRMODZ — BMW MGU Apps</h1>
