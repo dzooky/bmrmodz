@@ -24,6 +24,10 @@ Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
   - **Live estimates:** Estimates are based on current temperature trends and driving conditions, while the locally stored history provides a reference from comparable previous sessions.
 - **DPF Status** — Read-only diesel particulate filter monitor for BMW iDrive 7. Shows soot and ash mass, regeneration distances and status, plus detailed DPF measurements. Reads data from supported B57 DDE units.
 
+![DPF Status detail](docs/dpf/dpf-status_detail.png)
+
+![Oil Service Assistant engine view](docs/osa/osa_engine.png)
+
 ## Build
 
 The repository follows the MGU Store repository format in `mgu-repo.json`.
