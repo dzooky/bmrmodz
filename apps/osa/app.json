@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.25",
+  "version": "0.2.27",
   "settingsBeforeLast": true,
   "vendor": "custom",
   "loggingId": "OAA1",

@@ -71,14 +71,14 @@ mgu.run({
             if (!aboutLayers) {
                 aboutLogoRuns = rasterRuns(decodePng(path.join(__dirname, 'brmodz_logo.png'), 300, 124));
                 const feedback = [
-                    ['osa_about_bug', 'qr_report_bug.png', 104, 104, 826, 383, 'Report a bug'],
-                    ['osa_about_feature', 'qr_request_feature.png', 104, 104, 990, 383, 'Request a feature']
+                    ['osa_about_bug', 'qr_report_bug.png', 104, 104, 666, 383, 'Report a bug'],
+                    ['osa_about_feature', 'qr_request_feature.png', 104, 104, 830, 383, 'Request a feature']
                 ];
                 const hasFeedback = feedback.every(([, file]) => fs.existsSync(path.join(__dirname, file)));
                 const y = hasFeedback ? 375 : 390;
                 const links = [
-                    ['osa_about_instagram', 'qr_instagram.png', 116, 120, hasFeedback ? 492 : 660, y, hasFeedback ? 'Instagram' : null],
-                    ['osa_about_facebook', 'qr_facebook.png', 116, 120, hasFeedback ? 656 : 824, y, hasFeedback ? 'Facebook' : null]
+                    ['osa_about_instagram', 'qr_instagram.png', 116, 120, hasFeedback ? 332 : 500, y, hasFeedback ? 'Instagram' : null],
+                    ['osa_about_facebook', 'qr_facebook.png', 116, 120, hasFeedback ? 496 : 664, y, hasFeedback ? 'Facebook' : null]
                 ];
                 aboutLayers = links.concat(hasFeedback ? feedback : []).map(([key, file, width, height, x, y, label]) => {
                     const runs = rasterRuns(decodePng(path.join(__dirname, file), width, height));
@@ -102,19 +102,39 @@ mgu.run({
             const drawRuns = (runs, x, y) => {
                 runs.forEach(run => drawRect(x + run.x, y + run.y, run.width, run.height, run.color));
             };
-            drawRuns(aboutLogoRuns, 650, 58);
+            drawRuns(aboutLogoRuns, 490, 58);
             aboutLayers.forEach(({ runs, x, y, width, height, label, feedback }) => {
                 if (feedback) drawRect(x, y, width, height, 0xffffffff);
                 drawRuns(runs, x, y);
                 if (label) cv.text(label, x + width / 2, 512, 15, t.text, { align: 'center' });
             });
-            cv.text('OIL SERVICE ASSISTANT', 800, 225, 30, t.text,
+            cv.text('OIL SERVICE ASSISTANT', 640, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
-            cv.text('Monitors engine oil, coolant and transmission oil temperatures during service.', 800, 258, 19, t.dim, { align: 'center' });
-            cv.text('Live estimates show the expected time to reach the selected target temperature.', 800, 285, 19, t.dim, { align: 'center' });
-            cv.text('Starting conditions and completed warm-up times are stored locally on the head unit.', 800, 312, 19, t.dim, { align: 'center' });
-            cv.text('Previous sessions provide historical comparisons; data is never uploaded to the cloud.', 800, 339, 19, t.dim, { align: 'center' });
-            cv.text('Developed by dzooky@bmrmodz', 800, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
+            cv.text('Monitors engine oil, coolant and transmission oil temperatures.', 640, 258, 19, t.dim, { align: 'center' });
+            cv.text('Shows live estimates for reaching target temperatures.', 640, 285, 19, t.dim, { align: 'center' });
+            cv.text('Saves warm-up history locally for comparison with previous sessions.', 640, 312, 19, t.dim, { align: 'center' });
+
+            const newsX = 1120;
+            const milestones = [
+                ['0.2.27', 'Larger engine oil gauge'],
+                ['0.2.26', 'Redesigned About and release milestones'],
+                ['0.2.25', 'Feedback QR codes'],
+                ['0.2.23', 'Recovery after stalled HMI frames'],
+                ['0.2.21', 'Logo and social QR codes'],
+                ['0.2.0', 'Transmission warm-up and cool-down history'],
+                ['0.1.9', 'Saved warm-up history and statistics'],
+                ['0.1.8', 'Outside temperature on Engine page'],
+                ['0.1.7', 'Adaptive engine warm-up estimates'],
+                ['0.1.0', 'First standalone OSA app']
+            ];
+            cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
+            milestones.forEach(([version, label], index) => {
+                const y = 104 + index * 20;
+                cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
+                cv.text(label, newsX + 66, y, 14, t.dim);
+            });
+
+            cv.text('Developed by dzooky@bmrmodz', 640, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
         }
         const HISTORY_FILE = path.join(ctx.dataDir, 'osa-warmup-history.json');
         const MAX_HISTORY = 300;
@@ -346,7 +366,7 @@ mgu.run({
 
                 // Engine page keeps BOTH Warm-Up temperature gauges:
                 // engine oil and engine coolant. Transmission page is oil-only.
-                G.segBar(cv, t, 24, 44, 880, 225, {
+                G.segBar(cv, t, 24, 44, 880, 250, {
                     label: 'Oil',
                     value: oil,
                     unit: '°C',
@@ -362,7 +382,7 @@ mgu.run({
                     ramp: 'hot',
                     limit: 120
                 });
-                G.segBar(cv, t, 24, 286, 880, 225, {
+                G.segBar(cv, t, 24, 311, 880, 200, {
                     label: 'Coolant',
                     value: G.isNum(d.coolant) ? d.coolant : null,
                     unit: '°C',
