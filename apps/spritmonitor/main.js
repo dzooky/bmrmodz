@@ -548,6 +548,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.13', 'Fuel and AdBlue in one table'],
+                ['', 'More history points per chart'],
                 ['0.1.12', 'Consumption, distance and unit price charts'],
                 ['', 'Fuel tanks shown before AdBlue'],
                 ['0.1.11', 'Tank statistics in My Car'],
@@ -589,29 +591,36 @@ mgu.run({
                     if (chartMetric) {
                         renderChart(cv, theme, vehicle, tankPage, chartMetric);
                     } else {
-                        cv.text(tank.name + '  ' + (tankPage + 1) + ' / ' + statistics.length,
-                            65, 150, 26, theme.text, { font: 'bold' });
+                        const columns = [];
+                        const fuel = statistics.findIndex(item => !/ad\s*blue/i.test(item.name));
+                        const adBlue = statistics.findIndex(item => /ad\s*blue/i.test(item.name));
+                        if (fuel !== -1) columns.push(fuel);
+                        if (adBlue !== -1) columns.push(adBlue);
                         const format = (value, unit) => {
                             if (value == null || String(value).trim() === '') return 'Unavailable';
                             return [value, unit].filter(part => part != null && part !== '').join(' ');
                         };
-                        const latest = vehicle.latestFuelings[tankPage];
-                        const entry = latest.entry;
-                        const lastFill = latest.unavailable ? 'Unavailable' : !entry ? 'No fill-ups yet'
-                            : [entry.date, entry.quantity == null ? null : format(entry.quantity, entry.quantityunit)]
-                                .filter(Boolean).join('  /  ') || 'Unavailable';
-                        const rows = [
-                            ['Average consumption', format(...tank.consumption)],
-                            ['Recorded distance', format(...tank.distance)],
-                            ['Recorded quantity', format(...tank.quantity)],
-                            ['Fuel costs', format(...tank.cost)],
-                            ['Latest fill-up', lastFill]
-                        ];
-                        rows.forEach(([label, value], index) => {
+                        const headings = ['Average consumption', 'Recorded distance', 'Recorded quantity',
+                            'Fuel costs', 'Latest fill-up'];
+                        headings.forEach((label, index) => {
                             const y = 164 + index * 54;
                             cv.roundRect(50, y, 1500, 48, 12, withAlpha('#ffffff', 0.05));
                             cv.text(label, 75, y + 33, 24, theme.text);
-                            cv.text(value, 1525, y + 33, 24, theme.dim, { align: 'right' });
+                        });
+                        const quantityUnits = { 1: 'L', 2: 'kg', 3: 'US gal', 4: 'Imp gal', 5: 'kWh' };
+                        columns.forEach((index, column) => {
+                            const summary = statistics[index];
+                            const latest = vehicle.latestFuelings[index];
+                            const entry = latest.entry;
+                            const lastFill = latest.unavailable ? 'Unavailable' : !entry ? 'No fill-ups yet'
+                                : [entry.date, entry.quantity == null ? null :
+                                    format(entry.quantity, quantityUnits[entry.quantityunitid])].filter(Boolean).join('  /  ');
+                            const x = columns.length === 1 ? 1240 : 800 + column * 480;
+                            const center = { align: 'center' };
+                            cv.text(summary.name, x, 150, 26, theme.text, { align: 'center', font: 'bold' });
+                            [format(...summary.consumption), format(...summary.distance),
+                                format(...summary.quantity), format(...summary.cost), lastFill || 'Unavailable']
+                                .forEach((value, row) => cv.text(value, x, 197 + row * 54, 24, theme.dim, center));
                         });
                     }
                     [['consumption', 'Consumption'], ['distance', 'Distance'], ['price', 'Unit price']]
@@ -620,10 +629,10 @@ mgu.run({
                                 chartMetric === metric ? 'Back to summary' : label,
                                 () => { chartMetric = chartMetric === metric ? null : metric; });
                         });
-                    if (tankPage > 0) {
+                    if (chartMetric && tankPage > 0) {
                         G.button(cv, theme, 65, 447, 280, 45, 'Previous tank', () => { tankPage--; });
                     }
-                    if (tankPage + 1 < statistics.length) {
+                    if (chartMetric && tankPage + 1 < statistics.length) {
                         G.button(cv, theme, 1245, 447, 280, 45, 'Next tank', () => { tankPage++; });
                     }
                 }

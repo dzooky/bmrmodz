@@ -81,10 +81,11 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
             : 'No vehicles found in your Spritmonitor account.');
     }
     const endpoint = 'vehicle/' + encodeURIComponent(vehicle.id);
-    const [tanks, config, currencies] = await Promise.all([
+    const [tanks, config, currencies, preferences] = await Promise.all([
         getJson(endpoint + '/tanks.json', applicationId, token, false, lookup),
         getJson(endpoint + '/getconfig.json', applicationId, token, true, lookup).catch(() => null),
-        getJson('currencies.json', applicationId, token, false, lookup).catch(() => [])
+        getJson('currencies.json', applicationId, token, false, lookup).catch(() => []),
+        getJson('units.json', applicationId, token, true, lookup).catch(() => null)
     ]);
     const adBlue = tank => /ad\s*blue/i.test(tank.name || '');
     const orderedTanks = tanks.filter(tank => tank.name);
@@ -92,8 +93,28 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
     const tankVolume = config ? Number(config.tankvolume) : 0;
     const latestFuelings = await Promise.all(ordered.map(async tank => {
         try {
-            const entries = await getJson(endpoint + '/tank/' + encodeURIComponent(tank.id) +
-                '/fuelings.json?limit=60', applicationId, token, false, lookup);
+            const entries = [];
+            const seen = new Set();
+            const history = endpoint + '/tank/' + encodeURIComponent(tank.id) + '/fuelings.json';
+            for (let offset = 0; offset < 120 && entries.length < 60;) {
+                let batch;
+                try {
+                    batch = await getJson(history + '?limit=20&offset=' + offset, applicationId, token, false, lookup);
+                } catch (error) {
+                    if (!entries.length) throw error;
+                    break;
+                }
+                if (!batch.length) break;
+                const unique = batch.filter(entry => {
+                    if (entry.id == null) return true;
+                    if (seen.has(entry.id)) return false;
+                    seen.add(entry.id);
+                    return true;
+                });
+                if (!unique.length) break;
+                entries.push(...unique.slice(0, 60 - entries.length));
+                offset += batch.length;
+            }
             return { name: tank.name, entry: entries[0], entries };
         } catch (_) {
             return { name: tank.name, unavailable: true };
@@ -111,7 +132,8 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
         })),
         tankCapacity: Number.isFinite(tankVolume) && tankVolume > 0 ? tankVolume : null,
         latestFuelings,
-        currencies
+        currencies,
+        preferredCurrency: preferences && preferences.currency
     };
 }
 

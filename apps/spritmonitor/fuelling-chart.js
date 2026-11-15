@@ -1,6 +1,7 @@
 'use strict';
 
-const units = { 1: 'L', 2: 'kg', 3: 'US gal', 4: 'Imp gal', 5: 'kWh' };
+const units = { 1: 'L', 2: 'kg', 3: 'L', 4: 'L', 5: 'kWh' };
+const quantityFactor = { 1: 1, 2: 1, 3: 3.785411784, 4: 4.54609, 5: 1 };
 
 module.exports = function renderChart(cv, theme, vehicle, tankIndex, metric) {
     const tank = vehicle.tankStats[tankIndex];
@@ -12,19 +13,28 @@ module.exports = function renderChart(cv, theme, vehicle, tankIndex, metric) {
     const samples = [];
     const positive = value => value != null && value !== '' && Number.isFinite(Number(value)) && Number(value) > 0;
     let priceGroup;
-    (history.entries || []).forEach(entry => {
+    const entries = history.entries || [];
+    const preferredCurrency = vehicle.preferredCurrency;
+    const useConverted = preferredCurrency != null && entries.some(entry => positive(entry.cost_converted));
+    entries.forEach((entry, index) => {
         let value = metric === 'consumption' ? entry.consumption : entry.trip;
+        if (metric === 'distance' && !positive(value) && entries[index + 1]) {
+            const previous = entries[index + 1].odometer;
+            if (positive(entry.odometer) && positive(previous)) value = Number(entry.odometer) - Number(previous);
+        }
         if (metric === 'price') {
-            if (!positive(entry.cost) || !positive(entry.quantity)
-                || entry.currencyid == null || !units[entry.quantityunitid]) return;
-            const group = entry.currencyid + ':' + entry.quantityunitid;
+            const amount = useConverted ? entry.cost_converted : entry.cost;
+            const currencyId = useConverted ? preferredCurrency : entry.currencyid;
+            const quantityUnit = units[entry.quantityunitid];
+            if (!positive(amount) || !positive(entry.quantity) || currencyId == null || !quantityUnit) return;
+            const group = currencyId + ':' + quantityUnit;
             if (!priceGroup) {
                 priceGroup = group;
-                const currency = vehicle.currencies.find(item => String(item.id) === String(entry.currencyid));
-                unit = (currency ? currency.name : 'Currency #' + entry.currencyid) + ' / ' + units[entry.quantityunitid];
+                const currency = vehicle.currencies.find(item => String(item.id) === String(currencyId));
+                unit = (currency ? currency.name : 'Currency #' + currencyId) + ' / ' + quantityUnit;
             }
             if (group !== priceGroup) return;
-            value = Number(entry.cost) / Number(entry.quantity);
+            value = Number(amount) / (Number(entry.quantity) * quantityFactor[entry.quantityunitid]);
         }
         if (positive(value)) samples.push({ value: Number(value), date: entry.date, odometer: entry.odometer });
     });
@@ -41,7 +51,7 @@ module.exports = function renderChart(cv, theme, vehicle, tankIndex, metric) {
     const pad = Math.max((max - min) * 0.08, min * 0.01);
     const lower = Math.max(0, min - pad), upper = max + pad;
     const decimals = metric === 'price' ? 2 : metric === 'distance' && max >= 100 ? 0 : 1;
-    cv.text(unit || '', 1520, 150, 21, theme.dim, { align: 'right' });
+    cv.text(samples.length + ' points' + (unit ? ' / ' + unit : ''), 1520, 150, 21, theme.dim, { align: 'right' });
     for (let tick = 0; tick <= 4; tick++) {
         const row = y + tick * height / 4;
         cv.line(x, row, x + width, row, 1, theme.dim);
