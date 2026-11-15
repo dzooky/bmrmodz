@@ -109,7 +109,7 @@ mgu.run({
                 try { vehicle = offline.cache(owner, snapshot); }
                 catch (_) { accountStatus = 'Could not cache vehicle data.'; }
             }
-            ctx.setButtonVisible('BTN_ADBLUE', hasAdBlue());
+            updateVehicleControls();
         }
 
         function syncMessage() {
@@ -243,7 +243,7 @@ mgu.run({
             tankPage = 0;
             chartMetric = null;
             connection = '';
-            ctx.setButtonVisible('BTN_ADBLUE', false);
+            updateVehicleControls();
             refreshVehicle();
         }
 
@@ -292,7 +292,7 @@ mgu.run({
                     account = { applicationId: '6106f958398125d79a1fddfa6b0d60d8', token };
                     vehicleOptions = null;
                     vehicle = null;
-                    ctx.setButtonVisible('BTN_ADBLUE', false);
+                    updateVehicleControls();
                     connection = '';
                     refreshVehicle();
                 }, message => {
@@ -413,6 +413,14 @@ mgu.run({
             return Boolean(vehicle && vehicle.tankDetails.some(tank => Number(tank.type) === 6));
         }
 
+        function updateVehicleControls() {
+            ctx.setButtonVisible('BTN_ADBLUE', hasAdBlue());
+            const capacity = ctx.settings.item('fuelTankCapacity');
+            capacity.labels['0'] = vehicle && vehicle.tankCapacity
+                ? 'Auto (' + vehicle.tankCapacity + ' L from Spritmonitor)'
+                : 'Auto (Spritmonitor)';
+        }
+
         function openFuelling(type) {
             if (type === 'AdBlue' && !hasAdBlue()) return;
             cancelPairingGuide();
@@ -432,7 +440,7 @@ mgu.run({
             syncFuelings();
         }
 
-        ctx.setButtonVisible('BTN_ADBLUE', hasAdBlue());
+        updateVehicleControls();
         ctx.ui.onClick('BTN_FUEL', () => openFuelling('Fuel'));
         ctx.ui.onClick('BTN_ADBLUE', () => openFuelling('AdBlue'));
 
@@ -781,6 +789,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.21', 'Show automatic tank capacity in Settings'],
                 ['0.1.20', 'Remove the selected vehicle in My Car'],
                 ['', 'Retry fuel tank capacity from Spritmonitor'],
                 ['0.1.19', 'Restored the original fuelling buttons'],
