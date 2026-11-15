@@ -548,6 +548,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.14', 'Direct tank selection in charts'],
                 ['0.1.13', 'Fuel and AdBlue in one table'],
                 ['', 'More history points per chart'],
                 ['0.1.12', 'Consumption, distance and unit price charts'],
@@ -629,11 +630,15 @@ mgu.run({
                                 chartMetric === metric ? 'Back to summary' : label,
                                 () => { chartMetric = chartMetric === metric ? null : metric; });
                         });
-                    if (chartMetric && tankPage > 0) {
-                        G.button(cv, theme, 65, 447, 280, 45, 'Previous tank', () => { tankPage--; });
-                    }
-                    if (chartMetric && tankPage + 1 < statistics.length) {
-                        G.button(cv, theme, 1245, 447, 280, 45, 'Next tank', () => { tankPage++; });
+                    if (chartMetric && statistics.length > 1) {
+                        const fuel = statistics.findIndex(item => !/ad\s*blue/i.test(item.name));
+                        const adBlue = statistics.findIndex(item => /ad\s*blue/i.test(item.name));
+                        [fuel, adBlue].filter(index => index >= 0).forEach((index, column) => {
+                            const selected = index === tankPage;
+                            G.button(cv, theme, 950 + column * 225, 113, 210, 34,
+                                statistics[index].name, () => { tankPage = index; },
+                                { key: 'chart-tank-' + index, primary: selected });
+                        });
                     }
                 }
             } else if (page === 2) {
