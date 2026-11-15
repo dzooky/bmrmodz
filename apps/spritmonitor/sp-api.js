@@ -48,10 +48,21 @@ async function loadVehicle(applicationId, token, vehicleId) {
             ? 'Set SP_VEHICLE_ID to an existing vehicle ID from your account.'
             : 'No vehicles found in your Spritmonitor account.');
     }
-    const tanks = await getJson('vehicle/' + encodeURIComponent(vehicle.id) + '/tanks.json', applicationId, token);
+    const endpoint = 'vehicle/' + encodeURIComponent(vehicle.id);
+    const tanks = await getJson(endpoint + '/tanks.json', applicationId, token);
+    const latestFuelings = await Promise.all(tanks.filter(tank => tank.name).map(async tank => {
+        try {
+            const entries = await getJson(endpoint + '/tank/' + encodeURIComponent(tank.id) +
+                '/fuelings.json', applicationId, token);
+            return { name: tank.name, entry: entries[0] };
+        } catch (_) {
+            return { name: tank.name, unavailable: true };
+        }
+    }));
     return {
         name: [vehicle.make, vehicle.model].filter(Boolean).join(' '),
-        tanks: tanks.map(tank => tank.name).filter(Boolean)
+        tanks: tanks.map(tank => tank.name).filter(Boolean),
+        latestFuelings
     };
 }
 

@@ -268,4 +268,4 @@ function cardSheet(spec) {
     return sh;
 }
 
-module.exports = { listSheet, cardSheet, list, pill, TOP };
+module.exports = { listSheet, cardSheet, list, pill, toggle, TOP };

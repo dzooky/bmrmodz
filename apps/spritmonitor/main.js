@@ -3,6 +3,8 @@
 const path = require('path');
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
+const { toggle } = require('./kit/sheet');
+const { withAlpha } = require('./kit/canvas');
 const { decode: decodePng } = require('./png');
 
 const TABS = ['Info', 'Fuelling', 'My Car', 'About'];
@@ -10,10 +12,75 @@ const TABS = ['Info', 'Fuelling', 'My Car', 'About'];
 mgu.run({
     start(ctx) {
         let entry = '';
+        let draft;
+        let activeField = null;
+        let formStatus = '';
+        let formScroll = 0;
+        const maxFormScroll = () => entry === 'Fuel' ? 915 : 184;
         let page = 0;
         let artwork;
         let pairingQr;
         let vehicle;
+        const readings = {};
+        const consumptionUnits = {
+            VERBRAUCH_IN_L_S_100KM: 'L/100 km', VERBRAUCH_IN_MPG_UK: 'mpg UK',
+            VERBRAUCH_IN_MPG_US: 'mpg US', VERBRAUCH_IN_KM_S_L: 'km/L',
+            1: 'L/100 km', 2: 'mpg UK', 3: 'mpg US', 4: 'km/L'
+        };
+        const speedUnits = { KM_S_H__KM: 'km/h', MPH__MLS: 'mph', 1: 'km/h', 2: 'mph' };
+        const fields = ['statusRangeTankStatus', 'statusBordcomputerTravelData', 'statusBordcomputerAverage'];
+        const subscriptions = {};
+        fields.forEach(field => {
+            subscriptions[field] = value => { readings[field] = { value, at: Date.now() }; };
+        });
+        ctx.signals.watch('de.bmw.infotainment.KombiIF', '1', subscriptions, ctx.log, { pollMs: 3000 })
+            .catch(error => ctx.log.warn('KOMBI: ' + error.message));
+
+        function latest(field) {
+            const sample = readings[field];
+            return sample && Date.now() - sample.at <= 15000 && sample.value ? sample.value : {};
+        }
+
+        function liveData() {
+            const tank = latest(fields[0]);
+            const trip = latest(fields[1]);
+            const averages = latest(fields[2]);
+            const read = (value, invalid) => Number.isFinite(value) && value >= 0 && value < invalid ? value : null;
+            const average = key => {
+                const value = read(averages[key], 65535);
+                return value === null ? null : value / 10;
+            };
+            return {
+                odometer: read(tank.mileageKilometre, 16777215),
+                fuelLevel: read(tank.fluidLevelFuelTank, 255),
+                trip: read(trip.wayPassed, 65535),
+                consumption: [average('consumptionAverage1BC1'), average('consumptionAverage2BC2')],
+                speed: [average('speedAverage1BC1'), average('speedAverage2BC2')],
+                consumptionUnit: consumptionUnits[averages.statusUnitOfMeasurementConsumptionBC],
+                speedUnit: speedUnits[averages.statusUnitOfMeasurementSpeedBC]
+            };
+        }
+
+        function reading(value, unit, decimals) {
+            return value === null ? 'Unavailable' : value.toFixed(decimals) + (unit ? ' ' + unit : '');
+        }
+
+        function renderLiveData(cv, theme) {
+            const data = liveData();
+            const rows = [
+                ['Odometer', reading(data.odometer, 'km', 0)],
+                ['Trip distance (test)', reading(data.trip, 'km', 0)],
+                ['Fuel in tank', reading(data.fuelLevel, 'L', 0)],
+                ['Average consumption (BC1 / BC2)', data.consumption.map(v => reading(v, data.consumptionUnit, 1)).join(' / ')],
+                ['Average speed (BC1 / BC2)', data.speed.map(v => reading(v, data.speedUnit, 1)).join(' / ')]
+            ];
+            rows.forEach(([label, value], index) => {
+                const y = 165 + index * 62;
+                cv.roundRect(40, y, 1520, 54, 12, withAlpha('#ffffff', 0.05));
+                cv.text(label, 65, y + 35, 24, theme.text);
+                cv.text(value, 1520, y + 35, 24, theme.dim, { align: 'right' });
+            });
+        }
         let accountStatus = '';
         const isEmulator = typeof process.send === 'function' && process.env.MGU_EMU_CLOSED !== undefined;
         if (isEmulator && process.env.SP_APPLICATION_ID && process.env.SP_ACCESS_TOKEN) {
@@ -23,8 +90,226 @@ mgu.run({
                 .then(result => { vehicle = result; accountStatus = ''; })
                 .catch(error => { accountStatus = error.message; });
         }
-        ctx.ui.onClick('BTN_FUEL', () => { page = 1; entry = 'Fuel'; });
-        ctx.ui.onClick('BTN_ADBLUE', () => { page = 1; entry = 'AdBlue'; });
+        function openFuelling(type) {
+            page = 1;
+            formScroll = 0;
+            entry = type;
+            const now = new Date();
+            const date = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+            draft = {
+                date, type: '', manualType: false, odometer: '', trip: '', quantity: '', unit: 'L',
+                price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '', conditions: {}
+            };
+            activeField = null;
+            formStatus = '';
+        }
+
+        ctx.ui.onClick('BTN_FUEL', () => openFuelling('Fuel'));
+        ctx.ui.onClick('BTN_ADBLUE', () => openFuelling('AdBlue'));
+
+        const basicFields = [
+            ['date', 'Date'], ['type', 'Type'], ['odometer', 'Odometer'],
+            ['trip', 'Trip odometer'], ['quantity', 'Quantity'], ['fuel', 'Fuel sort'],
+            ['price', 'Price'], ['note', 'Note']
+        ];
+        const stationFields = [
+            ['company', 'Company'], ['country', 'Country'], ['location', 'Location']
+        ];
+        const computerFields = [
+            ['consumption', 'Consumption'], ['consumedQuantity', 'Quantity'], ['averageSpeed', 'Avg. speed']
+        ];
+
+        const choices = {
+            type: ['Full', 'Partial'],
+            unit: ['L', 'US gal', 'Imp gal', 'kg'],
+            currency: ['EUR', 'CZK', 'HUF', 'PLN', 'GBP', 'CHF', 'USD'],
+            priceMode: ['Total', 'Per unit']
+        };
+        const labels = { unit: 'Quantity unit', currency: 'Currency', priceMode: 'Price mode' };
+
+        function editField(key) {
+            activeField = key;
+            formStatus = '';
+        }
+
+        function renderEditor(cv, theme) {
+            const key = activeField;
+            const label = labels[key] || basicFields.concat(stationFields).find(field => field[0] === key)[1];
+            cv.text(label, 48, 80, 32, theme.text, { font: 'bold' });
+            G.button(cv, theme, 1350, 53, 195, 42, 'Done', () => editField(null));
+            if (choices[key]) {
+                choices[key].forEach((value, index) => {
+                    G.button(cv, theme, 48, 105 + index * 54, 900, 46,
+                        value + (draft[key] === value ? ' (selected)' : ''), () => {
+                            draft[key] = value;
+                            if (key === 'type') draft.manualType = true;
+                            editField(null);
+                        });
+                });
+                return;
+            }
+            if (key === 'quantity') G.button(cv, theme, 1100, 95, 445, 44, 'Unit: ' + draft.unit, () => editField('unit'));
+            if (key === 'price') {
+                G.button(cv, theme, 950, 95, 290, 44, draft.currency, () => editField('currency'));
+                G.button(cv, theme, 1255, 95, 290, 44, draft.priceMode, () => editField('priceMode'));
+            }
+            cv.text(draft[key].slice(-78) || '--', 48, 132, 27, theme.text);
+            const textField = ['note', 'company', 'country', 'location'].includes(key);
+            const keys = textField
+                ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').concat(['Space', '.', ',', 'Delete', 'Clear'])
+                : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'Delete', 'Clear'];
+            const columns = textField ? 10 : 5;
+            const width = textField ? 140 : 280;
+            keys.forEach((character, index) => {
+                G.button(cv, theme, 48 + index % columns * (width + 10), 160 + Math.floor(index / columns) * 58,
+                    width, 48, character, () => {
+                        const value = draft[key];
+                        if (character === 'Clear') draft[key] = '';
+                        else if (character === 'Delete') draft[key] = value.slice(0, -1);
+                        else if (character === '.' && !textField && value.includes('.')) return;
+                        else if (value.length < (textField ? 255 : 10)) {
+                            draft[key] = value + (character === 'Space' ? ' ' : character);
+                        }
+                    });
+            });
+        }
+
+        function renderDrivingConditions(cv, theme, offset) {
+            cv.text('Driving conditions', 65, 480 - offset, 26, theme.text, { font: 'bold' });
+
+            const conditions = draft.conditions;
+            const choices = [
+                ['Tires', ['Summer', 'Winter', 'All-season']],
+                ['Driving style', ['Slow', 'Normal', 'Fast']]
+            ];
+            choices.forEach(([label, options], row) => {
+                const y = 496 + row * 63 - offset;
+                cv.roundRect(40, y, 1520, 55, 12, withAlpha('#ffffff', 0.05));
+                cv.text(label, 65, y + 36, 26, theme.text);
+                options.forEach((option, index) => {
+                    const selected = conditions[label] === option;
+                    G.button(cv, theme, 420 + index * 372, y + 5, 340, 45,
+                        option + (selected ? ' (selected)' : ''), y >= 92 && y + 55 <= 446 ? () => {
+                            conditions[label] = selected ? undefined : option;
+                        } : null);
+                });
+            });
+
+            const groups = [
+                ['Routes', ['Motorway', 'City', 'Country roads']],
+                ['Extras', ['A/C', 'Trailer', 'Park heating']]
+            ];
+            groups.forEach(([label, options], group) => {
+                const x = 40;
+                cv.text(label, x + 25, 650 + group * 205 - offset, 24, theme.dim);
+                options.forEach((option, index) => {
+                    const y = 662 + group * 205 + index * 54 - offset;
+                    const selected = !!conditions[option];
+                    cv.roundRect(x, y, 1520, 48, 14, withAlpha('#ffffff', 0.05));
+                    cv.text(option, x + 28, y + 33, 24, theme.text);
+                    toggle(cv, theme, x + 1416, y + 5, selected);
+                    if (y >= 92 && y + 48 <= 446) cv.target(x, y, 1520, 48, () => { conditions[option] = !selected; }, option);
+                });
+            });
+        }
+
+        function renderDetails(cv, theme, title, fields, start, editable) {
+            cv.text(title, 65, start, 26, theme.text, { font: 'bold' });
+            fields.forEach(([key, label], index) => {
+                const y = start + 12 + index * 44;
+                const canEdit = editable;
+                const value = canEdit ? (draft[key] || '--').slice(0, 52) : (draft[key] || 'Unavailable');
+                cv.roundRect(40, y, 1520, 40, 10, withAlpha('#ffffff', 0.05));
+                cv.text(label, 65, y + 28, 23, theme.text);
+                cv.text(value, 1506, y + 28, 22, theme.dim, { align: 'right' });
+                if (canEdit) {
+                    cv.text('>', 1534, y + 28, 22, theme.dim);
+                    if (y >= 92 && y + 40 <= 446) cv.target(40, y, 1520, 40, () => editField(key), key);
+                }
+            });
+        }
+
+        function renderFuelling(cv, theme) {
+            if (draft && activeField) return renderEditor(cv, theme);
+            cv.text(draft ? 'Basic data' : 'Fuelling', 48, 80, 32, theme.text, { font: 'bold' });
+            if (!draft) {
+                cv.text('Live vehicle data', 48, 126, 24, theme.dim);
+                renderLiveData(cv, theme);
+                return;
+            }
+            cv.text(vehicle ? vehicle.name + ' / ' + entry : entry, 1545, 80, 22, theme.dim, { align: 'right' });
+            const data = liveData();
+            draft.odometer = data.odometer;
+            draft.trip = data.trip;
+            if (entry === 'Fuel' && !draft.manualType) {
+                const capacity = Number(ctx.settings.get('fuelTankCapacity'));
+                const threshold = Number(ctx.settings.get('fullTankThreshold'));
+                draft.type = capacity > 0 && data.fuelLevel !== null
+                    ? (data.fuelLevel / capacity * 100 >= threshold ? 'Full' : 'Partial') : '';
+            }
+            const tankNames = vehicle ? vehicle.tanks : [];
+            const matchingTanks = tankNames.filter(name => /ad\s*blue/i.test(name) === (entry === 'AdBlue'));
+            const fuelSort = matchingTanks.length === 1 ? matchingTanks[0] : 'Unavailable';
+            const values = {
+                fuel: fuelSort,
+                odometer: reading(draft.odometer, 'km', 0),
+                trip: reading(draft.trip, 'km', 0),
+                quantity: (draft.quantity || '--') + ' ' + draft.unit,
+                price: (draft.price || '--') + ' ' + draft.currency + ' / ' + draft.priceMode,
+                note: draft.note ? draft.note.slice(0, 52) + (draft.note.length > 52 ? '...' : '') : '--'
+            };
+            const offset = formScroll;
+            cv.clip(40, 92, 1520, 354);
+            basicFields.forEach(([key, label], index) => {
+                const y = 92 + index * 44 - offset;
+                const editable = !['date', 'odometer', 'trip', 'fuel'].includes(key);
+                cv.roundRect(40, y, 1520, 40, 10, withAlpha('#ffffff', 0.05));
+                cv.text(label, 65, y + 28, 23, theme.text);
+                cv.text(values[key] || draft[key] || '--', 1506, y + 28, 22, theme.dim, { align: 'right' });
+                if (editable) {
+                    cv.text('>', 1534, y + 28, 22, theme.dim);
+                    if (y >= 92 && y + 40 <= 446) cv.target(40, y, 1520, 40, () => editField(key), key);
+                }
+            });
+            if (entry === 'Fuel') renderDrivingConditions(cv, theme, offset);
+            const stationY = entry === 'Fuel' ? 1040 : 480;
+            renderDetails(cv, theme, 'Gas Station', stationFields, stationY - offset, true);
+            if (entry === 'Fuel') {
+                draft.consumption = data.consumption.map(v => reading(v, data.consumptionUnit, 1)).join(' / ');
+                draft.averageSpeed = data.speed.map(v => reading(v, data.speedUnit, 1)).join(' / ');
+                renderDetails(cv, theme, 'Board Computer (BC1 / BC2)', computerFields, 1216 - offset, false);
+            }
+            cv.noclip();
+            {
+                const bar = { x: 1572, y: 92, w: 6, h: 354 };
+                cv.scroll = { y: 92, bar };
+                cv.roundRect(bar.x, bar.y + offset / maxFormScroll() * 224, bar.w, 130, 3, theme.dim);
+            }
+            G.button(cv, theme, 48, 452, 220, 44, 'Check entry', () => {
+                const date = new Date(draft.date);
+                const validDate = Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === draft.date;
+                if (!validDate) formStatus = 'Enter a valid date (YYYY-MM-DD).';
+                else if (!draft.type) formStatus = 'Select a fuelling type.';
+                else if (!(Number(draft.quantity) > 0)) formStatus = 'Enter the quantity.';
+                else if (!/^\d+(?:\.\d+)?$/.test(draft.price)) formStatus = 'Enter the price.';
+                else if (!(Number(draft.odometer) > 0 || Number(draft.trip) > 0)) {
+                    formStatus = 'Odometer and trip data are unavailable.';
+                } else if (fuelSort === 'Unavailable') {
+                    formStatus = 'Fuel sort is unavailable for this vehicle.';
+                } else formStatus = 'Entry is ready. Preview only.';
+            });
+            G.button(cv, theme, 286, 452, 170, 44, 'Cancel', () => { draft = null; entry = ''; });
+            if (formStatus) cv.text(formStatus, 775, 482, 20, theme.text);
+        }
+
+        ctx.onScroll(delta => {
+            if (page !== 1 || !draft || activeField) return false;
+            const next = Math.max(0, Math.min(maxFormScroll(), formScroll + delta));
+            if (next === formScroll) return false;
+            formScroll = next;
+            return true;
+        });
+
         ctx.onTab(index => {
             if (TABS[index]) page = index;
         });
@@ -104,12 +389,12 @@ mgu.run({
             const center = { align: 'center' };
             const heading = { align: 'center', font: 'bold', spacing: 2.5 };
             cv.text('SPRITMONITOR', 640, 225, 30, theme.text, heading);
-            cv.text('Log fuel and AdBlue fill-ups in Spritmonitor', 640, 258, 19, theme.dim, center);
-            cv.text('directly from BMW iDrive 7.', 640, 285, 19, theme.dim, center);
+            cv.text('Third-party app for Spritmonitor.de.', 640, 258, 19, theme.dim, center);
+            cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285, 19, theme.dim, center);
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
-            cv.text('0.1.5', 1120, 105, 14, theme.text, { font: 'bold' });
-            cv.text('Fuelling and My Car preview', 1186, 105, 14, theme.dim);
+            cv.text('0.1.6', 1120, 105, 14, theme.text, { font: 'bold' });
+            cv.text('Live fuel and trip readings', 1186, 105, 14, theme.dim);
             cv.text('0.1.4', 1120, 185, 14, theme.text, { font: 'bold' });
             cv.text('Trip reset setting', 1186, 185, 14, theme.dim);
             cv.text('0.1.3', 1120, 125, 14, theme.text, { font: 'bold' });
@@ -127,9 +412,19 @@ mgu.run({
             if (page === 3) {
                 renderAbout(cv, theme);
             } else if (page === 2 && vehicle) {
-                cv.text(vehicle.name, 800, 180, 42, theme.text, { align: 'center', font: 'bold' });
-                cv.text(vehicle.tanks.join(' / '), 800, 232, 28, theme.text, { align: 'center' });
-                cv.text('Connected to Spritmonitor', 800, 286, 22, theme.dim, { align: 'center' });
+                cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
+                cv.text('Latest fill-ups', 65, 150, 26, theme.dim);
+                if (!vehicle.latestFuelings.length) cv.text('No tanks found', 65, 218, 26, theme.dim);
+                vehicle.latestFuelings.forEach(({ name, entry, unavailable }, index) => {
+                    const y = 175 + index * 96;
+                    cv.roundRect(50, y, 1500, 84, 14, withAlpha('#ffffff', 0.05));
+                    cv.text(name, 75, y + 51, 30, theme.text, { font: 'bold' });
+                    const parts = entry ? [entry.date, entry.quantity != null
+                        ? [entry.quantity, entry.quantityunit].filter(Boolean).join(' ') : null] : [];
+                    const detail = unavailable ? 'Could not load fill-ups'
+                        : entry ? parts.filter(Boolean).join('  /  ') || 'Details unavailable' : 'No fill-ups yet';
+                    cv.text(detail, 1525, y + 51, 26, theme.dim, { align: 'right' });
+                });
             } else if (page === 2 && accountStatus) {
                 cv.text(accountStatus, 800, 240, 26, theme.text, { align: 'center' });
             } else if (page === 2) {
@@ -163,9 +458,7 @@ mgu.run({
                     800, 260, 30, theme.text, centered);
                 cv.text('Thank you', 800, 302, 30, theme.text, centered);
             } else {
-                cv.text(entry || 'Spritmonitor', 48, 80, 32, theme.text, { font: 'bold' });
-                cv.text(entry ? 'Form preview' : 'Choose an entry type', 48, 126, 24, theme.dim);
-                if (vehicle) cv.text(vehicle.name, 48, 166, 24, theme.text);
+                renderFuelling(cv, theme);
             }
             G.frame(cv, theme, TABS, page, []);
             return ctx.ui.image('MAIN_GFX', cv);
