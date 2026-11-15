@@ -240,6 +240,29 @@ mgu.run({
         }
 
         refreshVehicle();
+        function previousDrivingConditions() {
+            const history = vehicle && vehicle.latestFuelings.find(tank => !/ad\s*blue/i.test(tank.name));
+            const entry = history && history.entry;
+            if (!entry) return {};
+
+            const split = value => String(value || '').toLowerCase().split(',').map(item => item.trim());
+            const attributes = split(entry.attributes);
+            const streets = split(entry.streets);
+            const conditions = {};
+            const tires = { summertires: 'Summer', wintertires: 'Winter', allyeartires: 'All-season' };
+            const styles = { slow: 'Slow', normal: 'Normal', fast: 'Fast' };
+            const extras = { ac: 'A/C', trailer: 'Trailer', heating: 'Park heating' };
+            const routes = { autobahn: 'Motorway', city: 'City', land: 'Country roads' };
+            const tireType = Object.keys(tires).find(key => attributes.includes(key));
+            const style = Object.keys(styles).find(key => attributes.includes(key));
+
+            if (tireType) conditions.Tires = tires[tireType];
+            if (style) conditions['Driving style'] = styles[style];
+            Object.keys(extras).forEach(key => { if (attributes.includes(key)) conditions[extras[key]] = true; });
+            Object.keys(routes).forEach(key => { if (streets.includes(key)) conditions[routes[key]] = true; });
+            return conditions;
+        }
+
         function openFuelling(type) {
             cancelPairingGuide();
             page = 1;
@@ -249,7 +272,8 @@ mgu.run({
             const date = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
             draft = {
                 date, type: '', manualType: false, odometer: '', trip: '', quantity: '', unit: 'L',
-                price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '', conditions: {}
+                price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '',
+                conditions: type === 'Fuel' ? previousDrivingConditions() : {}
             };
             activeField = null;
             formStatus = '';
@@ -548,6 +572,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.15', 'Prefill driving conditions from last fill-up'],
                 ['0.1.14', 'Direct tank selection in charts'],
                 ['0.1.13', 'Fuel and AdBlue in one table'],
                 ['', 'More history points per chart'],
