@@ -30,10 +30,16 @@ function useUplink(dataDir) {
 
 function getJson(endpoint, applicationId, token, expectObject, lookup) {
     return new Promise((resolve, reject) => {
-        const fail = () => reject(new Error('Could not reach Spritmonitor.'));
+        let secure = false;
+        const fail = () => {
+            const error = new Error('Could not reach Spritmonitor.');
+            error.beforeSend = !secure;
+            reject(error);
+        };
         const request = https.get({
             hostname: 'api.spritmonitor.de',
             lookup,
+            agent: false,
             path: '/v1/' + endpoint,
             headers: {
                 Accept: 'application/json',
@@ -41,10 +47,14 @@ function getJson(endpoint, applicationId, token, expectObject, lookup) {
                 Authorization: 'Bearer ' + token
             }
         }, response => {
+            secure = true;
             response.on('error', fail);
+            response.on('aborted', fail);
             if (response.statusCode !== 200) {
                 response.resume();
-                reject(new Error('Spritmonitor request failed (HTTP ' + response.statusCode + ').'));
+                const error = new Error('Spritmonitor request failed (HTTP ' + response.statusCode + ').');
+                error.status = response.statusCode;
+                reject(error);
                 return;
             }
             let body = '';
@@ -60,7 +70,9 @@ function getJson(endpoint, applicationId, token, expectObject, lookup) {
                 }
             });
         });
-        request.setTimeout(10000, () => request.destroy());
+        request.on('socket', socket => socket.once('secureConnect', () => { secure = true; }));
+        const deadline = setTimeout(() => request.destroy(new Error('Request timeout')), 12000);
+        request.on('close', () => clearTimeout(deadline));
         request.on('error', fail);
     });
 }
@@ -81,11 +93,12 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
             : 'No vehicles found in your Spritmonitor account.');
     }
     const endpoint = 'vehicle/' + encodeURIComponent(vehicle.id);
-    const [tanks, config, currencies, preferences] = await Promise.all([
+    const [tanks, config, currencies, preferences, fuelSorts] = await Promise.all([
         getJson(endpoint + '/tanks.json', applicationId, token, false, lookup),
         getJson(endpoint + '/getconfig.json', applicationId, token, true, lookup).catch(() => null),
         getJson('currencies.json', applicationId, token, false, lookup).catch(() => []),
-        getJson('units.json', applicationId, token, true, lookup).catch(() => null)
+        getJson('units.json', applicationId, token, true, lookup).catch(() => null),
+        getJson('fuelsorts.json', applicationId, token, false, lookup).catch(() => [])
     ]);
     const adBlue = tank => /ad\s*blue/i.test(tank.name || '');
     const orderedTanks = tanks.filter(tank => tank.name);
@@ -115,14 +128,19 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
                 entries.push(...unique.slice(0, 60 - entries.length));
                 offset += batch.length;
             }
-            return { name: tank.name, entry: entries[0], entries };
+            return { id: tank.id, name: tank.name, entry: entries[0], entries };
         } catch (_) {
-            return { name: tank.name, unavailable: true };
+            return { id: tank.id, name: tank.name, unavailable: true };
         }
     }));
     return {
         name: [vehicle.make, config && config.modelname || vehicle.model].filter(Boolean).join(' '),
         tanks: ordered.map(tank => tank.name),
+        tankDetails: ordered.map(tank => ({ id: tank.id, type: tank.fuelsorttype, name: tank.name })),
+        fuelSorts,
+        configAvailable: Boolean(config),
+        tripUnit: vehicle.tripunit,
+        bcConsumptionUnit: config && Number(config.bcunit),
         tankStats: ordered.map(tank => ({
             name: tank.name,
             consumption: [tank.consumption, tank.consumptionunit],
@@ -137,4 +155,33 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
     };
 }
 
-module.exports = { listVehicles, loadVehicle, useUplink };
+async function refreshLastFuelling(account, vehicle, dataDir) {
+    const fuel = vehicle.tankDetails.find(tank => Number(tank.type) !== 6);
+    if (!fuel) return vehicle;
+    const endpoint = 'vehicle/' + encodeURIComponent(account.vehicleId) +
+        '/tank/' + encodeURIComponent(fuel.id) + '/fuelings.json?limit=1';
+    const entries = await getJson(endpoint, account.applicationId, account.token, false,
+        dataDir ? useUplink(dataDir) : undefined);
+    const entry = entries[0];
+    return Object.assign({}, vehicle, {
+        latestFuelings: vehicle.latestFuelings.map(history => history.id === fuel.id ? {
+            id: history.id,
+            name: history.name,
+            entry,
+            entries: entry ? [entry].concat((history.entries || []).filter(item => item.id !== entry.id)).slice(0, 60) : []
+        } : history)
+    });
+}
+
+async function addFuelling(account, tankId, fields, dataDir) {
+    const endpoint = 'vehicle/' + encodeURIComponent(account.vehicleId) +
+        '/tank/' + encodeURIComponent(tankId) + '/fueling.json?' + new URLSearchParams(fields);
+    const result = await getJson(endpoint, account.applicationId, account.token, true,
+        dataDir ? useUplink(dataDir) : undefined);
+    if (!Number.isInteger(result.errors) || result.errors < 0) {
+        throw new Error('Spritmonitor did not confirm the upload.');
+    }
+    return result.errors === 0;
+}
+
+module.exports = { listVehicles, loadVehicle, refreshLastFuelling, addFuelling, useUplink };

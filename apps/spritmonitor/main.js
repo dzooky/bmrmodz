@@ -18,6 +18,8 @@ mgu.run({
         let activeField = null;
         let formStatus = '';
         let formScroll = 0;
+        let savedEntryId;
+        let refreshOnOpen = false;
         const maxFormScroll = () => entry === 'Fuel' ? 915 : 184;
         let page = 0;
         let artwork;
@@ -100,6 +102,12 @@ mgu.run({
         const api = require('./sp-api');
         const accountFile = path.join(ctx.dataDir, 'sp-account.json');
         const uplinkDir = isEmulator ? undefined : ctx.dataDir;
+        let offline;
+        try { offline = require('./offline-fuellings').open(ctx.dataDir); }
+        catch (_) { accountStatus = 'Could not open local fuelling storage.'; }
+        if (offline) vehicle = offline.read(account).vehicle;
+        let connection = '';
+        let syncing = false;
         let loadingAccount = false;
         let vehicleOptions = null;
         let phonePairing;
@@ -109,15 +117,104 @@ mgu.run({
         let chartMetric = null;
         const renderChart = require('./fuelling-chart');
 
+        function cacheVehicle(owner, snapshot) {
+            if (owner !== account) return;
+            vehicle = snapshot;
+            if (!offline) return;
+            try { vehicle = offline.cache(owner, snapshot); }
+            catch (_) { accountStatus = 'Could not cache vehicle data.'; }
+        }
+
+        function syncMessage() {
+            const entries = offline ? offline.read(account).entries : [];
+            const pending = entries.filter(item => item.state === 'pending').length;
+            const review = entries.filter(item => item.state === 'sending').length;
+            const rejected = entries.filter(item => item.state === 'rejected').length;
+            return [connection, pending ? pending + ' pending' : '',
+                review ? review + ' unconfirmed in Spritmonitor' : '',
+                rejected ? rejected + ' rejected by Spritmonitor' : '',
+                offline ? '' : 'Local storage unavailable'].filter(Boolean).join('  /  ');
+        }
+
+        async function syncFuelings() {
+            if (!offline || !account?.vehicleId || syncing || loadingAccount) return;
+            syncing = true;
+            const owner = account;
+            try {
+                const vehicles = await api.listVehicles(owner.applicationId, owner.token, uplinkDir);
+                if (owner !== account) return;
+                const wasOnline = connection === 'Online';
+                connection = 'Online';
+                if (!vehicles.some(item => String(item.id) === String(owner.vehicleId))) {
+                    connection = 'Selected vehicle unavailable';
+                    return;
+                }
+                const store = offline.read(owner);
+                const pending = store.entries.filter(item => item.state === 'pending');
+                const opening = refreshOnOpen;
+                refreshOnOpen = false;
+                if (!wasOnline || !vehicle || pending.some(item => !item.upload)) {
+                    // Keep offline defaults in memory unless a fresh snapshot is available.
+                    const fresh = await api.loadVehicle(owner.applicationId, owner.token,
+                        String(owner.vehicleId), uplinkDir, vehicles);
+                    cacheVehicle(owner, fresh);
+                } else if (opening) {
+                    cacheVehicle(owner, await api.refreshLastFuelling(owner, vehicle, uplinkDir));
+                }
+                if (owner !== account) return;
+                if (draft && entry === 'Fuel' && opening) {
+                    const defaults = previousDrivingConditions();
+                    for (const key of Object.keys(Object.assign({}, draft.conditions, defaults))) {
+                        if (!draft.editedConditions.has(key)) draft.conditions[key] = defaults[key];
+                    }
+                }
+                let sent = false;
+                for (const item of pending) {
+                    if (owner !== account) return;
+                    const upload = item.upload || require('./offline-fuellings').uploadFields(vehicle, item);
+                    if (!upload) {
+                        connection = 'Waiting for Spritmonitor tank, fuel sort or units';
+                        continue;
+                    }
+                    offline.change(owner, item.id, 'sending');
+                    let accepted;
+                    try {
+                        accepted = await api.addFuelling(owner, upload.tankId, upload.fields, uplinkDir);
+                    } catch (error) {
+                        if (error.beforeSend || [401, 403, 429].includes(error.status)) {
+                            offline.change(owner, item.id, 'pending');
+                        }
+                        throw error;
+                    }
+                    offline.change(owner, item.id, accepted ? null : 'rejected');
+                    sent = sent || accepted;
+                }
+                if (sent && owner === account) {
+                    cacheVehicle(owner, await api.loadVehicle(owner.applicationId, owner.token,
+                        String(owner.vehicleId), uplinkDir, vehicles));
+                }
+            } catch (error) {
+                if (owner === account) {
+                    connection = [401, 403].includes(error.status) ? 'Spritmonitor sign-in required'
+                        : error.status === 429 ? 'Spritmonitor busy' : 'Spritmonitor unavailable';
+                }
+            } finally {
+                syncing = false;
+            }
+        }
+
         async function refreshVehicle() {
             if (!account || loadingAccount || !account.applicationId || !account.token) return;
             loadingAccount = true;
             accountStatus = 'Loading vehicles from Spritmonitor...';
+            const owner = account;
             try {
                 if (account.vehicleId) {
-                    vehicle = await api.loadVehicle(account.applicationId, account.token,
-                        String(account.vehicleId), uplinkDir);
+                    const fresh = await api.loadVehicle(owner.applicationId, owner.token,
+                        String(owner.vehicleId), uplinkDir);
                     accountStatus = '';
+                    cacheVehicle(owner, fresh);
+                    connection = 'Online';
                 } else {
                     vehicleOptions = await api.listVehicles(account.applicationId, account.token, uplinkDir);
                     vehiclePage = 0;
@@ -127,6 +224,7 @@ mgu.run({
                 accountStatus = error.message;
             } finally {
                 loadingAccount = false;
+                syncFuelings();
             }
         }
 
@@ -145,9 +243,10 @@ mgu.run({
                 account = next;
                 tankPage = 0;
                 chartMetric = null;
-                vehicle = selected;
                 vehicleOptions = null;
                 accountStatus = '';
+                cacheVehicle(next, selected);
+                connection = 'Online';
             } catch (error) {
                 accountStatus = error.message;
             } finally {
@@ -176,6 +275,8 @@ mgu.run({
                     phonePairing = null;
                     account = { applicationId: '6106f958398125d79a1fddfa6b0d60d8', token };
                     vehicleOptions = null;
+                    vehicle = null;
+                    connection = '';
                     refreshVehicle();
                 }, message => {
                     phonePairing = null;
@@ -188,6 +289,7 @@ mgu.run({
 
         function renderAccount(cv, theme) {
             cv.text('MY CAR', 65, 95, 34, theme.text, { font: 'bold' });
+            if (account?.vehicleId) cv.text(syncMessage(), 1525, 95, 20, theme.dim, { align: 'right' });
             if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
             if (loadingAccount) return;
             if (tokenPageQr || phonePairing) {
@@ -239,8 +341,13 @@ mgu.run({
 
         }
 
-        refreshVehicle();
+        if (account?.vehicleId && offline) syncFuelings();
+        else refreshVehicle();
+        const syncTimer = setInterval(syncFuelings, 30000);
+        syncTimer.unref();
         function previousDrivingConditions() {
+            const local = offline && offline.read(account).conditions;
+            if (local) return Object.assign({}, local);
             const history = vehicle && vehicle.latestFuelings.find(tank => !/ad\s*blue/i.test(tank.name));
             const entry = history && history.entry;
             if (!entry) return {};
@@ -263,6 +370,21 @@ mgu.run({
             return conditions;
         }
 
+        function saveMessage() {
+            if (!savedEntryId || !offline) return formStatus;
+            const state = offline.read(account);
+            const last = Object.values(state.lastFuelling || {}).find(item => item.id === savedEntryId);
+            if (!last) return formStatus;
+            if (last.state === 'sent') return 'Saved and sent to Spritmonitor.';
+            if (syncing) return 'Saved in iDrive. Syncing with Spritmonitor...';
+            if (last.state === 'sending') return 'Saved in iDrive. Check Spritmonitor before adding it again.';
+            if (last.state === 'rejected') return 'Saved in iDrive. Spritmonitor rejected the entry.';
+            if (connection === 'Spritmonitor unavailable') {
+                return 'Saved offline. Will send when the connection returns.';
+            }
+            return 'Saved in iDrive. Waiting to send.';
+        }
+
         function openFuelling(type) {
             cancelPairingGuide();
             page = 1;
@@ -273,10 +395,13 @@ mgu.run({
             draft = {
                 date, type: '', manualType: false, odometer: '', trip: '', quantity: '', unit: 'L',
                 price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '',
-                conditions: type === 'Fuel' ? previousDrivingConditions() : {}
+                conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set()
             };
             activeField = null;
             formStatus = '';
+            savedEntryId = undefined;
+            refreshOnOpen = true;
+            syncFuelings();
         }
 
         ctx.ui.onClick('BTN_FUEL', () => openFuelling('Fuel'));
@@ -365,6 +490,7 @@ mgu.run({
                     const selected = conditions[label] === option;
                     G.button(cv, theme, 420 + index * 372, y + 5, 340, 45,
                         option + (selected ? ' (selected)' : ''), y >= 92 && y + 55 <= 446 ? () => {
+                            draft.editedConditions.add(label);
                             conditions[label] = selected ? undefined : option;
                         } : null);
                 });
@@ -383,7 +509,12 @@ mgu.run({
                     cv.roundRect(x, y, 1520, 48, 14, withAlpha('#ffffff', 0.05));
                     cv.text(option, x + 28, y + 33, 24, theme.text);
                     toggle(cv, theme, x + 1416, y + 5, selected);
-                    if (y >= 92 && y + 48 <= 446) cv.target(x, y, 1520, 48, () => { conditions[option] = !selected; }, option);
+                    if (y >= 92 && y + 48 <= 446) {
+                        cv.target(x, y, 1520, 48, () => {
+                            draft.editedConditions.add(option);
+                            conditions[option] = !selected;
+                        }, option);
+                    }
                 });
             });
         }
@@ -404,12 +535,61 @@ mgu.run({
             });
         }
 
+        function saveFuelling(data) {
+            if (!account?.vehicleId) return 'Connect a vehicle in My Car first.';
+            if (!offline) return 'Local storage is unavailable.';
+            if (!draft.type) return 'Select a fuelling type.';
+            if (!(Number.isFinite(Number(draft.quantity)) && Number(draft.quantity) > 0)) {
+                return 'Enter the refilled quantity.';
+            }
+            if (!/^\d+(?:\.\d+)?$/.test(draft.price) || !Number.isFinite(Number(draft.price))) return 'Enter the price.';
+            if (draft.trip == null) return 'Trip data are unavailable.';
+            const fields = {
+                date: draft.date.split('-').reverse().join('.'),
+                type: draft.type === 'Full' ? 'full' : 'notfull',
+                trip: draft.trip,
+                quantity: Number(draft.quantity),
+                quantityunitid: { L: 1, kg: 2, 'US gal': 3, 'Imp gal': 4 }[draft.unit],
+                price: Number(draft.price),
+                pricetype: draft.priceMode === 'Total' ? 0 : 1,
+                currency: draft.currency
+            };
+            if (draft.odometer != null) fields.odometer = draft.odometer;
+            for (const [key, apiKey] of [['note', 'note'], ['company', 'stationname'],
+                ['country', 'country'], ['location', 'location']]) {
+                if (draft[key]) fields[apiKey] = draft[key];
+            }
+            if (entry === 'Fuel') {
+                const conditions = draft.conditions;
+                const codes = {
+                    Summer: 'summertires', Winter: 'wintertires', 'All-season': 'allyeartires',
+                    Slow: 'slow', Normal: 'normal', Fast: 'fast'
+                };
+                fields.attributes = [codes[conditions.Tires], codes[conditions['Driving style']],
+                    conditions['A/C'] && 'ac', conditions.Trailer && 'trailer',
+                    conditions['Park heating'] && 'heating'].filter(Boolean).join(',');
+                fields.streets = [conditions.Motorway && 'autobahn', conditions.City && 'city',
+                    conditions['Country roads'] && 'land'].filter(Boolean).join(',');
+                fields.bcSpeed = data.speed;
+                fields.bcSpeedUnit = data.speedUnit;
+                fields.bcConsumption = data.consumption;
+                fields.bcConsumptionUnit = data.consumptionUnit;
+            }
+            try { savedEntryId = offline.enqueue(account, entry, fields, draft.conditions); }
+            catch (_) { return 'Could not save the entry locally.'; }
+            draft = null;
+            entry = '';
+            syncFuelings();
+            return 'Saved in iDrive.';
+        }
+
         function renderFuelling(cv, theme) {
             if (draft && activeField) return renderEditor(cv, theme);
             cv.text(draft ? 'Basic data' : 'Fuelling', 48, 80, 32, theme.text, { font: 'bold' });
             if (!draft) {
                 cv.text('Live vehicle data', 48, 126, 24, theme.dim);
                 renderLiveData(cv, theme);
+                cv.text([saveMessage(), syncMessage()].filter(Boolean).join('  /  '), 48, 477, 22, theme.dim);
                 return;
             }
             cv.text(vehicle ? vehicle.name + ' / ' + entry : entry, 1545, 80, 22, theme.dim, { align: 'right' });
@@ -460,21 +640,11 @@ mgu.run({
                 cv.scroll = { y: 92, bar };
                 cv.roundRect(bar.x, bar.y + offset / maxFormScroll() * 224, bar.w, 130, 3, theme.dim);
             }
-            G.button(cv, theme, 48, 452, 220, 44, 'Check entry', () => {
-                const date = new Date(draft.date);
-                const validDate = Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === draft.date;
-                if (!validDate) formStatus = 'Enter a valid date (YYYY-MM-DD).';
-                else if (!draft.type) formStatus = 'Select a fuelling type.';
-                else if (!(Number(draft.quantity) > 0)) formStatus = 'Enter the refilled quantity.';
-                else if (!/^\d+(?:\.\d+)?$/.test(draft.price)) formStatus = 'Enter the price.';
-                else if (!(Number(draft.odometer) > 0 || Number(draft.trip) > 0)) {
-                    formStatus = 'Odometer and trip data are unavailable.';
-                } else if (fuelSort === 'Unavailable') {
-                    formStatus = 'Fuel sort is unavailable for this vehicle.';
-                } else formStatus = 'Entry is ready. Preview only.';
+            G.button(cv, theme, 48, 452, 220, 44, 'Save', () => {
+                if (draft) formStatus = saveFuelling(data);
             });
             G.button(cv, theme, 286, 452, 170, 44, 'Cancel', () => { draft = null; entry = ''; });
-            if (formStatus) cv.text(formStatus, 775, 482, 20, theme.text);
+            cv.text(formStatus || syncMessage(), 490, 482, 20, theme.text);
         }
 
         ctx.onScroll(delta => {
@@ -572,6 +742,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.16', 'Offline fuelling and automatic sync'],
+                ['', 'Last driving settings available offline'],
                 ['0.1.15', 'Prefill driving conditions from last fill-up'],
                 ['0.1.14', 'Direct tank selection in charts'],
                 ['0.1.13', 'Fuel and AdBlue in one table'],
@@ -609,6 +781,7 @@ mgu.run({
                 if (vehicle.tankCapacity) {
                     cv.text('Fuel tank: ' + vehicle.tankCapacity + ' L', 1525, 100, 26, theme.dim, { align: 'right' });
                 }
+                cv.text(syncMessage(), 65, 130, 20, theme.dim);
                 const statistics = vehicle.tankStats;
                 const tank = statistics[tankPage];
                 if (!tank) {
