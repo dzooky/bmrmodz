@@ -70,10 +70,12 @@ function open(dataDir) {
 
     function change(account, id, state) {
         const current = read(account);
-        const entries = current.entries.flatMap(entry => entry.id !== id
-            ? [entry] : state ? [Object.assign({}, entry, { state })] : []);
-        const lastFuelling = Object.fromEntries(Object.entries(current.lastFuelling || {}).map(([kind, entry]) =>
-            [kind, entry.id === id ? Object.assign({}, entry, { state: state || 'sent' }) : entry]));
+        const entries = state ? current.entries.map(entry => entry.id === id
+            ? Object.assign({}, entry, { state }) : entry) : current.entries.filter(entry => entry.id !== id);
+        const lastFuelling = Object.assign({}, current.lastFuelling);
+        for (const [kind, entry] of Object.entries(lastFuelling)) {
+            if (entry.id === id) lastFuelling[kind] = Object.assign({}, entry, { state: state || 'sent' });
+        }
         write(account, Object.assign({}, current, { entries, lastFuelling }));
     }
 

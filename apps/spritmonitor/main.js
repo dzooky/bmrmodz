@@ -137,7 +137,7 @@ mgu.run({
         }
 
         async function syncFuelings() {
-            if (!offline || !account?.vehicleId || syncing || loadingAccount) return;
+            if (!offline || !account || !account.vehicleId || syncing || loadingAccount) return;
             syncing = true;
             const owner = account;
             try {
@@ -289,7 +289,7 @@ mgu.run({
 
         function renderAccount(cv, theme) {
             cv.text('MY CAR', 65, 95, 34, theme.text, { font: 'bold' });
-            if (account?.vehicleId) cv.text(syncMessage(), 1525, 95, 20, theme.dim, { align: 'right' });
+            if (account && account.vehicleId) cv.text(syncMessage(), 1525, 95, 20, theme.dim, { align: 'right' });
             if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
             if (loadingAccount) return;
             if (tokenPageQr || phonePairing) {
@@ -341,7 +341,7 @@ mgu.run({
 
         }
 
-        if (account?.vehicleId && offline) syncFuelings();
+        if (account && account.vehicleId && offline) syncFuelings();
         else refreshVehicle();
         const syncTimer = setInterval(syncFuelings, 30000);
         syncTimer.unref();
@@ -536,7 +536,7 @@ mgu.run({
         }
 
         function saveFuelling(data) {
-            if (!account?.vehicleId) return 'Connect a vehicle in My Car first.';
+            if (!account || !account.vehicleId) return 'Connect a vehicle in My Car first.';
             if (!offline) return 'Local storage is unavailable.';
             if (!draft.type) return 'Select a fuelling type.';
             if (!(Number.isFinite(Number(draft.quantity)) && Number(draft.quantity) > 0)) {
@@ -742,6 +742,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.17', 'Fixed startup on BMW iDrive 7'],
                 ['0.1.16', 'Offline fuelling and automatic sync'],
                 ['', 'Last driving settings available offline'],
                 ['0.1.15', 'Prefill driving conditions from last fill-up'],

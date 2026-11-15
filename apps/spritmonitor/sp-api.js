@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const dns = require('dns');
 const net = require('net');
+const querystring = require('querystring');
 
 function useUplink(dataDir) {
     return (hostname, options, callback) => {
@@ -175,7 +176,7 @@ async function refreshLastFuelling(account, vehicle, dataDir) {
 
 async function addFuelling(account, tankId, fields, dataDir) {
     const endpoint = 'vehicle/' + encodeURIComponent(account.vehicleId) +
-        '/tank/' + encodeURIComponent(tankId) + '/fueling.json?' + new URLSearchParams(fields);
+        '/tank/' + encodeURIComponent(tankId) + '/fueling.json?' + querystring.stringify(fields);
     const result = await getJson(endpoint, account.applicationId, account.token, true,
         dataDir ? useUplink(dataDir) : undefined);
     if (!Number.isInteger(result.errors) || result.errors < 0) {
