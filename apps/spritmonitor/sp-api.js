@@ -103,4 +103,4 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
     };
 }
 
-module.exports = { listVehicles, loadVehicle };
+module.exports = { listVehicles, loadVehicle, useUplink };

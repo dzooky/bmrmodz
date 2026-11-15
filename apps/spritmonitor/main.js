@@ -102,6 +102,7 @@ mgu.run({
         const uplinkDir = isEmulator ? undefined : ctx.dataDir;
         let loadingAccount = false;
         let vehicleOptions = null;
+        let phonePairing;
         let vehiclePage = 0;
 
         async function refreshVehicle() {
@@ -148,10 +149,48 @@ mgu.run({
             }
         }
 
+        function startPhonePairing() {
+            accountStatus = '';
+            try {
+                phonePairing = require('./phone-pairing').start(uplinkDir, token => {
+                    phonePairing = null;
+                    account = { applicationId: '6106f958398125d79a1fddfa6b0d60d8', token };
+                    vehicleOptions = null;
+                    refreshVehicle();
+                }, message => {
+                    phonePairing = null;
+                    accountStatus = message;
+                });
+            } catch (_) {
+                accountStatus = 'Could not start phone pairing.';
+            }
+        }
+
         function renderAccount(cv, theme) {
             cv.text('MY CAR', 65, 95, 34, theme.text, { font: 'bold' });
             if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
             if (loadingAccount) return;
+            if (phonePairing) {
+                cv.text('Scan the QR code with your phone', 800, 142, 28, theme.text, { align: 'center' });
+                const qr = phonePairing.qr;
+                const count = qr.getModuleCount();
+                const cell = Math.floor(276 / (count + 8));
+                const size = (count + 8) * cell;
+                const x = 800 - Math.floor(size / 2), y = 158;
+                cv.fillRect(x, y, size, size, 0xffffffff);
+                for (let row = 0; row < count; row++) {
+                    for (let col = 0; col < count; col++) {
+                        if (qr.isDark(row, col)) cv.fillRect(x + (col + 4) * cell,
+                            y + (row + 4) * cell, cell, cell, 0x000000ff);
+                    }
+                }
+                G.button(cv, theme, 1210, 425, 315, 50, 'Cancel pairing', () => {
+                    phonePairing.stop();
+                    phonePairing = null;
+                });
+                return;
+            }
+            G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', startPhonePairing);
             if (vehicleOptions && vehicleOptions.length) {
                 cv.text(accountStatus || 'Select your vehicle', 65, 141, 24, theme.dim);
                 const onPage = 4;
@@ -166,13 +205,13 @@ mgu.run({
                 }
             } else if (!accountStatus) {
                 cv.text('No vehicle connected', 65, 141, 24, theme.dim);
-                cv.text('Phone pairing is not available yet.', 65, 187, 24, theme.dim);
             }
 
         }
 
         refreshVehicle();
         function openFuelling(type) {
+            if (phonePairing) { phonePairing.stop(); phonePairing = null; }
             page = 1;
             formScroll = 0;
             entry = type;
@@ -394,6 +433,7 @@ mgu.run({
 
         ctx.onTab(index => {
             if (!TABS[index]) return;
+            if (index !== 2 && phonePairing) { phonePairing.stop(); phonePairing = null; }
             page = index;
             if (page === 2 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
@@ -478,6 +518,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.10', 'Secure phone pairing with a QR code'],
                 ['0.1.9', 'Removed token entry from iDrive'],
                 ['0.1.8', 'Select a vehicle from the connected account'],
                 ['', 'BC1 averages and manual refilled quantity'],
