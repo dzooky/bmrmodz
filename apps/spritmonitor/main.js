@@ -103,7 +103,9 @@ mgu.run({
         let loadingAccount = false;
         let vehicleOptions = null;
         let phonePairing;
+        let tokenPageQr;
         let vehiclePage = 0;
+        let tankPage = 0;
 
         async function refreshVehicle() {
             if (!account || loadingAccount || !account.applicationId || !account.token) return;
@@ -139,6 +141,7 @@ mgu.run({
                 try { fs.renameSync(temporary, accountFile); }
                 catch (error) { fs.unlinkSync(temporary); throw error; }
                 account = next;
+                tankPage = 0;
                 vehicle = selected;
                 vehicleOptions = null;
                 accountStatus = '';
@@ -149,7 +152,21 @@ mgu.run({
             }
         }
 
+        function openPairingGuide() {
+            accountStatus = '';
+            tokenPageQr = require('./qrcode')(0, 'M');
+            tokenPageQr.addData('https://www.spritmonitor.de/en/my_account/change_password.html');
+            tokenPageQr.make();
+        }
+
+        function cancelPairingGuide() {
+            tokenPageQr = null;
+            if (phonePairing) phonePairing.stop();
+            phonePairing = null;
+        }
+
         function startPhonePairing() {
+            tokenPageQr = null;
             accountStatus = '';
             try {
                 phonePairing = require('./phone-pairing').start(uplinkDir, token => {
@@ -170,13 +187,18 @@ mgu.run({
             cv.text('MY CAR', 65, 95, 34, theme.text, { font: 'bold' });
             if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
             if (loadingAccount) return;
-            if (phonePairing) {
-                cv.text('Scan the QR code with your phone', 800, 142, 28, theme.text, { align: 'center' });
-                const qr = phonePairing.qr;
+            if (tokenPageQr || phonePairing) {
+                const firstStep = Boolean(tokenPageQr);
+                const heading = firstStep ? '1 / 2   Create and copy your token' : '2 / 2   Paste your token';
+                const instruction = firstStep ? 'Scan to sign in to Spritmonitor. Create a token and copy it.'
+                    : 'Scan to open the pairing page. Paste your token and send it to iDrive.';
+                cv.text(heading, 800, 130, 28, theme.text, { align: 'center' });
+                cv.text(instruction, 800, 164, 22, theme.dim, { align: 'center' });
+                const qr = tokenPageQr || phonePairing.qr;
                 const count = qr.getModuleCount();
                 const cell = Math.floor(276 / (count + 8));
                 const size = (count + 8) * cell;
-                const x = 800 - Math.floor(size / 2), y = 158;
+                const x = 800 - Math.floor(size / 2), y = 178;
                 cv.fillRect(x, y, size, size, 0xffffffff);
                 for (let row = 0; row < count; row++) {
                     for (let col = 0; col < count; col++) {
@@ -184,13 +206,18 @@ mgu.run({
                             y + (row + 4) * cell, cell, cell, 0x000000ff);
                     }
                 }
-                G.button(cv, theme, 1210, 425, 315, 50, 'Cancel pairing', () => {
-                    phonePairing.stop();
-                    phonePairing = null;
-                });
+                G.button(cv, theme, 65, 425, 275, 50, 'Cancel', cancelPairingGuide);
+                if (firstStep) {
+                    G.button(cv, theme, 1210, 425, 315, 50, 'Next', startPhonePairing);
+                } else {
+                    G.button(cv, theme, 1210, 425, 315, 50, 'Back', () => {
+                        cancelPairingGuide();
+                        openPairingGuide();
+                    });
+                }
                 return;
             }
-            G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', startPhonePairing);
+            G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', openPairingGuide);
             if (vehicleOptions && vehicleOptions.length) {
                 cv.text(accountStatus || 'Select your vehicle', 65, 141, 24, theme.dim);
                 const onPage = 4;
@@ -211,7 +238,7 @@ mgu.run({
 
         refreshVehicle();
         function openFuelling(type) {
-            if (phonePairing) { phonePairing.stop(); phonePairing = null; }
+            cancelPairingGuide();
             page = 1;
             formScroll = 0;
             entry = type;
@@ -433,7 +460,7 @@ mgu.run({
 
         ctx.onTab(index => {
             if (!TABS[index]) return;
-            if (index !== 2 && phonePairing) { phonePairing.stop(); phonePairing = null; }
+            if (index !== 2) cancelPairingGuide();
             page = index;
             if (page === 2 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
@@ -518,6 +545,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.11', 'Tank statistics in My Car'],
+                ['', 'Two-step phone pairing guide'],
                 ['0.1.10', 'Secure phone pairing with a QR code'],
                 ['0.1.9', 'Removed token entry from iDrive'],
                 ['0.1.8', 'Select a vehicle from the connected account'],
@@ -544,21 +573,45 @@ mgu.run({
                 renderAbout(cv, theme);
             } else if (page === 2 && vehicle) {
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
-                cv.text('Latest fill-ups', 65, 150, 26, theme.dim);
                 if (vehicle.tankCapacity) {
                     cv.text('Fuel tank: ' + vehicle.tankCapacity + ' L', 1525, 100, 26, theme.dim, { align: 'right' });
                 }
-                if (!vehicle.latestFuelings.length) cv.text('No tanks found', 65, 218, 26, theme.dim);
-                vehicle.latestFuelings.forEach(({ name, entry, unavailable }, index) => {
-                    const y = 175 + index * 96;
-                    cv.roundRect(50, y, 1500, 84, 14, withAlpha('#ffffff', 0.05));
-                    cv.text(name, 75, y + 51, 30, theme.text, { font: 'bold' });
-                    const parts = entry ? [entry.date, entry.quantity != null
-                        ? [entry.quantity, entry.quantityunit].filter(Boolean).join(' ') : null] : [];
-                    const detail = unavailable ? 'Could not load fill-ups'
-                        : entry ? parts.filter(Boolean).join('  /  ') || 'Details unavailable' : 'No fill-ups yet';
-                    cv.text(detail, 1525, y + 51, 26, theme.dim, { align: 'right' });
-                });
+                const statistics = vehicle.tankStats;
+                const tank = statistics[tankPage];
+                if (!tank) {
+                    cv.text('No tanks found', 65, 160, 26, theme.dim);
+                } else {
+                    cv.text(tank.name + '  ' + (tankPage + 1) + ' / ' + statistics.length,
+                        65, 150, 26, theme.text, { font: 'bold' });
+                    const format = (value, unit) => {
+                        if (value == null || String(value).trim() === '') return 'Unavailable';
+                        return [value, unit].filter(part => part != null && part !== '').join(' ');
+                    };
+                    const latest = vehicle.latestFuelings[tankPage];
+                    const entry = latest.entry;
+                    const lastFill = latest.unavailable ? 'Unavailable' : !entry ? 'No fill-ups yet'
+                        : [entry.date, entry.quantity == null ? null : format(entry.quantity, entry.quantityunit)]
+                            .filter(Boolean).join('  /  ') || 'Unavailable';
+                    const rows = [
+                        ['Average consumption', format(...tank.consumption)],
+                        ['Recorded distance', format(...tank.distance)],
+                        ['Recorded quantity', format(...tank.quantity)],
+                        ['Fuel costs', format(...tank.cost)],
+                        ['Latest fill-up', lastFill]
+                    ];
+                    rows.forEach(([label, value], index) => {
+                        const y = 164 + index * 54;
+                        cv.roundRect(50, y, 1500, 48, 12, withAlpha('#ffffff', 0.05));
+                        cv.text(label, 75, y + 33, 24, theme.text);
+                        cv.text(value, 1525, y + 33, 24, theme.dim, { align: 'right' });
+                    });
+                    if (tankPage > 0) {
+                        G.button(cv, theme, 65, 447, 280, 45, 'Previous tank', () => { tankPage--; });
+                    }
+                    if (tankPage + 1 < statistics.length) {
+                        G.button(cv, theme, 1245, 447, 280, 45, 'Next tank', () => { tankPage++; });
+                    }
+                }
             } else if (page === 2) {
                 renderAccount(cv, theme);
             } else if (page === 0) {

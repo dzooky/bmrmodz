@@ -98,6 +98,13 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
     return {
         name: [vehicle.make, config && config.modelname || vehicle.model].filter(Boolean).join(' '),
         tanks: tanks.map(tank => tank.name).filter(Boolean),
+        tankStats: tanks.filter(tank => tank.name).map(tank => ({
+            name: tank.name,
+            consumption: [tank.consumption, tank.consumptionunit],
+            distance: [tank.tripsum, tank.tripsumunit],
+            quantity: [tank.quantitysum, tank.quantitysumunit],
+            cost: [tank.costsum, tank.costsumunit]
+        })),
         tankCapacity: Number.isFinite(tankVolume) && tankVolume > 0 ? tankVolume : null,
         latestFuelings
     };
