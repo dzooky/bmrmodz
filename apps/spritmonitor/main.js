@@ -1,6 +1,7 @@
 'use strict';
 
 const path = require('path');
+const fs = require('fs');
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const { toggle } = require('./kit/sheet');
@@ -83,13 +84,36 @@ mgu.run({
         }
         let accountStatus = '';
         const isEmulator = typeof process.send === 'function' && process.env.MGU_EMU_CLOSED !== undefined;
+        let account;
         if (isEmulator && process.env.SP_APPLICATION_ID && process.env.SP_ACCESS_TOKEN) {
-            accountStatus = 'Loading vehicles from Spritmonitor...';
-            const api = require('./sp-api');
-            api.loadVehicle(process.env.SP_APPLICATION_ID, process.env.SP_ACCESS_TOKEN, process.env.SP_VEHICLE_ID)
-                .then(result => { vehicle = result; accountStatus = ''; })
-                .catch(error => { accountStatus = error.message; });
+            account = {
+                applicationId: process.env.SP_APPLICATION_ID,
+                token: process.env.SP_ACCESS_TOKEN,
+                vehicleId: process.env.SP_VEHICLE_ID
+            };
+        } else {
+            try {
+                account = JSON.parse(fs.readFileSync(path.join(ctx.dataDir, 'sp-account.json'), 'utf8'));
+            } catch (error) {
+                if (error.code !== 'ENOENT') accountStatus = 'Could not read the Spritmonitor account setup.';
+            }
         }
+        let loadingAccount = false;
+        function refreshVehicle() {
+            if (!account || loadingAccount) return;
+            if (!account.applicationId || !account.token || !account.vehicleId) {
+                accountStatus = 'The Spritmonitor account setup is incomplete.';
+                return;
+            }
+            loadingAccount = true;
+            accountStatus = 'Loading vehicle from Spritmonitor...';
+            require('./sp-api').loadVehicle(account.applicationId, account.token, String(account.vehicleId),
+                isEmulator ? undefined : ctx.dataDir)
+                .then(result => { vehicle = result; accountStatus = ''; })
+                .catch(error => { accountStatus = error.message; })
+                .then(() => { loadingAccount = false; });
+        }
+        refreshVehicle();
         function openFuelling(type) {
             page = 1;
             formScroll = 0;
@@ -242,7 +266,7 @@ mgu.run({
             draft.odometer = data.odometer;
             draft.trip = data.trip;
             if (entry === 'Fuel' && !draft.manualType) {
-                const capacity = Number(ctx.settings.get('fuelTankCapacity'));
+                const capacity = Number(ctx.settings.get('fuelTankCapacity')) || (vehicle && vehicle.tankCapacity);
                 const threshold = Number(ctx.settings.get('fullTankThreshold'));
                 draft.type = capacity > 0 && data.fuelLevel !== null
                     ? (data.fuelLevel / capacity * 100 >= threshold ? 'Full' : 'Partial') : '';
@@ -275,9 +299,9 @@ mgu.run({
             const stationY = entry === 'Fuel' ? 1040 : 480;
             renderDetails(cv, theme, 'Gas Station', stationFields, stationY - offset, true);
             if (entry === 'Fuel') {
-                draft.consumption = data.consumption.map(v => reading(v, data.consumptionUnit, 1)).join(' / ');
-                draft.averageSpeed = data.speed.map(v => reading(v, data.speedUnit, 1)).join(' / ');
-                renderDetails(cv, theme, 'Board Computer (BC1 / BC2)', computerFields, 1216 - offset, false);
+                draft.consumption = reading(data.consumption[0], data.consumptionUnit, 1);
+                draft.averageSpeed = reading(data.speed[0], data.speedUnit, 1);
+                renderDetails(cv, theme, 'Board Computer (BC1)', computerFields, 1216 - offset, false);
             }
             cv.noclip();
             {
@@ -311,7 +335,9 @@ mgu.run({
         });
 
         ctx.onTab(index => {
-            if (TABS[index]) page = index;
+            if (!TABS[index]) return;
+            page = index;
+            if (page === 2 && !vehicle) refreshVehicle();
         });
 
         const rasterRuns = src => {
@@ -393,8 +419,10 @@ mgu.run({
             cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285, 19, theme.dim, center);
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
-            cv.text('0.1.6', 1120, 105, 14, theme.text, { font: 'bold' });
-            cv.text('Live fuel and trip readings', 1186, 105, 14, theme.dim);
+            cv.text('0.1.7', 1120, 105, 14, theme.text, { font: 'bold' });
+            cv.text('Tank capacity and BC1 in Add Fuel', 1186, 105, 14, theme.dim);
+            cv.text('0.1.6', 1120, 205, 14, theme.text, { font: 'bold' });
+            cv.text('Live fuel and trip readings', 1186, 205, 14, theme.dim);
             cv.text('0.1.4', 1120, 185, 14, theme.text, { font: 'bold' });
             cv.text('Trip reset setting', 1186, 185, 14, theme.dim);
             cv.text('0.1.3', 1120, 125, 14, theme.text, { font: 'bold' });
@@ -414,6 +442,9 @@ mgu.run({
             } else if (page === 2 && vehicle) {
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
                 cv.text('Latest fill-ups', 65, 150, 26, theme.dim);
+                if (vehicle.tankCapacity) {
+                    cv.text('Fuel tank: ' + vehicle.tankCapacity + ' L', 1525, 100, 26, theme.dim, { align: 'right' });
+                }
                 if (!vehicle.latestFuelings.length) cv.text('No tanks found', 65, 218, 26, theme.dim);
                 vehicle.latestFuelings.forEach(({ name, entry, unavailable }, index) => {
                     const y = 175 + index * 96;
@@ -431,7 +462,7 @@ mgu.run({
                 const centered = { align: 'center' };
                 cv.text('No vehicle paired', 800, 108, 34, theme.text,
                     { align: 'center', font: 'bold' });
-                cv.text('Scan the QR code with your phone', 800, 152, 24, theme.dim, centered);
+                cv.text('Secure phone pairing is in development.', 800, 152, 24, theme.dim, centered);
 
                 // Preview only. A live QR must carry a session-specific pairing link.
                 if (!pairingQr) {

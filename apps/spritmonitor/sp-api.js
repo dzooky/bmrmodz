@@ -1,12 +1,39 @@
 'use strict';
 
 const https = require('https');
+const fs = require('fs');
+const path = require('path');
+const dns = require('dns');
+const net = require('net');
 
-function getJson(endpoint, applicationId, token) {
+function useUplink(dataDir) {
+    return (hostname, options, callback) => {
+        let lease;
+        for (const file of [path.join(dataDir, 'uplink.json'), '/run/mgu-uplink/lease.json']) {
+            try { lease = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) {}
+            if (lease && Array.isArray(lease.dns)) break;
+        }
+        const servers = lease && Array.isArray(lease.dns) ? lease.dns.filter(ip => net.isIP(ip)) : [];
+        if (!servers.length) return dns.lookup(hostname, options, callback);
+        const resolver = new dns.Resolver();
+        resolver.setServers(servers);
+        const timer = setTimeout(() => resolver.cancel(), 6000);
+        resolver.resolve4(hostname, (error, addresses) => {
+            clearTimeout(timer);
+            if (error) return callback(error);
+            if (!addresses.length) return callback(new Error('No address from the MGU uplink.'));
+            if (options.all) return callback(null, addresses.map(address => ({ address, family: 4 })));
+            callback(null, addresses[0], 4);
+        });
+    };
+}
+
+function getJson(endpoint, applicationId, token, expectObject, lookup) {
     return new Promise((resolve, reject) => {
         const fail = () => reject(new Error('Could not reach Spritmonitor.'));
         const request = https.get({
             hostname: 'api.spritmonitor.de',
+            lookup,
             path: '/v1/' + endpoint,
             headers: {
                 Accept: 'application/json',
@@ -26,7 +53,7 @@ function getJson(endpoint, applicationId, token) {
             response.on('end', () => {
                 try {
                     const data = JSON.parse(body);
-                    if (!Array.isArray(data)) throw new Error();
+                    if (expectObject ? !data || typeof data !== 'object' || Array.isArray(data) : !Array.isArray(data)) throw new Error();
                     resolve(data);
                 } catch (_) {
                     reject(new Error('Unexpected response from Spritmonitor.'));
@@ -38,8 +65,9 @@ function getJson(endpoint, applicationId, token) {
     });
 }
 
-async function loadVehicle(applicationId, token, vehicleId) {
-    const vehicles = await getJson('vehicles.json', applicationId, token);
+async function loadVehicle(applicationId, token, vehicleId, dataDir) {
+    const lookup = dataDir ? useUplink(dataDir) : undefined;
+    const vehicles = await getJson('vehicles.json', applicationId, token, false, lookup);
     const vehicle = vehicleId
         ? vehicles.find(item => String(item.id) === vehicleId)
         : vehicles.length === 1 ? vehicles[0] : null;
@@ -49,11 +77,15 @@ async function loadVehicle(applicationId, token, vehicleId) {
             : 'No vehicles found in your Spritmonitor account.');
     }
     const endpoint = 'vehicle/' + encodeURIComponent(vehicle.id);
-    const tanks = await getJson(endpoint + '/tanks.json', applicationId, token);
+    const [tanks, config] = await Promise.all([
+        getJson(endpoint + '/tanks.json', applicationId, token, false, lookup),
+        getJson(endpoint + '/getconfig.json', applicationId, token, true, lookup).catch(() => null)
+    ]);
+    const tankVolume = config ? Number(config.tankvolume) : 0;
     const latestFuelings = await Promise.all(tanks.filter(tank => tank.name).map(async tank => {
         try {
             const entries = await getJson(endpoint + '/tank/' + encodeURIComponent(tank.id) +
-                '/fuelings.json', applicationId, token);
+                '/fuelings.json', applicationId, token, false, lookup);
             return { name: tank.name, entry: entries[0] };
         } catch (_) {
             return { name: tank.name, unavailable: true };
@@ -62,6 +94,7 @@ async function loadVehicle(applicationId, token, vehicleId) {
     return {
         name: [vehicle.make, vehicle.model].filter(Boolean).join(' '),
         tanks: tanks.map(tank => tank.name).filter(Boolean),
+        tankCapacity: Number.isFinite(tankVolume) && tankVolume > 0 ? tankVolume : null,
         latestFuelings
     };
 }
