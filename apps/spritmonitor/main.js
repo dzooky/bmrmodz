@@ -9,7 +9,7 @@ const { toggle } = require('./kit/sheet');
 const { withAlpha } = require('./kit/canvas');
 const { decode: decodePng } = require('./png');
 
-const TABS = ['Info', 'Fuelling', 'My Car', 'About'];
+const TABS = ['Info', 'My Car', 'About'];
 
 mgu.run({
     start(ctx) {
@@ -68,21 +68,6 @@ mgu.run({
             return value === null ? 'Unavailable' : value.toFixed(decimals) + (unit ? ' ' + unit : '');
         }
 
-        function renderLiveData(cv, theme) {
-            const data = liveData();
-            const rows = [
-                ['Odometer', reading(data.odometer, 'km', 0)],
-                ['Trip distance (test)', reading(data.trip, 'km', 0)],
-                ['Average consumption', reading(data.consumption, data.consumptionUnit, 1)],
-                ['Average speed', reading(data.speed, data.speedUnit, 1)]
-            ];
-            rows.forEach(([label, value], index) => {
-                const y = 165 + index * 62;
-                cv.roundRect(40, y, 1520, 54, 12, withAlpha('#ffffff', 0.05));
-                cv.text(label, 65, y + 35, 24, theme.text);
-                cv.text(value, 1520, y + 35, 24, theme.dim, { align: 'right' });
-            });
-        }
         let accountStatus = '';
         const isEmulator = typeof process.send === 'function' && process.env.MGU_EMU_CLOSED !== undefined;
         let account;
@@ -385,9 +370,13 @@ mgu.run({
             return 'Saved in iDrive. Waiting to send.';
         }
 
+        function hasAdBlue() {
+            return Boolean(vehicle && vehicle.tankDetails.some(tank => Number(tank.type) === 6));
+        }
+
         function openFuelling(type) {
+            if (type === 'AdBlue' && !hasAdBlue()) return;
             cancelPairingGuide();
-            page = 1;
             formScroll = 0;
             entry = type;
             const now = new Date();
@@ -404,8 +393,15 @@ mgu.run({
             syncFuelings();
         }
 
+        ctx.hideButton('BTN_FUEL');
         ctx.ui.onClick('BTN_FUEL', () => openFuelling('Fuel'));
-        ctx.ui.onClick('BTN_ADBLUE', () => openFuelling('AdBlue'));
+
+        function renderFuellingActions(cv, theme) {
+            G.button(cv, theme, 48, 460, 135, 42, 'Add Fuel', () => openFuelling('Fuel'));
+            if (hasAdBlue()) {
+                G.button(cv, theme, 190, 460, 135, 42, 'Add AdBlue', () => openFuelling('AdBlue'));
+            }
+        }
 
         const basicFields = [
             ['date', 'Date'], ['type', 'Type'], ['odometer', 'Odometer'],
@@ -587,9 +583,9 @@ mgu.run({
             if (draft && activeField) return renderEditor(cv, theme);
             cv.text(draft ? 'Basic data' : 'Fuelling', 48, 80, 32, theme.text, { font: 'bold' });
             if (!draft) {
-                cv.text('Live vehicle data', 48, 126, 24, theme.dim);
-                renderLiveData(cv, theme);
-                cv.text([saveMessage(), syncMessage()].filter(Boolean).join('  /  '), 48, 477, 22, theme.dim);
+                cv.text(saveMessage(), 48, 153, 28, theme.text);
+                cv.text(syncMessage(), 48, 195, 22, theme.dim);
+                G.button(cv, theme, 48, 452, 170, 44, 'Back', () => { savedEntryId = undefined; });
                 return;
             }
             cv.text(vehicle ? vehicle.name + ' / ' + entry : entry, 1545, 80, 22, theme.dim, { align: 'right' });
@@ -602,9 +598,9 @@ mgu.run({
                 draft.type = capacity > 0 && data.fuelLevel !== null
                     ? (data.fuelLevel / capacity * 100 >= threshold ? 'Full' : 'Partial') : '';
             }
-            const tankNames = vehicle ? vehicle.tanks : [];
-            const matchingTanks = tankNames.filter(name => /ad\s*blue/i.test(name) === (entry === 'AdBlue'));
-            const fuelSort = matchingTanks.length === 1 ? matchingTanks[0] : 'Unavailable';
+            const tanks = vehicle ? vehicle.tankDetails : [];
+            const matchingTanks = tanks.filter(tank => (Number(tank.type) === 6) === (entry === 'AdBlue'));
+            const fuelSort = matchingTanks.length === 1 ? matchingTanks[0].name : 'Unavailable';
             const values = {
                 fuel: fuelSort,
                 odometer: reading(draft.odometer, 'km', 0),
@@ -648,7 +644,7 @@ mgu.run({
         }
 
         ctx.onScroll(delta => {
-            if (page !== 1 || !draft || activeField) return false;
+            if (!draft || activeField) return false;
             const next = Math.max(0, Math.min(maxFormScroll(), formScroll + delta));
             if (next === formScroll) return false;
             formScroll = next;
@@ -657,9 +653,12 @@ mgu.run({
 
         ctx.onTab(index => {
             if (!TABS[index]) return;
-            if (index !== 2) cancelPairingGuide();
+            if (index !== 1) cancelPairingGuide();
+            draft = null;
+            savedEntryId = undefined;
+            activeField = null;
             page = index;
-            if (page === 2 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
+            if (page === 1 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
 
         const rasterRuns = src => {
@@ -742,6 +741,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
                 ['0.1.17', 'Fixed startup on BMW iDrive 7'],
                 ['0.1.16', 'Offline fuelling and automatic sync'],
                 ['', 'Last driving settings available offline'],
@@ -775,9 +775,12 @@ mgu.run({
             const theme = ctx.theme();
             const cv = ctx.canvas(1600, 520).clear(theme.bg);
             G.panel(cv, theme, 24, 44, 1552, 468, null);
-            if (page === 3) {
+            const showingFuelling = Boolean(draft || savedEntryId);
+            if (showingFuelling) {
+                renderFuelling(cv, theme);
+            } else if (page === 2) {
                 renderAbout(cv, theme);
-            } else if (page === 2 && vehicle) {
+            } else if (page === 1 && vehicle) {
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
                 if (vehicle.tankCapacity) {
                     cv.text('Fuel tank: ' + vehicle.tankCapacity + ' L', 1525, 100, 26, theme.dim, { align: 'right' });
@@ -840,7 +843,7 @@ mgu.run({
                         });
                     }
                 }
-            } else if (page === 2) {
+            } else if (page === 1) {
                 renderAccount(cv, theme);
             } else if (page === 0) {
                 const centered = { align: 'center' };
@@ -849,10 +852,11 @@ mgu.run({
                 cv.text('We still working on it and will be available soon.',
                     800, 260, 30, theme.text, centered);
                 cv.text('Thank you', 800, 302, 30, theme.text, centered);
-            } else {
-                renderFuelling(cv, theme);
             }
-            G.frame(cv, theme, TABS, page, []);
+            if (!showingFuelling && !tokenPageQr && !phonePairing && !vehicleOptions) {
+                renderFuellingActions(cv, theme);
+            }
+            G.frame(cv, theme, TABS, showingFuelling ? -1 : page, []);
             return ctx.ui.image('MAIN_GFX', cv);
         });
     },
