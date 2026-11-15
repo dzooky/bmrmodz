@@ -576,6 +576,7 @@ async function runInner(impl) {
         sheet(sh) { return display.openSheet(sh); },
         /** hideButton(id): leave bar button id out where the kit runs the screen (its job is on the page there). */
         hideButton(id) { display.hideButton(id); },
+        setButtonVisible(id, visible) { display.setButtonVisible(id, visible); },
         /**
          * onScroll(fn): fn(dy) scrolls a page drawn with cv.scroll = true by dy px (+ = further down), from a
          * finger dragged on it or the controller turned while on it; returns false when already at that end.

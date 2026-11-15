@@ -96,6 +96,7 @@ class Display {
         this.frames = 0; this.jsMs = 0; this.statT = Date.now();
         this.sheet = null;                           // sheet.js page drawn over the app's (openSheet)
         this.ccuLast = null;                         // last controller state (knob counter, press, push)
+        this.hiddenButtons = new Set();
         this.ownHidden = new Set();                  // more bar buttons left out where the kit runs the screen (hideButton)
         G.onConfirm(() => { this.lastWords = null; this.tickHandlers.forEach((fn) => fn()); });   // a reset asks / runs out
         const canvasScreens = (spec.screens || []).filter((s) => s.kind === 'canvas');
@@ -339,7 +340,7 @@ class Display {
     /** Press bar button id, as the HMI does for a tap or the controller's press. */
     _click(id) {
         const c = this.ui.rhmi && this.ui.rhmi.getByName(id);
-        if (!c || !c.emit) return;
+        if (!c || !c.emit || this.hiddenButtons.has(id)) return;
         if (this.sheet && !this.sheet.keepOnBar) this.closeSheet();
         c.emit('action', {});
     }
@@ -568,7 +569,9 @@ class Display {
         const hide = this.ownable() && !this.blocked;
         if (this.hmiBarHidden === hide) return;
         this.hmiBarHidden = hide;
-        (this.screen.buttons || []).forEach((b) => { if (this.ui.visible) this.ui.visible(b[0], !hide); });
+        (this.screen.buttons || []).forEach((b) => {
+            if (this.ui.visible) this.ui.visible(b[0], !hide && !this.hiddenButtons.has(b[0]));
+        });
     }
 
     layout() {
@@ -915,6 +918,17 @@ class Display {
         // the kit's bar with nothing left on it (its buttons on the page, Settings a tab): no bar
         return this.ownable() && !this.buttons().length ? 0 : FULL.barH;
     }
+    /** Change a bar button's availability in both the kit and native HMI bars. */
+    setButtonVisible(id, visible) {
+        if (this.hiddenButtons.has(id) === !visible) return;
+        if (visible) this.hiddenButtons.delete(id);
+        else this.hiddenButtons.add(id);
+        this._btns = null;
+        this.hmiBarHidden = null;
+        this._hmiBar();
+        if (this.place) this._place();
+    }
+
     /** Leave bar button id out where the kit runs the screen (the app draws it on the page there). */
     hideButton(id) {
         this.ownHidden.add(id); this._btns = null;
@@ -934,7 +948,8 @@ class Display {
         this._btnsOwn = own;
         const m = new Recorder(1, 1);
         let x = HMI.btn.x;
-        this._btns = (this.screen.buttons || []).filter((b) => !own || (PAGER.indexOf(b[0]) < 0 && b[0] !== 'BTN_SETTINGS' && !this.ownHidden.has(b[0]))).map((b) => {
+        this._btns = (this.screen.buttons || []).filter((b) => !this.hiddenButtons.has(b[0]) &&
+            (!own || (PAGER.indexOf(b[0]) < 0 && b[0] !== 'BTN_SETTINGS' && !this.ownHidden.has(b[0])))).map((b) => {
             const label = this.labels[b[0]] != null ? this.labels[b[0]] : String(b[1] || b[0]);
             const w = Math.round(m.textWidth(label, HMI.btn.size, { font: 'label' }) * HMI.btn.k) + HMI.btn.pad;
             const r = { id: b[0], label, x, w };

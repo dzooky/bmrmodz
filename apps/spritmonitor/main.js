@@ -105,9 +105,11 @@ mgu.run({
         function cacheVehicle(owner, snapshot) {
             if (owner !== account) return;
             vehicle = snapshot;
-            if (!offline) return;
-            try { vehicle = offline.cache(owner, snapshot); }
-            catch (_) { accountStatus = 'Could not cache vehicle data.'; }
+            if (offline) {
+                try { vehicle = offline.cache(owner, snapshot); }
+                catch (_) { accountStatus = 'Could not cache vehicle data.'; }
+            }
+            ctx.setButtonVisible('BTN_ADBLUE', hasAdBlue());
         }
 
         function syncMessage() {
@@ -261,6 +263,7 @@ mgu.run({
                     account = { applicationId: '6106f958398125d79a1fddfa6b0d60d8', token };
                     vehicleOptions = null;
                     vehicle = null;
+                    ctx.setButtonVisible('BTN_ADBLUE', false);
                     connection = '';
                     refreshVehicle();
                 }, message => {
@@ -393,15 +396,9 @@ mgu.run({
             syncFuelings();
         }
 
-        ctx.hideButton('BTN_FUEL');
+        ctx.setButtonVisible('BTN_ADBLUE', hasAdBlue());
         ctx.ui.onClick('BTN_FUEL', () => openFuelling('Fuel'));
-
-        function renderFuellingActions(cv, theme) {
-            G.button(cv, theme, 48, 460, 135, 42, 'Add Fuel', () => openFuelling('Fuel'));
-            if (hasAdBlue()) {
-                G.button(cv, theme, 190, 460, 135, 42, 'Add AdBlue', () => openFuelling('AdBlue'));
-            }
-        }
+        ctx.ui.onClick('BTN_ADBLUE', () => openFuelling('AdBlue'));
 
         const basicFields = [
             ['date', 'Date'], ['type', 'Type'], ['odometer', 'Odometer'],
@@ -741,6 +738,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.19', 'Restored the original fuelling buttons'],
                 ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
                 ['0.1.17', 'Fixed startup on BMW iDrive 7'],
                 ['0.1.16', 'Offline fuelling and automatic sync'],
@@ -852,9 +850,6 @@ mgu.run({
                 cv.text('We still working on it and will be available soon.',
                     800, 260, 30, theme.text, centered);
                 cv.text('Thank you', 800, 302, 30, theme.text, centered);
-            }
-            if (!showingFuelling && !tokenPageQr && !phonePairing && !vehicleOptions) {
-                renderFuellingActions(cv, theme);
             }
             G.frame(cv, theme, TABS, showingFuelling ? -1 : page, []);
             return ctx.ui.image('MAIN_GFX', cv);
