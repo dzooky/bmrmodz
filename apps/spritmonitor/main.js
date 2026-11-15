@@ -355,7 +355,9 @@ mgu.run({
                 }
                 return;
             }
-            G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', openPairingGuide);
+            if (!account || !account.token) {
+                G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', openPairingGuide);
+            }
             if (account) G.button(cv, theme, 760, 420, 360, 50, 'Disconnect account', disconnectAccount);
             if (account && !vehicleOptions) {
                 if (account.vehicleId) {
@@ -807,6 +809,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.23', 'Hide phone pairing when connected'],
                 ['0.1.22', 'Disconnect the Spritmonitor account'],
                 ['', 'Hide fuelling buttons until a vehicle is selected'],
                 ['0.1.21', 'Show automatic tank capacity in Settings'],
