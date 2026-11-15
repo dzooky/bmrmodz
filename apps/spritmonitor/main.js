@@ -229,6 +229,16 @@ mgu.run({
             account = next;
         }
 
+        function clearSelectedVehicle() {
+            vehicle = null;
+            vehicleOptions = null;
+            tankPage = 0;
+            chartMetric = null;
+            connection = '';
+            accountStatus = '';
+            updateVehicleControls();
+        }
+
         function removeVehicle() {
             if (!account || !account.vehicleId || loadingAccount) return;
             const next = Object.assign({}, account);
@@ -238,13 +248,19 @@ mgu.run({
                 accountStatus = 'Could not remove the vehicle from iDrive.';
                 return;
             }
-            vehicle = null;
-            vehicleOptions = null;
-            tankPage = 0;
-            chartMetric = null;
-            connection = '';
-            updateVehicleControls();
+            clearSelectedVehicle();
             refreshVehicle();
+        }
+
+        function disconnectAccount() {
+            if (!account || loadingAccount) return;
+            try { persistAccount(null); }
+            catch (_) {
+                accountStatus = 'Could not disconnect the Spritmonitor account.';
+                return;
+            }
+            cancelPairingGuide();
+            clearSelectedVehicle();
         }
 
         async function selectVehicle(option) {
@@ -340,6 +356,7 @@ mgu.run({
                 return;
             }
             G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', openPairingGuide);
+            if (account) G.button(cv, theme, 760, 420, 360, 50, 'Disconnect account', disconnectAccount);
             if (account && !vehicleOptions) {
                 if (account.vehicleId) {
                     G.button(cv, theme, 65, 420, 270, 50, 'Remove vehicle', removeVehicle);
@@ -414,6 +431,7 @@ mgu.run({
         }
 
         function updateVehicleControls() {
+            ctx.setButtonVisible('BTN_FUEL', Boolean(account && account.vehicleId));
             ctx.setButtonVisible('BTN_ADBLUE', hasAdBlue());
             const capacity = ctx.settings.item('fuelTankCapacity');
             capacity.labels['0'] = vehicle && vehicle.tankCapacity
@@ -422,7 +440,7 @@ mgu.run({
         }
 
         function openFuelling(type) {
-            if (type === 'AdBlue' && !hasAdBlue()) return;
+            if (!account || !account.vehicleId || (type === 'AdBlue' && !hasAdBlue())) return;
             cancelPairingGuide();
             formScroll = 0;
             entry = type;
@@ -789,6 +807,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.22', 'Disconnect the Spritmonitor account'],
+                ['', 'Hide fuelling buttons until a vehicle is selected'],
                 ['0.1.21', 'Show automatic tank capacity in Settings'],
                 ['0.1.20', 'Remove the selected vehicle in My Car'],
                 ['', 'Retry fuel tank capacity from Spritmonitor'],
@@ -841,6 +861,7 @@ mgu.run({
                 cv.text(tankLabel, 1525, 100, 24, theme.dim, { align: 'right' });
                 cv.text(accountStatus || syncMessage(), 65, 130, 20, theme.dim);
                 G.button(cv, theme, 1245, 447, 280, 45, 'Remove vehicle', removeVehicle);
+                G.button(cv, theme, 50, 447, 280, 45, 'Disconnect account', disconnectAccount);
                 const statistics = vehicle.tankStats;
                 const tank = statistics[tankPage];
                 if (!tank) {
