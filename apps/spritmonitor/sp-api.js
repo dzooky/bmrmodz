@@ -82,6 +82,27 @@ function listVehicles(applicationId, token, dataDir) {
     return getJson('vehicles.json', applicationId, token, false, dataDir ? useUplink(dataDir) : undefined);
 }
 
+function vehicleConfig(vehicleId, applicationId, token, lookup) {
+    return getJson('vehicle/' + encodeURIComponent(vehicleId) + '/getconfig.json',
+        applicationId, token, true, lookup).catch(() => null);
+}
+
+function tankCapacity(config) {
+    const volume = config && Number(config.tankvolume);
+    return Number.isFinite(volume) && volume > 0 ? volume : null;
+}
+
+async function refreshVehicleConfig(account, vehicle, dataDir) {
+    const config = await vehicleConfig(account.vehicleId, account.applicationId, account.token,
+        dataDir ? useUplink(dataDir) : undefined);
+    if (!config) return vehicle;
+    return Object.assign({}, vehicle, {
+        configAvailable: true,
+        tankCapacity: tankCapacity(config),
+        bcConsumptionUnit: Number(config.bcunit)
+    });
+}
+
 async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicles) {
     const lookup = dataDir ? useUplink(dataDir) : undefined;
     const vehicles = knownVehicles || await listVehicles(applicationId, token, dataDir);
@@ -96,7 +117,7 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
     const endpoint = 'vehicle/' + encodeURIComponent(vehicle.id);
     const [tanks, config, currencies, preferences, fuelSorts] = await Promise.all([
         getJson(endpoint + '/tanks.json', applicationId, token, false, lookup),
-        getJson(endpoint + '/getconfig.json', applicationId, token, true, lookup).catch(() => null),
+        vehicleConfig(vehicle.id, applicationId, token, lookup),
         getJson('currencies.json', applicationId, token, false, lookup).catch(() => []),
         getJson('units.json', applicationId, token, true, lookup).catch(() => null),
         getJson('fuelsorts.json', applicationId, token, false, lookup).catch(() => [])
@@ -104,7 +125,6 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
     const adBlue = tank => /ad\s*blue/i.test(tank.name || '');
     const orderedTanks = tanks.filter(tank => tank.name);
     const ordered = orderedTanks.filter(tank => !adBlue(tank)).concat(orderedTanks.filter(adBlue));
-    const tankVolume = config ? Number(config.tankvolume) : 0;
     const latestFuelings = await Promise.all(ordered.map(async tank => {
         try {
             const entries = [];
@@ -149,7 +169,7 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
             quantity: [tank.quantitysum, tank.quantitysumunit],
             cost: [tank.costsum, tank.costsumunit]
         })),
-        tankCapacity: Number.isFinite(tankVolume) && tankVolume > 0 ? tankVolume : null,
+        tankCapacity: tankCapacity(config),
         latestFuelings,
         currencies,
         preferredCurrency: preferences && preferences.currency
@@ -185,4 +205,4 @@ async function addFuelling(account, tankId, fields, dataDir) {
     return result.errors === 0;
 }
 
-module.exports = { listVehicles, loadVehicle, refreshLastFuelling, addFuelling, useUplink };
+module.exports = { listVehicles, loadVehicle, refreshVehicleConfig, refreshLastFuelling, addFuelling, useUplink };

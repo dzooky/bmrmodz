@@ -145,8 +145,14 @@ mgu.run({
                     const fresh = await api.loadVehicle(owner.applicationId, owner.token,
                         String(owner.vehicleId), uplinkDir, vehicles);
                     cacheVehicle(owner, fresh);
-                } else if (opening) {
-                    cacheVehicle(owner, await api.refreshLastFuelling(owner, vehicle, uplinkDir));
+                } else {
+                    if (opening || !vehicle.configAvailable) {
+                        const fresh = await api.refreshVehicleConfig(owner, vehicle, uplinkDir);
+                        if (fresh !== vehicle) cacheVehicle(owner, fresh);
+                    }
+                    if (opening && owner === account) {
+                        cacheVehicle(owner, await api.refreshLastFuelling(owner, vehicle, uplinkDir));
+                    }
                 }
                 if (owner !== account) return;
                 if (draft && entry === 'Fuel' && opening) {
@@ -215,6 +221,32 @@ mgu.run({
             }
         }
 
+        function persistAccount(next) {
+            const temporary = accountFile + '.' + crypto.randomBytes(8).toString('hex') + '.tmp';
+            fs.writeFileSync(temporary, JSON.stringify(next), { mode: 0o600, flag: 'wx' });
+            try { fs.renameSync(temporary, accountFile); }
+            catch (error) { fs.unlinkSync(temporary); throw error; }
+            account = next;
+        }
+
+        function removeVehicle() {
+            if (!account || !account.vehicleId || loadingAccount) return;
+            const next = Object.assign({}, account);
+            delete next.vehicleId;
+            try { persistAccount(next); }
+            catch (_) {
+                accountStatus = 'Could not remove the vehicle from iDrive.';
+                return;
+            }
+            vehicle = null;
+            vehicleOptions = null;
+            tankPage = 0;
+            chartMetric = null;
+            connection = '';
+            ctx.setButtonVisible('BTN_ADBLUE', false);
+            refreshVehicle();
+        }
+
         async function selectVehicle(option) {
             if (loadingAccount) return;
             loadingAccount = true;
@@ -223,11 +255,7 @@ mgu.run({
                 const next = Object.assign({}, account, { vehicleId: String(option.id) });
                 const selected = await api.loadVehicle(next.applicationId, next.token,
                     next.vehicleId, uplinkDir, vehicleOptions);
-                const temporary = accountFile + '.' + crypto.randomBytes(8).toString('hex') + '.tmp';
-                fs.writeFileSync(temporary, JSON.stringify(next), { mode: 0o600, flag: 'wx' });
-                try { fs.renameSync(temporary, accountFile); }
-                catch (error) { fs.unlinkSync(temporary); throw error; }
-                account = next;
+                persistAccount(next);
                 tankPage = 0;
                 chartMetric = null;
                 vehicleOptions = null;
@@ -238,6 +266,7 @@ mgu.run({
                 accountStatus = error.message;
             } finally {
                 loadingAccount = false;
+                syncFuelings();
             }
         }
 
@@ -311,6 +340,13 @@ mgu.run({
                 return;
             }
             G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', openPairingGuide);
+            if (account && !vehicleOptions) {
+                if (account.vehicleId) {
+                    G.button(cv, theme, 65, 420, 270, 50, 'Remove vehicle', removeVehicle);
+                } else {
+                    G.button(cv, theme, 65, 420, 270, 50, 'Choose vehicle', refreshVehicle);
+                }
+            }
             if (vehicleOptions && vehicleOptions.length) {
                 cv.text(accountStatus || 'Select your vehicle', 65, 141, 24, theme.dim);
                 const onPage = 4;
@@ -576,6 +612,13 @@ mgu.run({
             return 'Saved in iDrive.';
         }
 
+        function fuelTankCapacity() {
+            const manual = Number(ctx.settings.get('fuelTankCapacity'));
+            if (manual > 0) return { litres: manual, source: 'Settings' };
+            if (vehicle && vehicle.tankCapacity) return { litres: vehicle.tankCapacity, source: 'Spritmonitor' };
+            return { litres: null };
+        }
+
         function renderFuelling(cv, theme) {
             if (draft && activeField) return renderEditor(cv, theme);
             cv.text(draft ? 'Basic data' : 'Fuelling', 48, 80, 32, theme.text, { font: 'bold' });
@@ -590,7 +633,7 @@ mgu.run({
             draft.odometer = data.odometer;
             draft.trip = data.trip;
             if (entry === 'Fuel' && !draft.manualType) {
-                const capacity = Number(ctx.settings.get('fuelTankCapacity')) || (vehicle && vehicle.tankCapacity);
+                const capacity = fuelTankCapacity().litres;
                 const threshold = Number(ctx.settings.get('fullTankThreshold'));
                 draft.type = capacity > 0 && data.fuelLevel !== null
                     ? (data.fuelLevel / capacity * 100 >= threshold ? 'Full' : 'Partial') : '';
@@ -738,6 +781,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.20', 'Remove the selected vehicle in My Car'],
+                ['', 'Retry fuel tank capacity from Spritmonitor'],
                 ['0.1.19', 'Restored the original fuelling buttons'],
                 ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
                 ['0.1.17', 'Fixed startup on BMW iDrive 7'],
@@ -780,10 +825,13 @@ mgu.run({
                 renderAbout(cv, theme);
             } else if (page === 1 && vehicle) {
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
-                if (vehicle.tankCapacity) {
-                    cv.text('Fuel tank: ' + vehicle.tankCapacity + ' L', 1525, 100, 26, theme.dim, { align: 'right' });
-                }
-                cv.text(syncMessage(), 65, 130, 20, theme.dim);
+                const capacity = fuelTankCapacity();
+                const tankLabel = capacity.litres
+                    ? 'Fuel tank: ' + capacity.litres + ' L (' + capacity.source + ')'
+                    : 'Fuel tank capacity unavailable';
+                cv.text(tankLabel, 1525, 100, 24, theme.dim, { align: 'right' });
+                cv.text(accountStatus || syncMessage(), 65, 130, 20, theme.dim);
+                G.button(cv, theme, 1245, 447, 280, 45, 'Remove vehicle', removeVehicle);
                 const statistics = vehicle.tankStats;
                 const tank = statistics[tankPage];
                 if (!tank) {
