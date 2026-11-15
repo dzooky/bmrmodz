@@ -287,7 +287,6 @@ mgu.run({
         }
 
         function openPairingGuide() {
-            accountStatus = '';
             tokenPageQr = require('./qrcode')(0, 'M');
             tokenPageQr.addData('https://www.spritmonitor.de/en/my_account/change_password.html');
             tokenPageQr.make();
@@ -325,6 +324,7 @@ mgu.run({
             if (account && account.vehicleId) cv.text(syncMessage(), 1525, 95, 20, theme.dim, { align: 'right' });
             if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
             if (loadingAccount) return;
+            if ((!account || !account.token) && !tokenPageQr && !phonePairing) openPairingGuide();
             if (tokenPageQr || phonePairing) {
                 const firstStep = Boolean(tokenPageQr);
                 const heading = firstStep ? '1 / 2   Create and copy your token' : '2 / 2   Paste your token';
@@ -344,7 +344,10 @@ mgu.run({
                             y + (row + 4) * cell, cell, cell, 0x000000ff);
                     }
                 }
-                G.button(cv, theme, 65, 425, 275, 50, 'Cancel', cancelPairingGuide);
+                G.button(cv, theme, 65, 425, 275, 50, 'Cancel', () => {
+                    cancelPairingGuide();
+                    page = 0;
+                });
                 if (firstStep) {
                     G.button(cv, theme, 1210, 425, 315, 50, 'Next', startPhonePairing);
                 } else {
@@ -354,9 +357,6 @@ mgu.run({
                     });
                 }
                 return;
-            }
-            if (!account || !account.token) {
-                G.button(cv, theme, 1160, 420, 365, 50, 'Connect with phone', openPairingGuide);
             }
             if (account) G.button(cv, theme, 760, 420, 360, 50, 'Disconnect account', disconnectAccount);
             if (account && !vehicleOptions) {
@@ -809,6 +809,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.24', 'Open QR pairing automatically in My Car'],
                 ['0.1.23', 'Hide phone pairing when connected'],
                 ['0.1.22', 'Disconnect the Spritmonitor account'],
                 ['', 'Hide fuelling buttons until a vehicle is selected'],
