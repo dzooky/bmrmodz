@@ -101,11 +101,8 @@ mgu.run({
         const accountFile = path.join(ctx.dataDir, 'sp-account.json');
         const uplinkDir = isEmulator ? undefined : ctx.dataDir;
         let loadingAccount = false;
-        let accountEditor = false;
         let vehicleOptions = null;
         let vehiclePage = 0;
-        let tokenInput = '';
-        let keyboard = 0;
 
         async function refreshVehicle() {
             if (!account || loadingAccount || !account.applicationId || !account.token) return;
@@ -155,34 +152,6 @@ mgu.run({
             cv.text('MY CAR', 65, 95, 34, theme.text, { font: 'bold' });
             if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
             if (loadingAccount) return;
-            if (accountEditor) {
-                cv.text('Enter your personal access token from Spritmonitor.', 65, 143, 24, theme.dim);
-                cv.text(tokenInput.length + ' characters entered', 65, 177, 22, theme.text);
-                const modes = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz', '0123456789-_'];
-                const names = ['ABC', 'abc', '123'];
-                modes[keyboard].split('').forEach((key, index) => {
-                    G.button(cv, theme, 60 + (index % 10) * 148, 194 + Math.floor(index / 10) * 62,
-                        136, 52, key, () => { if (tokenInput.length < 256) tokenInput += key; },
-                        { key: 'token-' + key });
-                });
-                names.forEach((label, index) => {
-                    G.button(cv, theme, 60 + index * 148, 392, 136, 52, label, () => { keyboard = index; });
-                });
-                G.button(cv, theme, 515, 392, 215, 52, 'Delete', () => { tokenInput = tokenInput.slice(0, -1); });
-                G.button(cv, theme, 755, 392, 270, 52, 'Connect', () => {
-                    if (!tokenInput) return;
-                    account = { applicationId: '6106f958398125d79a1fddfa6b0d60d8', token: tokenInput };
-                    tokenInput = '';
-                    accountEditor = false;
-                    vehicleOptions = null;
-                    refreshVehicle();
-                });
-                G.button(cv, theme, 1050, 392, 240, 52, 'Cancel', () => {
-                    tokenInput = '';
-                    accountEditor = false;
-                });
-                return;
-            }
             if (vehicleOptions && vehicleOptions.length) {
                 cv.text(accountStatus || 'Select your vehicle', 65, 141, 24, theme.dim);
                 const onPage = 4;
@@ -197,13 +166,9 @@ mgu.run({
                 }
             } else if (!accountStatus) {
                 cv.text('No vehicle connected', 65, 141, 24, theme.dim);
+                cv.text('Phone pairing is not available yet.', 65, 187, 24, theme.dim);
             }
-            G.button(cv, theme, 1160, 420, 365, 50, 'Enter access token', () => {
-                tokenInput = '';
-                keyboard = 0;
-                accountStatus = '';
-                accountEditor = true;
-            });
+
         }
 
         refreshVehicle();
@@ -430,10 +395,6 @@ mgu.run({
         ctx.onTab(index => {
             if (!TABS[index]) return;
             page = index;
-            if (page !== 2) {
-                tokenInput = '';
-                accountEditor = false;
-            }
             if (page === 2 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
 
@@ -517,7 +478,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
-                ['0.1.8', 'Connect account and select vehicle'],
+                ['0.1.9', 'Removed token entry from iDrive'],
+                ['0.1.8', 'Select a vehicle from the connected account'],
                 ['', 'BC1 averages and manual refilled quantity'],
                 ['0.1.7', 'Tank capacity from Spritmonitor'],
                 ['0.1.6', 'Live fuel and trip readings'],
