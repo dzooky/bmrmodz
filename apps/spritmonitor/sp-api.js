@@ -65,9 +65,13 @@ function getJson(endpoint, applicationId, token, expectObject, lookup) {
     });
 }
 
-async function loadVehicle(applicationId, token, vehicleId, dataDir) {
+function listVehicles(applicationId, token, dataDir) {
+    return getJson('vehicles.json', applicationId, token, false, dataDir ? useUplink(dataDir) : undefined);
+}
+
+async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicles) {
     const lookup = dataDir ? useUplink(dataDir) : undefined;
-    const vehicles = await getJson('vehicles.json', applicationId, token, false, lookup);
+    const vehicles = knownVehicles || await listVehicles(applicationId, token, dataDir);
     const vehicle = vehicleId
         ? vehicles.find(item => String(item.id) === vehicleId)
         : vehicles.length === 1 ? vehicles[0] : null;
@@ -92,11 +96,11 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir) {
         }
     }));
     return {
-        name: [vehicle.make, vehicle.model].filter(Boolean).join(' '),
+        name: [vehicle.make, config && config.modelname || vehicle.model].filter(Boolean).join(' '),
         tanks: tanks.map(tank => tank.name).filter(Boolean),
         tankCapacity: Number.isFinite(tankVolume) && tankVolume > 0 ? tankVolume : null,
         latestFuelings
     };
 }
 
-module.exports = { loadVehicle };
+module.exports = { listVehicles, loadVehicle };

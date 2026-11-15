@@ -2,6 +2,7 @@
 
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const { toggle } = require('./kit/sheet');
@@ -20,7 +21,6 @@ mgu.run({
         const maxFormScroll = () => entry === 'Fuel' ? 915 : 184;
         let page = 0;
         let artwork;
-        let pairingQr;
         let vehicle;
         const readings = {};
         const consumptionUnits = {
@@ -55,8 +55,8 @@ mgu.run({
                 odometer: read(tank.mileageKilometre, 16777215),
                 fuelLevel: read(tank.fluidLevelFuelTank, 255),
                 trip: read(trip.wayPassed, 65535),
-                consumption: [average('consumptionAverage1BC1'), average('consumptionAverage2BC2')],
-                speed: [average('speedAverage1BC1'), average('speedAverage2BC2')],
+                consumption: average('consumptionAverage1BC1'),
+                speed: average('speedAverage1BC1'),
                 consumptionUnit: consumptionUnits[averages.statusUnitOfMeasurementConsumptionBC],
                 speedUnit: speedUnits[averages.statusUnitOfMeasurementSpeedBC]
             };
@@ -71,9 +71,8 @@ mgu.run({
             const rows = [
                 ['Odometer', reading(data.odometer, 'km', 0)],
                 ['Trip distance (test)', reading(data.trip, 'km', 0)],
-                ['Fuel in tank', reading(data.fuelLevel, 'L', 0)],
-                ['Average consumption (BC1 / BC2)', data.consumption.map(v => reading(v, data.consumptionUnit, 1)).join(' / ')],
-                ['Average speed (BC1 / BC2)', data.speed.map(v => reading(v, data.speedUnit, 1)).join(' / ')]
+                ['Average consumption', reading(data.consumption, data.consumptionUnit, 1)],
+                ['Average speed', reading(data.speed, data.speedUnit, 1)]
             ];
             rows.forEach(([label, value], index) => {
                 const y = 165 + index * 62;
@@ -98,21 +97,115 @@ mgu.run({
                 if (error.code !== 'ENOENT') accountStatus = 'Could not read the Spritmonitor account setup.';
             }
         }
+        const api = require('./sp-api');
+        const accountFile = path.join(ctx.dataDir, 'sp-account.json');
+        const uplinkDir = isEmulator ? undefined : ctx.dataDir;
         let loadingAccount = false;
-        function refreshVehicle() {
-            if (!account || loadingAccount) return;
-            if (!account.applicationId || !account.token || !account.vehicleId) {
-                accountStatus = 'The Spritmonitor account setup is incomplete.';
+        let accountEditor = false;
+        let vehicleOptions = null;
+        let vehiclePage = 0;
+        let tokenInput = '';
+        let keyboard = 0;
+
+        async function refreshVehicle() {
+            if (!account || loadingAccount || !account.applicationId || !account.token) return;
+            loadingAccount = true;
+            accountStatus = 'Loading vehicles from Spritmonitor...';
+            try {
+                if (account.vehicleId) {
+                    vehicle = await api.loadVehicle(account.applicationId, account.token,
+                        String(account.vehicleId), uplinkDir);
+                    accountStatus = '';
+                } else {
+                    vehicleOptions = await api.listVehicles(account.applicationId, account.token, uplinkDir);
+                    vehiclePage = 0;
+                    accountStatus = vehicleOptions.length ? '' : 'No vehicles found in this account.';
+                }
+            } catch (error) {
+                accountStatus = error.message;
+            } finally {
+                loadingAccount = false;
+            }
+        }
+
+        async function selectVehicle(option) {
+            if (loadingAccount) return;
+            loadingAccount = true;
+            accountStatus = 'Loading selected vehicle...';
+            try {
+                const next = Object.assign({}, account, { vehicleId: String(option.id) });
+                const selected = await api.loadVehicle(next.applicationId, next.token,
+                    next.vehicleId, uplinkDir, vehicleOptions);
+                const temporary = accountFile + '.' + crypto.randomBytes(8).toString('hex') + '.tmp';
+                fs.writeFileSync(temporary, JSON.stringify(next), { mode: 0o600, flag: 'wx' });
+                try { fs.renameSync(temporary, accountFile); }
+                catch (error) { fs.unlinkSync(temporary); throw error; }
+                account = next;
+                vehicle = selected;
+                vehicleOptions = null;
+                accountStatus = '';
+            } catch (error) {
+                accountStatus = error.message;
+            } finally {
+                loadingAccount = false;
+            }
+        }
+
+        function renderAccount(cv, theme) {
+            cv.text('MY CAR', 65, 95, 34, theme.text, { font: 'bold' });
+            if (accountStatus && (!vehicleOptions || loadingAccount)) cv.text(accountStatus, 65, 141, 24, theme.dim);
+            if (loadingAccount) return;
+            if (accountEditor) {
+                cv.text('Enter your personal access token from Spritmonitor.', 65, 143, 24, theme.dim);
+                cv.text(tokenInput.length + ' characters entered', 65, 177, 22, theme.text);
+                const modes = ['ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz', '0123456789-_'];
+                const names = ['ABC', 'abc', '123'];
+                modes[keyboard].split('').forEach((key, index) => {
+                    G.button(cv, theme, 60 + (index % 10) * 148, 194 + Math.floor(index / 10) * 62,
+                        136, 52, key, () => { if (tokenInput.length < 256) tokenInput += key; },
+                        { key: 'token-' + key });
+                });
+                names.forEach((label, index) => {
+                    G.button(cv, theme, 60 + index * 148, 392, 136, 52, label, () => { keyboard = index; });
+                });
+                G.button(cv, theme, 515, 392, 215, 52, 'Delete', () => { tokenInput = tokenInput.slice(0, -1); });
+                G.button(cv, theme, 755, 392, 270, 52, 'Connect', () => {
+                    if (!tokenInput) return;
+                    account = { applicationId: '6106f958398125d79a1fddfa6b0d60d8', token: tokenInput };
+                    tokenInput = '';
+                    accountEditor = false;
+                    vehicleOptions = null;
+                    refreshVehicle();
+                });
+                G.button(cv, theme, 1050, 392, 240, 52, 'Cancel', () => {
+                    tokenInput = '';
+                    accountEditor = false;
+                });
                 return;
             }
-            loadingAccount = true;
-            accountStatus = 'Loading vehicle from Spritmonitor...';
-            require('./sp-api').loadVehicle(account.applicationId, account.token, String(account.vehicleId),
-                isEmulator ? undefined : ctx.dataDir)
-                .then(result => { vehicle = result; accountStatus = ''; })
-                .catch(error => { accountStatus = error.message; })
-                .then(() => { loadingAccount = false; });
+            if (vehicleOptions && vehicleOptions.length) {
+                cv.text(accountStatus || 'Select your vehicle', 65, 141, 24, theme.dim);
+                const onPage = 4;
+                vehicleOptions.slice(vehiclePage * onPage, (vehiclePage + 1) * onPage).forEach((option, index) => {
+                    const label = [option.make, option.model, option.sign].filter(Boolean).join(' ');
+                    G.button(cv, theme, 65, 159 + index * 62, 1460, 53, label || String(option.id),
+                        () => selectVehicle(option), { key: 'vehicle-' + option.id });
+                });
+                if (vehiclePage) G.button(cv, theme, 65, 420, 250, 50, 'Previous', () => { vehiclePage--; });
+                if ((vehiclePage + 1) * onPage < vehicleOptions.length) {
+                    G.button(cv, theme, 330, 420, 250, 50, 'Next', () => { vehiclePage++; });
+                }
+            } else if (!accountStatus) {
+                cv.text('No vehicle connected', 65, 141, 24, theme.dim);
+            }
+            G.button(cv, theme, 1160, 420, 365, 50, 'Enter access token', () => {
+                tokenInput = '';
+                keyboard = 0;
+                accountStatus = '';
+                accountEditor = true;
+            });
         }
+
         refreshVehicle();
         function openFuelling(type) {
             page = 1;
@@ -133,7 +226,7 @@ mgu.run({
 
         const basicFields = [
             ['date', 'Date'], ['type', 'Type'], ['odometer', 'Odometer'],
-            ['trip', 'Trip odometer'], ['quantity', 'Quantity'], ['fuel', 'Fuel sort'],
+            ['trip', 'Trip odometer'], ['quantity', 'Refilled quantity'], ['fuel', 'Fuel sort'],
             ['price', 'Price'], ['note', 'Note']
         ];
         const stationFields = [
@@ -299,8 +392,8 @@ mgu.run({
             const stationY = entry === 'Fuel' ? 1040 : 480;
             renderDetails(cv, theme, 'Gas Station', stationFields, stationY - offset, true);
             if (entry === 'Fuel') {
-                draft.consumption = reading(data.consumption[0], data.consumptionUnit, 1);
-                draft.averageSpeed = reading(data.speed[0], data.speedUnit, 1);
+                draft.consumption = reading(data.consumption, data.consumptionUnit, 1);
+                draft.averageSpeed = reading(data.speed, data.speedUnit, 1);
                 renderDetails(cv, theme, 'Board Computer (BC1)', computerFields, 1216 - offset, false);
             }
             cv.noclip();
@@ -314,7 +407,7 @@ mgu.run({
                 const validDate = Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === draft.date;
                 if (!validDate) formStatus = 'Enter a valid date (YYYY-MM-DD).';
                 else if (!draft.type) formStatus = 'Select a fuelling type.';
-                else if (!(Number(draft.quantity) > 0)) formStatus = 'Enter the quantity.';
+                else if (!(Number(draft.quantity) > 0)) formStatus = 'Enter the refilled quantity.';
                 else if (!/^\d+(?:\.\d+)?$/.test(draft.price)) formStatus = 'Enter the price.';
                 else if (!(Number(draft.odometer) > 0 || Number(draft.trip) > 0)) {
                     formStatus = 'Odometer and trip data are unavailable.';
@@ -337,7 +430,11 @@ mgu.run({
         ctx.onTab(index => {
             if (!TABS[index]) return;
             page = index;
-            if (page === 2 && !vehicle) refreshVehicle();
+            if (page !== 2) {
+                tokenInput = '';
+                accountEditor = false;
+            }
+            if (page === 2 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
 
         const rasterRuns = src => {
@@ -419,18 +516,21 @@ mgu.run({
             cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285, 19, theme.dim, center);
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
-            cv.text('0.1.7', 1120, 105, 14, theme.text, { font: 'bold' });
-            cv.text('Tank capacity and BC1 in Add Fuel', 1186, 105, 14, theme.dim);
-            cv.text('0.1.6', 1120, 205, 14, theme.text, { font: 'bold' });
-            cv.text('Live fuel and trip readings', 1186, 205, 14, theme.dim);
-            cv.text('0.1.4', 1120, 185, 14, theme.text, { font: 'bold' });
-            cv.text('Trip reset setting', 1186, 185, 14, theme.dim);
-            cv.text('0.1.3', 1120, 125, 14, theme.text, { font: 'bold' });
-            cv.text('Settings tab', 1186, 125, 14, theme.dim);
-            cv.text('0.1.2', 1120, 145, 14, theme.text, { font: 'bold' });
-            cv.text('Feedback QR codes in About', 1186, 145, 14, theme.dim);
-            cv.text('0.1.1', 1120, 165, 14, theme.text, { font: 'bold' });
-            cv.text('BMRMODZ layout and About', 1186, 165, 14, theme.dim);
+            const releases = [
+                ['0.1.8', 'Connect account and select vehicle'],
+                ['', 'BC1 averages and manual refilled quantity'],
+                ['0.1.7', 'Tank capacity from Spritmonitor'],
+                ['0.1.6', 'Live fuel and trip readings'],
+                ['0.1.4', 'Trip reset setting'],
+                ['0.1.3', 'Settings tab'],
+                ['0.1.2', 'Feedback QR codes in About'],
+                ['0.1.1', 'BMRMODZ layout and About']
+            ];
+            releases.forEach(([version, description], index) => {
+                const y = 105 + index * 20;
+                if (version) cv.text(version, 1120, y, 14, theme.text, { font: 'bold' });
+                cv.text(description, 1186, y, 14, theme.dim);
+            });
         }
 
         ctx.loop('MAIN', 4, () => {
@@ -456,31 +556,8 @@ mgu.run({
                         : entry ? parts.filter(Boolean).join('  /  ') || 'Details unavailable' : 'No fill-ups yet';
                     cv.text(detail, 1525, y + 51, 26, theme.dim, { align: 'right' });
                 });
-            } else if (page === 2 && accountStatus) {
-                cv.text(accountStatus, 800, 240, 26, theme.text, { align: 'center' });
             } else if (page === 2) {
-                const centered = { align: 'center' };
-                cv.text('No vehicle paired', 800, 108, 34, theme.text,
-                    { align: 'center', font: 'bold' });
-                cv.text('Secure phone pairing is in development.', 800, 152, 24, theme.dim, centered);
-
-                // Preview only. A live QR must carry a session-specific pairing link.
-                if (!pairingQr) {
-                    pairingQr = rasterRuns(decodePng(path.join(__dirname, 'qr_pairing_preview.png'), 180, 180))
-                        .filter(run => run.color !== 0xffffffff);
-                }
-                const scale = cv.place ? cv.place.scale : 1;
-                const edge = value => Math.round(value * scale) / scale;
-                const x = 710, y = 180, size = 180;
-                cv.fillRect(edge(x), edge(y), edge(x + size) - edge(x), edge(y + size) - edge(y), 0xffffffff);
-                for (const run of pairingQr) {
-                    const left = edge(x + run.x);
-                    const top = edge(y + run.y);
-                    cv.fillRect(left, top, edge(x + run.x + run.width) - left,
-                        edge(y + run.y + run.height) - top, run.color);
-                }
-                cv.text('Preview QR code. Pairing is not available yet.',
-                    800, 408, 19, theme.dim, centered);
+                renderAccount(cv, theme);
             } else if (page === 0) {
                 const centered = { align: 'center' };
                 cv.text('This application is still in development phase and not ready for public use.',
