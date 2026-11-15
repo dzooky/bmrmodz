@@ -106,6 +106,8 @@ mgu.run({
         let tokenPageQr;
         let vehiclePage = 0;
         let tankPage = 0;
+        let chartMetric = null;
+        const renderChart = require('./fuelling-chart');
 
         async function refreshVehicle() {
             if (!account || loadingAccount || !account.applicationId || !account.token) return;
@@ -142,6 +144,7 @@ mgu.run({
                 catch (error) { fs.unlinkSync(temporary); throw error; }
                 account = next;
                 tankPage = 0;
+                chartMetric = null;
                 vehicle = selected;
                 vehicleOptions = null;
                 accountStatus = '';
@@ -545,6 +548,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.12', 'Consumption, distance and unit price charts'],
+                ['', 'Fuel tanks shown before AdBlue'],
                 ['0.1.11', 'Tank statistics in My Car'],
                 ['', 'Two-step phone pairing guide'],
                 ['0.1.10', 'Secure phone pairing with a QR code'],
@@ -581,30 +586,40 @@ mgu.run({
                 if (!tank) {
                     cv.text('No tanks found', 65, 160, 26, theme.dim);
                 } else {
-                    cv.text(tank.name + '  ' + (tankPage + 1) + ' / ' + statistics.length,
-                        65, 150, 26, theme.text, { font: 'bold' });
-                    const format = (value, unit) => {
-                        if (value == null || String(value).trim() === '') return 'Unavailable';
-                        return [value, unit].filter(part => part != null && part !== '').join(' ');
-                    };
-                    const latest = vehicle.latestFuelings[tankPage];
-                    const entry = latest.entry;
-                    const lastFill = latest.unavailable ? 'Unavailable' : !entry ? 'No fill-ups yet'
-                        : [entry.date, entry.quantity == null ? null : format(entry.quantity, entry.quantityunit)]
-                            .filter(Boolean).join('  /  ') || 'Unavailable';
-                    const rows = [
-                        ['Average consumption', format(...tank.consumption)],
-                        ['Recorded distance', format(...tank.distance)],
-                        ['Recorded quantity', format(...tank.quantity)],
-                        ['Fuel costs', format(...tank.cost)],
-                        ['Latest fill-up', lastFill]
-                    ];
-                    rows.forEach(([label, value], index) => {
-                        const y = 164 + index * 54;
-                        cv.roundRect(50, y, 1500, 48, 12, withAlpha('#ffffff', 0.05));
-                        cv.text(label, 75, y + 33, 24, theme.text);
-                        cv.text(value, 1525, y + 33, 24, theme.dim, { align: 'right' });
-                    });
+                    if (chartMetric) {
+                        renderChart(cv, theme, vehicle, tankPage, chartMetric);
+                    } else {
+                        cv.text(tank.name + '  ' + (tankPage + 1) + ' / ' + statistics.length,
+                            65, 150, 26, theme.text, { font: 'bold' });
+                        const format = (value, unit) => {
+                            if (value == null || String(value).trim() === '') return 'Unavailable';
+                            return [value, unit].filter(part => part != null && part !== '').join(' ');
+                        };
+                        const latest = vehicle.latestFuelings[tankPage];
+                        const entry = latest.entry;
+                        const lastFill = latest.unavailable ? 'Unavailable' : !entry ? 'No fill-ups yet'
+                            : [entry.date, entry.quantity == null ? null : format(entry.quantity, entry.quantityunit)]
+                                .filter(Boolean).join('  /  ') || 'Unavailable';
+                        const rows = [
+                            ['Average consumption', format(...tank.consumption)],
+                            ['Recorded distance', format(...tank.distance)],
+                            ['Recorded quantity', format(...tank.quantity)],
+                            ['Fuel costs', format(...tank.cost)],
+                            ['Latest fill-up', lastFill]
+                        ];
+                        rows.forEach(([label, value], index) => {
+                            const y = 164 + index * 54;
+                            cv.roundRect(50, y, 1500, 48, 12, withAlpha('#ffffff', 0.05));
+                            cv.text(label, 75, y + 33, 24, theme.text);
+                            cv.text(value, 1525, y + 33, 24, theme.dim, { align: 'right' });
+                        });
+                    }
+                    [['consumption', 'Consumption'], ['distance', 'Distance'], ['price', 'Unit price']]
+                        .forEach(([metric, label], i) => {
+                            G.button(cv, theme, 355 + i * 222, 447, 210, 45,
+                                chartMetric === metric ? 'Back to summary' : label,
+                                () => { chartMetric = chartMetric === metric ? null : metric; });
+                        });
                     if (tankPage > 0) {
                         G.button(cv, theme, 65, 447, 280, 45, 'Previous tank', () => { tankPage--; });
                     }

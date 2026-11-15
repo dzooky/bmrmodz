@@ -81,24 +81,28 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
             : 'No vehicles found in your Spritmonitor account.');
     }
     const endpoint = 'vehicle/' + encodeURIComponent(vehicle.id);
-    const [tanks, config] = await Promise.all([
+    const [tanks, config, currencies] = await Promise.all([
         getJson(endpoint + '/tanks.json', applicationId, token, false, lookup),
-        getJson(endpoint + '/getconfig.json', applicationId, token, true, lookup).catch(() => null)
+        getJson(endpoint + '/getconfig.json', applicationId, token, true, lookup).catch(() => null),
+        getJson('currencies.json', applicationId, token, false, lookup).catch(() => [])
     ]);
+    const adBlue = tank => /ad\s*blue/i.test(tank.name || '');
+    const orderedTanks = tanks.filter(tank => tank.name);
+    const ordered = orderedTanks.filter(tank => !adBlue(tank)).concat(orderedTanks.filter(adBlue));
     const tankVolume = config ? Number(config.tankvolume) : 0;
-    const latestFuelings = await Promise.all(tanks.filter(tank => tank.name).map(async tank => {
+    const latestFuelings = await Promise.all(ordered.map(async tank => {
         try {
             const entries = await getJson(endpoint + '/tank/' + encodeURIComponent(tank.id) +
-                '/fuelings.json', applicationId, token, false, lookup);
-            return { name: tank.name, entry: entries[0] };
+                '/fuelings.json?limit=60', applicationId, token, false, lookup);
+            return { name: tank.name, entry: entries[0], entries };
         } catch (_) {
             return { name: tank.name, unavailable: true };
         }
     }));
     return {
         name: [vehicle.make, config && config.modelname || vehicle.model].filter(Boolean).join(' '),
-        tanks: tanks.map(tank => tank.name).filter(Boolean),
-        tankStats: tanks.filter(tank => tank.name).map(tank => ({
+        tanks: ordered.map(tank => tank.name),
+        tankStats: ordered.map(tank => ({
             name: tank.name,
             consumption: [tank.consumption, tank.consumptionunit],
             distance: [tank.tripsum, tank.tripsumunit],
@@ -106,7 +110,8 @@ async function loadVehicle(applicationId, token, vehicleId, dataDir, knownVehicl
             cost: [tank.costsum, tank.costsumunit]
         })),
         tankCapacity: Number.isFinite(tankVolume) && tankVolume > 0 ? tankVolume : null,
-        latestFuelings
+        latestFuelings,
+        currencies
     };
 }
 
