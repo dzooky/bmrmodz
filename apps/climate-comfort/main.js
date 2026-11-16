@@ -2,6 +2,8 @@
 
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
+const { ReadOnlyDiag } = require('./kit/readonly-diag');
+const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
 const renderSeats = require('./seats');
 const renderSteering = require('./steering');
@@ -22,29 +24,18 @@ function equipmentTabs(equipment) {
 }
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
-const VO_STATES = ['unknown', 'present', 'absent'];
 
-function renderEquipment(cv, theme, equipment, rows, voSettings) {
+function renderEquipment(cv, theme, equipment, rows, voStatus) {
     const center = { align: 'center' };
     cv.text('Equipment', 66, 96, 19, theme.dim);
     cv.text('Installed', 1450, 96, 19, theme.dim, center);
+    if (voStatus) cv.text(voStatus, 800, 96, 19, theme.dim, center);
 
     rows.forEach(({ key, label }, index) => {
         const y = 140 + index * 62;
         cv.fillRect(55, y - 25, 1490, 1, theme.dim);
         cv.text(label, 66, y + 13, 24, theme.text);
-        const code = VO_CODES[key];
-        if (voSettings && code) {
-            const setting = 'vo' + code;
-            const status = equipment[key] === true ? 'Present' : equipment[key] === false ? 'Absent' : 'Unknown';
-            cv.text('VO ' + code, 1220, y + 13, 19, theme.dim);
-            cv.roundRect(1368, y - 14, 164, 46, 10, '#ffffff12');
-            cv.text(status, 1450, y + 15, 19, theme.text, center);
-            cv.target(1368, y - 14, 164, 46, () => {
-                const index = VO_STATES.indexOf(voSettings.get(setting));
-                voSettings.set(setting, VO_STATES[(index + 1) % VO_STATES.length]);
-            }, setting);
-        } else if (equipment[key] === true) {
+        if (equipment[key] === true) {
             cv.polyline([[1438, y - 1], [1446, y + 7], [1462, y - 9]], 4, '#55d884');
         } else {
             const status = equipment[key] === false ? '-' : 'Unknown';
@@ -60,18 +51,37 @@ mgu.run({
         const equipment = {};
         let tabs = [];
         let page = 'Info';
+        let voStatus = null;
+        const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
+
+        async function detectSteering() {
+            if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
+            voStatus = 'Reading vehicle order...';
+            try {
+                const codes = await readVehicleOrder(link);
+                if (!codes) {
+                    // A later visit to My Car can retry after the gateway wakes up.
+                    voStatus = 'Vehicle order unavailable';
+                    ctx.log.warn('Climate Comfort: no supported Vehicle Order response from gateway 10 DID 3F06');
+                    return;
+                }
+                Object.keys(VO_CODES).forEach(key => { equipment[key] = codes.has(VO_CODES[key]); });
+                voStatus = 'Vehicle order read';
+            } catch (error) {
+                voStatus = 'Vehicle order unavailable';
+                ctx.log.warn('Climate Comfort: Vehicle Order read failed: ' + error.message);
+            }
+        }
+
+        detectSteering();
         ctx.onTab(index => {
             if (tabs[index]) page = tabs[index];
+            if (page === 'My Car') detectSteering();
         });
 
         ctx.loop('MAIN', 4, () => {
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
-            } else {
-                Object.keys(VO_CODES).forEach(key => {
-                    const status = ctx.settings.get('vo' + VO_CODES[key]);
-                    equipment[key] = status === 'present' ? true : status === 'absent' ? false : undefined;
-                });
             }
             tabs = equipmentTabs(equipment);
             if (!tabs.includes(page)) page = 'My Car';
@@ -88,7 +98,7 @@ mgu.run({
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true);
             } else if (page === 'My Car') {
-                renderEquipment(cv, theme, equipment, rows, ctx.isPreview ? null : ctx.settings);
+                renderEquipment(cv, theme, equipment, rows, voStatus);
             } else if (page === 'About') {
                 renderAbout(cv, theme);
             }
