@@ -164,7 +164,7 @@ function start(log, getColour, report, testing) {
                 const y = testActive ? 360 : 665;
                 command(socket, { op: 'layer', ref: 1, kind: 'image', target, class: 'overlay',
                     x, y, w: size, h: size, iw: size, ih: size,
-                    exclusive: 0, contend: 0, guide_hold: 0 });
+                    exclusive: 0, contend: target === 'map' ? 1 : 0, guide_hold: 0 });
             }
         }
         if (testActive && Date.now() >= client.nextStatus) {

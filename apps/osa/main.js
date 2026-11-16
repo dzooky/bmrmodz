@@ -119,6 +119,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.35', 'Timed BC test with temporary map replacement'],
                 ['0.2.34', 'Map test records slot and layer states'],
                 ['0.2.33', 'BC test in the cluster map area'],
                 ['0.2.32', 'Three-phase BC diagnostics and refined oil drop'],
@@ -139,14 +140,14 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 16;
+                const y = 104 + index * 15;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
 
             cv.text('CLUSTER BC TEST', newsX, 390, 17, t.text, { font: 'bold' });
             const phase = testPhase();
-            const instructions = ['1/3 Baseline: press BC', '2/3 Drop on: press BC', '3/3 Drop off: wait for release, then press BC'];
+            const instructions = ['1/3 Baseline: press BC', '2/3 Press BC when the drop appears', '3/3 Drop off: wait for release, then press BC'];
             cv.text(phase < 0 ? (testResult ? 'Capture complete' : 'Start the test from Settings') :
                 instructions[phase] + ' (' + Math.ceil((testStarted + testEnds[phase] - mono()) / 1000) + ' s)',
                 newsX, 410, 14, t.dim);
