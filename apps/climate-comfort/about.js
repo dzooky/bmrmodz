@@ -42,13 +42,15 @@ function renderAbout(cv, theme) {
 
     cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
     cv.text(version, 1120, 105, 14, theme.text, { font: 'bold' });
-    cv.text('Initial preview with Info, My Car and About.', 1186, 105, 14, theme.dim);
-    cv.text('Five equipment items listed in My Car.', 1186, 125, 14, theme.dim);
-    cv.text('Toggle equipment in the emulator panel.', 1186, 145, 14, theme.dim);
-    cv.text('Seat graphics added to Front.', 1186, 165, 14, theme.dim);
-    cv.text('Two steering wheel variants and a heating threshold.', 1186, 185, 14, theme.dim);
-    cv.text('Separate controls for the outer rear seats.', 1186, 205, 14, theme.dim);
-    cv.text('iDrive preview and Climate Comfort app icon.', 1186, 225, 14, theme.dim);
+    cv.text('Set steering VO codes 248 and 710 in My Car.', 1186, 105, 14, theme.dim);
+    cv.text('0.1.0', 1120, 145, 14, theme.text, { font: 'bold' });
+    cv.text('Initial preview with Info, My Car and About.', 1186, 145, 14, theme.dim);
+    cv.text('Five equipment items listed in My Car.', 1186, 165, 14, theme.dim);
+    cv.text('Toggle equipment in the emulator panel.', 1186, 185, 14, theme.dim);
+    cv.text('Seat graphics added to Front.', 1186, 205, 14, theme.dim);
+    cv.text('Two steering wheel variants and a heating threshold.', 1186, 225, 14, theme.dim);
+    cv.text('Separate controls for the outer rear seats.', 1186, 245, 14, theme.dim);
+    cv.text('iDrive preview and Climate Comfort app icon.', 1186, 265, 14, theme.dim);
 }
 
 module.exports = renderAbout;
