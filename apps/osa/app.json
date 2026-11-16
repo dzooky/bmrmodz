@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.29",
+  "version": "0.2.30",
   "settingsBeforeLast": true,
   "vendor": "custom",
   "loggingId": "OAA1",
@@ -86,30 +86,25 @@
       ]
     },
     {
+      "key": "oilCluster",
+      "label": "Notification on cluster",
+      "type": "bool",
+      "default": true,
+      "notification": true
+    },
+    {
       "key": "demo",
       "label": "Demo data",
       "type": "choice",
       "default": "auto",
-      "options": [
-        [
-          "auto",
-          "Auto"
-        ],
-        [
-          "on",
-          "Always"
-        ],
-        [
-          "off",
-          "Never"
-        ]
-      ]
+      "hidden": true,
+      "reset": 1
     },
     {
       "key": "warmOil",
       "label": "Oil is warm at",
       "type": "number",
-      "unit": "°C",
+      "unit": "\u00b0C",
       "default": 80,
       "steps": [
         60,
@@ -125,7 +120,7 @@
       "key": "warmCoolant",
       "label": "Coolant is warm at",
       "type": "number",
-      "unit": "°C",
+      "unit": "\u00b0C",
       "default": 80,
       "steps": [
         60,

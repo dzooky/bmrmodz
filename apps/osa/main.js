@@ -18,11 +18,12 @@ const path = require('path');
 const { decode: decodePng } = require('./png');
 
 const W = 1600, H = 520;
+const OIL_WARMUP_RAMP = ['#2580ff', '#ffd82a', '#ff2a2a'];
+const ENGINE_RUNNING_RPM = 300;
 
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
-        turboIconPreview.start(log);
         let page = 0;
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
@@ -118,6 +119,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.30', 'Oil warm-up alert and cluster toggle'],
                 ['0.2.29', 'Oil drop preview below the coolant gauge'],
                 ['0.2.28', 'Turbo icon placement preview on the cluster'],
                 ['0.2.27', 'Larger engine oil gauge'],
@@ -169,7 +171,7 @@ mgu.run({
         let atfWarmSession = null;
         let atfCoolSession = pendingCool;
         const updateAtfHistory = (d) => {
-            const running = G.isNum(d.rpm) ? d.rpm >= 300 : null;
+            const running = G.isNum(d.rpm) ? d.rpm >= ENGINE_RUNNING_RPM : null;
             const atf = transmission.fresh ? transmission.temp : null;
             const now = Date.now();
             if (running === null) return;
@@ -236,7 +238,7 @@ mgu.run({
         const updateWarmHistory = (d, oilTarget, coolantTarget) => {
             const now = mono();
             if (d.demo || !G.isNum(d.rpm)) { warmSession = null; return; }
-            if (d.rpm >= 300) {
+            if (d.rpm >= ENGINE_RUNNING_RPM) {
                 if (!warmSession && !sessionDone) {
                     if (!G.isNum(d.oil) || !G.isNum(d.coolant) || !G.isNum(outsideTemp)) return;
                     warmSession = { start: now, outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant,
@@ -261,7 +263,18 @@ mgu.run({
                 sessionDone = false;
             }
         };
+        const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
+        const oilWarmTarget = () => Number(ctx.settings.get('warmOil')) || 80;
+        const oilColour = (temperature, target) =>
+            G.ramp(OIL_WARMUP_RAMP, temperature / target);
+        const warmupIndicator = turboIconPreview.createWarmupIndicator(oilColour);
+        turboIconPreview.start(log, () => {
+            const { demo, oil } = car.data();
+            if (demo || !G.isNum(oil)) return null;
+            const colour = warmupIndicator(oil, oilWarmTarget(), mono());
+            return ctx.settings.get('oilCluster') ? colour : null;
+        });
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
@@ -275,7 +288,6 @@ mgu.run({
         });
 
         const hist = [];
-        const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         let lastHist = 0;
         // Keep the calculated heating rate stable between samples. The display
         // refreshes faster than the vehicle signals, so update this only on a
@@ -358,7 +370,7 @@ mgu.run({
             const cv = ctx.canvas(W, H).clear(t.bg);
 
             const d = car.data();
-            const oilTarget = Number(ctx.settings.get('warmOil')) || 80;
+            const oilTarget = oilWarmTarget();
             const coolantTarget = Number(ctx.settings.get('warmCoolant')) || 80;
             updateWarmHistory(d, oilTarget, coolantTarget);
             updateAtfHistory(d);
@@ -456,7 +468,7 @@ mgu.run({
                 });
                 cv.text('°C', value === null ? 1010 : 1018, 245, 27, t.dim);
 
-                const engineRunning = G.isNum(d.rpm) && d.rpm >= 300;
+                const engineRunning = G.isNum(d.rpm) && d.rpm >= ENGINE_RUNNING_RPM;
                 const atfMode = value !== null && value < 30 ? 'heat'
                     : (value !== null && value > 40 && !engineRunning ? 'cool' : null);
                 if (atfMode === 'heat') {
