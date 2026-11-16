@@ -4,6 +4,8 @@ const net = require('net');
 const { Canvas } = require('./kit/canvas');
 const WIDTH = 430;
 const HEIGHT = 76;
+const UPPER = { x: 745, y: 525, width: WIDTH, height: HEIGHT, background: null };
+const LOWER = { x: 780, y: 650, width: 360, height: 58, background: '#000000' };
 const MESSAGE_MS = 4000;
 const socketPath = '/dev/shm/cluster-render/render.sock';
 
@@ -14,15 +16,18 @@ function send(socket, type, body) {
     socket.write(Buffer.concat([header, body]));
 }
 const command = (socket, value) => send(socket, 0x4a, Buffer.from(JSON.stringify(value)));
-function drawMessage(socket, target, frame) {
-    const canvas = new Canvas(WIDTH, HEIGHT);
+function drawMessage(socket, target, frame, placement) {
+    const { width, height, background } = placement;
+    const canvas = new Canvas(width, height);
+    if (background) canvas.roundRect(0, 0, width, height, 8, background);
+    const baseline = background ? 40 : 47;
     const labelStyle = { font: 'bold', literal: true };
     const temperatureStyle = { align: 'right', literal: true };
     const temperature = target + ' °C';
-    canvas.text('Oil warmed up', 25, 49, 32, [0, 0, 0, 190], labelStyle);
-    canvas.text(temperature, WIDTH - 23, 49, 30, [0, 0, 0, 190], temperatureStyle);
-    canvas.text('Oil warmed up', 24, 47, 32, '#ffffff', labelStyle);
-    canvas.text(temperature, WIDTH - 24, 47, 30, '#ffb547', temperatureStyle);
+    canvas.text('Oil warmed up', 25, baseline + 2, 32, [0, 0, 0, 190], labelStyle);
+    canvas.text(temperature, width - 23, baseline + 2, 30, [0, 0, 0, 190], temperatureStyle);
+    canvas.text('Oil warmed up', 24, baseline, 32, '#ffffff', labelStyle);
+    canvas.text(temperature, width - 24, baseline, 30, '#ffb547', temperatureStyle);
     const body = Buffer.alloc(14 + canvas.d.length);
     body.writeUInt32LE(1, 0);
     body.writeUInt32LE(frame, 4);
@@ -81,7 +86,7 @@ function readEvents(socket, report) {
 }
 
 // Keep the cluster message independent of the currently visible iDrive page.
-function start(log, getMessage, report, testing, getY) {
+function start(log, getMessage, report, testing, isLower) {
     if (process.env.MGU_RENDERD_SOCKET && /mgu-emu-/.test(process.env.MGU_RENDERD_SOCKET)) return;
 
     let client = null;
@@ -89,7 +94,7 @@ function start(log, getMessage, report, testing, getY) {
 
     function connect() {
         const socket = net.createConnection(socketPath);
-        const connection = { socket, ready: false, frame: 0, message: null, nextStatus: 0, target: null };
+        const connection = { socket, ready: false, frame: 0, message: null, nextStatus: 0, target: null, placement: null };
         client = connection;
         const deadline = setTimeout(() => socket.destroy(), 4000);
         deadline.unref();
@@ -137,13 +142,16 @@ function start(log, getMessage, report, testing, getY) {
         if (!client.ready || client.socket.destroyed) return;
         const socket = client.socket;
         const target = message === null ? null : 'panel';
-        if (target !== client.target) {
+        const placement = isLower() ? LOWER : UPPER;
+        if (target !== client.target || (target && placement !== client.placement)) {
             if (client.target) command(socket, { op: 'drop', ref: 1 });
             client.target = target;
+            client.placement = placement;
             client.message = null;
             if (target) {
                 command(socket, { op: 'layer', ref: 1, kind: 'image', target, class: 'overlay',
-                    x: 745, y: getY(), w: WIDTH, h: HEIGHT, iw: WIDTH, ih: HEIGHT,
+                    x: placement.x, y: placement.y, w: placement.width, h: placement.height,
+                    iw: placement.width, ih: placement.height,
                     exclusive: 0, contend: 0 });
             }
         }
@@ -154,7 +162,7 @@ function start(log, getMessage, report, testing, getY) {
         if (message === null || message === client.message) return;
         client.message = message;
         client.frame = (client.frame + 1) >>> 0;
-        drawMessage(client.socket, message, client.frame);
+        drawMessage(client.socket, message, client.frame, placement);
     }
 
     refresh();

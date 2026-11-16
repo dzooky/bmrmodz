@@ -118,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.42', 'Bottom-edge cluster message test with black background'],
                 ['0.2.41', 'English oil warm-up message on the cluster'],
                 ['0.2.40', 'Passive cluster capture and lower message test'],
                 ['0.2.39', 'Transparent background for cluster messages'],
@@ -401,7 +402,7 @@ mgu.run({
             if (demo || !G.isNum(oil)) return null;
             const message = warmupMessage(oil, oilWarmTarget(), mono());
             return ctx.settings.get('oilCluster') ? message : null;
-        }, recordCluster, () => testPhase() >= 0, () => testMode === 'clusterLowerTest' ? 610 : 525);
+        }, recordCluster, () => testPhase() >= 0, () => testMode === 'clusterLowerTest');
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
