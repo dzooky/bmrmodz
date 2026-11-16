@@ -119,6 +119,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.33', 'BC test in the cluster map area'],
                 ['0.2.32', 'Three-phase BC diagnostics and refined oil drop'],
                 ['0.2.31', 'Cluster BC test and slimmer oil drop'],
                 ['0.2.30', 'Oil warm-up alert and cluster toggle'],
@@ -137,7 +138,7 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 18;
+                const y = 104 + index * 17;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
@@ -153,7 +154,7 @@ mgu.run({
                 if (!snapshot.size) return label + ': no slot data yet';
                 const changes = Array.from(snapshot, ([slot, states]) => {
                     const before = clusterSlots[0].get(slot);
-                    const changed = index === 0 ? slot === '0x203' || states.size > 1 :
+                    const changed = index === 0 ? ['0x100', '0x200', '0x203'].includes(slot) || states.size > 1 :
                         !before || [...states].some(state => !before.has(state));
                     return changed ? slot + ' ' + [...states].join('/') : '';
                 }).filter(Boolean);
@@ -162,7 +163,12 @@ mgu.run({
                         if (!snapshot.has(slot)) changes.push(slot + ' gone');
                     }
                 }
-                changes.sort((a, b) => Number(b.startsWith('0x203 ')) - Number(a.startsWith('0x203 ')));
+                const slotOrder = ['0x100', '0x200', '0x203'];
+                const priority = (line) => {
+                    const position = slotOrder.indexOf(line.split(' ')[0]);
+                    return position < 0 ? slotOrder.length : position;
+                };
+                changes.sort((a, b) => priority(a) - priority(b));
                 return label + ': ' + (changes.join(', ') || 'no slot change');
             });
             if (clusterError) lines.push(clusterError);
@@ -320,7 +326,7 @@ mgu.run({
             const phase = testPhase();
             if (phase < 0) return;
             if (!Array.isArray(event)) {
-                if (event.startsWith('Renderer')) clusterError = event;
+                if (/^(Renderer|Map:)/.test(event)) clusterError = event;
                 return;
             }
             for (const line of event) {

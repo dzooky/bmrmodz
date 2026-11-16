@@ -83,8 +83,8 @@ function readEvents(socket, report) {
             let event;
             try { event = JSON.parse(body.toString('utf8')); } catch (error) { continue; }
             if (!event) continue;
-            if (event.ev === 'target' && event.target === 'panel') {
-                report(['Panel:', event.state, event.holder, event.reason].filter(Boolean).join(' '));
+            if (event.ev === 'target' && event.target === 'map') {
+                report(['Map:', event.state, event.holder, event.reason].filter(Boolean).join(' '));
             } else if (event.ev === 'status' && typeof event.text === 'string') {
                 const slots = event.text.split(/\r?\n/).map(line => line.trim())
                     .filter(line => /^slot 0x[0-9a-f]+\b/i.test(line));
@@ -105,7 +105,7 @@ function start(log, getColour, report, testing) {
 
     function connect() {
         const socket = net.createConnection(socketPath);
-        const connection = { socket, ready: false, frame: 0, colourKey: null, nextStatus: 0, layer: false };
+        const connection = { socket, ready: false, frame: 0, colourKey: null, nextStatus: 0, target: null };
         client = connection;
         const deadline = setTimeout(() => socket.destroy(), 4000);
         deadline.unref();
@@ -130,12 +130,13 @@ function start(log, getColour, report, testing) {
 
     function refresh() {
         const colour = getColour();
-        if (!colour && !testing()) {
+        const testActive = testing();
+        if (!colour && !testActive) {
             const connection = client;
             client = null;
             retryAt = 0;
             if (connection && connection.ready && !connection.socket.destroyed) {
-                if (connection.layer) command(connection.socket, { op: 'drop', ref: 1 });
+                if (connection.target) command(connection.socket, { op: 'drop', ref: 1 });
                 connection.socket.end();
                 const deadline = setTimeout(() => connection.socket.destroy(), 1000);
                 deadline.unref();
@@ -151,16 +152,20 @@ function start(log, getColour, report, testing) {
         }
         if (!client.ready || client.socket.destroyed) return;
         const socket = client.socket;
-        if (colour && !client.layer) {
-            command(socket, { op: 'layer', ref: 1, kind: 'image', target: 'panel', class: 'overlay',
-                x: 1728, y: 665, w: size, h: size, iw: size, ih: size, exclusive: 0, contend: 0 });
-            client.layer = true;
-        } else if (!colour && client.layer) {
-            command(socket, { op: 'drop', ref: 1 });
-            client.layer = false;
+        const target = colour ? (testActive ? 'map' : 'panel') : null;
+        if (target !== client.target) {
+            if (client.target) command(socket, { op: 'drop', ref: 1 });
+            client.target = target;
             client.colourKey = null;
+            if (target) {
+                const x = testActive ? 525 : 1728;
+                const y = testActive ? 360 : 665;
+                command(socket, { op: 'layer', ref: 1, kind: 'image', target, class: 'overlay',
+                    x, y, w: size, h: size, iw: size, ih: size,
+                    exclusive: 0, contend: 0, guide_hold: 0 });
+            }
         }
-        if (testing() && Date.now() >= client.nextStatus) {
+        if (testActive && Date.now() >= client.nextStatus) {
             command(socket, { op: 'status' });
             client.nextStatus = Date.now() + 750;
         }
