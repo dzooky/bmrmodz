@@ -81,7 +81,7 @@ function readEvents(socket, report) {
 }
 
 // Keep the cluster message independent of the currently visible iDrive page.
-function start(log, getMessage, report, testing) {
+function start(log, getMessage, report, testing, getY) {
     if (process.env.MGU_RENDERD_SOCKET && /mgu-emu-/.test(process.env.MGU_RENDERD_SOCKET)) return;
 
     let client = null;
@@ -143,7 +143,7 @@ function start(log, getMessage, report, testing) {
             client.message = null;
             if (target) {
                 command(socket, { op: 'layer', ref: 1, kind: 'image', target, class: 'overlay',
-                    x: 745, y: 525, w: WIDTH, h: HEIGHT, iw: WIDTH, ih: HEIGHT,
+                    x: 745, y: getY(), w: WIDTH, h: HEIGHT, iw: WIDTH, ih: HEIGHT,
                     exclusive: 0, contend: 0 });
             }
         }

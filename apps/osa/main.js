@@ -118,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.40', 'Passive cluster capture and lower message test'],
                 ['0.2.39', 'Transparent background for cluster messages'],
                 ['0.2.38', 'Cluster message above factory notifications'],
                 ['0.2.37', 'Lower cluster message placement test'],
@@ -143,24 +144,28 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 13;
+                const y = 104 + index * 12;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
 
-            cv.text('CLUSTER BC TEST', newsX, 390, 17, t.text, { font: 'bold' });
+            cv.text('CLUSTER TEST', newsX, 390, 17, t.text, { font: 'bold' });
             const phase = testPhase();
-            const instructions = ['1/3 Before message: check BC', '2/3 Message on: check BC', '3/3 Message off: check BC again'];
+            const passive = lastTestMode === 'clusterPassiveTest';
+            const lower = lastTestMode === 'clusterLowerTest';
+            const instructions = passive
+                ? ['Observation: baseline', 'Observation: watching BMW display', 'Observation: final capture']
+                : ['1/3 Before message', lower ? '2/3 Lower message on' : '2/3 Upper message on', '3/3 Message off'];
             cv.text(phase < 0 ? (testResult ? 'Capture complete' : 'Start the test from Settings') :
                 instructions[phase] + ' (' + Math.ceil((testStarted + testEnds[phase] - mono()) / 1000) + ' s)',
                 newsX, 410, 14, t.dim);
             const lines = clusterSlots.map((snapshot, index) => {
-                const label = ['Before', 'On', 'After'][index];
+                const label = (passive ? ['Start', 'During', 'End'] : ['Before', 'On', 'After'])[index];
                 if (!snapshot.size) return label + ': no slot data yet';
                 const changes = Array.from(snapshot, ([slot, states]) => {
                     const before = clusterSlots[0].get(slot);
                     const changed = index === 0 ? ['0x100', '0x200', '0x203'].includes(slot) || states.size > 1 :
-                        slot === '0x100' || !before || [...states].some(state => !before.has(state));
+                        states.size > 1 || !before || [...states].some(state => !before.has(state));
                     return changed ? slot + ' ' + [...states].join('/') : '';
                 }).filter(Boolean);
                 if (index > 0) {
@@ -168,7 +173,7 @@ mgu.run({
                         if (!snapshot.has(slot)) changes.push(slot + ' gone');
                     }
                 }
-                const slotOrder = ['0x100', '0x200', '0x203'];
+                const slotOrder = ['0x200', '0x203', '0x100'];
                 const priority = (line) => {
                     const position = slotOrder.indexOf(line.split(' ')[0]);
                     return position < 0 ? slotOrder.length : position;
@@ -176,13 +181,15 @@ mgu.run({
                 changes.sort((a, b) => priority(a) - priority(b));
                 return label + ': ' + (changes.join(', ') || 'no slot change');
             });
+            if (lastTestMode) lines.push('Check Control events: ' + checkControlCount +
+                (checkControlLast === null ? '' : ' | last at +' + checkControlLast + ' s'));
             for (const prefix of ['Panel', 'Layer', 'Renderer']) {
                 const events = clusterEvents.get(prefix);
                 if (events && events.size) lines.push(prefix + ': ' + [...events].join(' / '));
             }
             lines.forEach((line, index) => {
                 while (cv.textWidth(line, 13) > 428) line = line.slice(0, -1);
-                cv.text(line, newsX, 429 + index * 14, 13, t.text);
+                cv.text(line, newsX, 427 + index * 13, 13, t.text);
             });
 
             cv.text('Developed by dzooky@bmrmodz', 640, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
@@ -312,22 +319,48 @@ mgu.run({
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
         const oilWarmTarget = () => Number(ctx.settings.get('warmOil')) || 80;
         const warmupMessage = turboIconPreview.createWarmupMessage();
-        const testEnds = [8000, 8000 + turboIconPreview.MESSAGE_MS, 16000 + turboIconPreview.MESSAGE_MS];
+        const messageTestEnds = [8000, 8000 + turboIconPreview.MESSAGE_MS, 16000 + turboIconPreview.MESSAGE_MS];
+        const testModes = ['clusterBcTest', 'clusterLowerTest', 'clusterPassiveTest'];
+        let testEnds = messageTestEnds;
+        let testMode = null;
+        let lastTestMode = null;
+        let checkControlCount = 0;
+        let checkControlLast = null;
         const clusterSlots = [new Map(), new Map(), new Map()];
         let testStarted = null;
         let testResult = false;
         const clusterEvents = new Map();
         const testPhase = () => testStarted === null ? -1 : testEnds.findIndex(end => mono() - testStarted < end);
-        if (ctx.settings.get('clusterBcTest')) ctx.settings.set('clusterBcTest', false);
+        for (const key of testModes) if (ctx.settings.get(key)) ctx.settings.set(key, false);
         ctx.settings.onChange((key, value) => {
-            if (key !== 'clusterBcTest') return;
-            testStarted = value ? mono() : null;
-            if (value) {
-                clusterSlots.forEach(snapshot => snapshot.clear());
-                testResult = false;
-                clusterEvents.clear();
+            if (!testModes.includes(key)) return;
+            if (!value) {
+                if (key === testMode) {
+                    testMode = null;
+                    testStarted = null;
+                }
+                return;
+            }
+            testMode = key;
+            lastTestMode = key;
+            testEnds = key === 'clusterPassiveTest' ? [8000, 82000, 90000] : messageTestEnds;
+            testStarted = mono();
+            clusterSlots.forEach(snapshot => snapshot.clear());
+            clusterEvents.clear();
+            testResult = false;
+            checkControlCount = 0;
+            checkControlLast = null;
+            for (const other of testModes) {
+                if (other !== key && ctx.settings.get(other)) ctx.settings.set(other, false);
             }
         });
+        ctx.signals.watch('de.bmw.infotainment.KombiInterface_2', '1', {
+            newCCMessage: () => {
+                if (testPhase() < 0) return;
+                checkControlCount++;
+                checkControlLast = Math.round((mono() - testStarted) / 1000);
+            },
+        }, log).catch(error => log.warn('Check Control observation: ' + error));
         const recordCluster = (event) => {
             const phase = testPhase();
             if (phase < 0) return;
@@ -357,15 +390,17 @@ mgu.run({
         turboIconPreview.start(log, () => {
             if (testStarted !== null) {
                 const phase = testPhase();
-                if (phase >= 0) return phase === 1 ? oilWarmTarget() : null;
+                if (phase >= 0) {
+                    return phase === 1 && testMode !== 'clusterPassiveTest' ? oilWarmTarget() : null;
+                }
                 testResult = true;
-                ctx.settings.set('clusterBcTest', false);
+                ctx.settings.set(testMode, false);
             }
             const { demo, oil } = car.data();
             if (demo || !G.isNum(oil)) return null;
             const message = warmupMessage(oil, oilWarmTarget(), mono());
             return ctx.settings.get('oilCluster') ? message : null;
-        }, recordCluster, () => testPhase() >= 0);
+        }, recordCluster, () => testPhase() >= 0, () => testMode === 'clusterLowerTest' ? 610 : 525);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
