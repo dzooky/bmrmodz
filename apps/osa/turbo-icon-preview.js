@@ -4,8 +4,8 @@ const net = require('net');
 const { Canvas } = require('./kit/canvas');
 const WIDTH = 430;
 const HEIGHT = 76;
-const UPPER = { x: 745, y: 525, width: WIDTH, height: HEIGHT, background: null };
-const LOWER = { x: 780, y: 650, width: 360, height: 58, background: '#000000' };
+const UPPER = { x: 745, y: 525, width: WIDTH, height: HEIGHT, baseline: 47 };
+const LOWER = { x: 780, y: 650, width: 360, height: 58, baseline: 40 };
 const MESSAGE_MS = 4000;
 const socketPath = '/dev/shm/cluster-render/render.sock';
 
@@ -17,10 +17,8 @@ function send(socket, type, body) {
 }
 const command = (socket, value) => send(socket, 0x4a, Buffer.from(JSON.stringify(value)));
 function drawMessage(socket, target, frame, placement) {
-    const { width, height, background } = placement;
+    const { width, height, baseline } = placement;
     const canvas = new Canvas(width, height);
-    if (background) canvas.roundRect(0, 0, width, height, 8, background);
-    const baseline = background ? 40 : 47;
     const labelStyle = { font: 'bold', literal: true };
     const temperatureStyle = { align: 'right', literal: true };
     const temperature = target + ' °C';

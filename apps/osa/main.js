@@ -118,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.43', 'Transparent message at the cluster bottom edge'],
                 ['0.2.42', 'Bottom-edge cluster message test with black background'],
                 ['0.2.41', 'English oil warm-up message on the cluster'],
                 ['0.2.40', 'Passive cluster capture and lower message test'],
