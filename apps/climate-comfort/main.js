@@ -3,6 +3,7 @@
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
+const { hex } = require('./kit/diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
 const renderSeats = require('./seats');
@@ -23,6 +24,8 @@ function equipmentTabs(equipment) {
     return tabs;
 }
 
+const ACSM_ADDRESS = 0x01;
+const SEAT_OCCUPANCY_DID = 0xD486;
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
 
 function drawUnconfirmed(cv, x, y) {
@@ -31,7 +34,17 @@ function drawUnconfirmed(cv, x, y) {
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
 }
 
-function renderEquipment(cv, theme, equipment, rows, voStatus) {
+function occupancyText(reply) {
+    if (!reply) return 'ACSM D486: No response';
+    const raw = reply.map(byte => hex(byte)).join(' ');
+    if (reply[0] !== 0x62 || reply[1] !== 0xD4 || reply[2] !== 0x86 || reply.length < 5) {
+        return 'ACSM D486: ' + raw;
+    }
+    // ACSM5 lists four one-byte results in order: driver, passenger, rear left, rear right.
+    return 'ACSM D486: Front passenger ' + hex(reply[4]) + '   |   Raw ' + raw;
+}
+
+function renderEquipment(cv, theme, equipment, rows, voStatus, occupancy) {
     const center = { align: 'center' };
     cv.text('Equipment', 66, 96, 19, theme.dim);
     cv.text('Installed', 1450, 96, 19, theme.dim, center);
@@ -50,6 +63,7 @@ function renderEquipment(cv, theme, equipment, rows, voStatus) {
         }
     });
 
+    if (occupancy) cv.text(occupancy, 800, 494, 17, theme.text, center);
     if (rows.some(({ key }) => equipment[key] === undefined)) {
         drawUnconfirmed(cv, 77, 488);
         cv.text('Unconfirmed equipment', 100, 494, 17, theme.dim);
@@ -64,6 +78,9 @@ mgu.run({
         let tabs = [];
         let page = 'Info';
         let voStatus = null;
+        let occupancy = null;
+        let occupancyPending = false;
+        let occupancyNext = 0;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
 
         async function detectEquipment() {
@@ -90,10 +107,35 @@ mgu.run({
             }
         }
 
+        async function pollOccupancy() {
+            if (!link || occupancyPending || voStatus === 'Reading vehicle order...' || Date.now() < occupancyNext) return;
+            if (!link.ready) {
+                occupancy = 'ACSM D486: Diagnostics unavailable';
+                return;
+            }
+
+            occupancyPending = true;
+            try {
+                occupancy = occupancyText(await link.read(ACSM_ADDRESS, SEAT_OCCUPANCY_DID, 1500));
+            } catch (error) {
+                occupancy = 'ACSM D486: Read failed';
+                ctx.log.warn('Climate Comfort: occupancy read failed: ' + error.message);
+            } finally {
+                occupancyNext = Date.now() + 1000;
+                occupancyPending = false;
+            }
+        }
+
         detectEquipment();
         ctx.onTab(index => {
-            if (tabs[index]) page = tabs[index];
-            if (page === 'My Car') detectEquipment();
+            if (!tabs[index] || tabs[index] === page) return;
+            page = tabs[index];
+            if (page === 'My Car' && link) {
+                occupancy = 'ACSM D486: Reading...';
+                occupancyNext = 0;
+                link.wake(ACSM_ADDRESS);
+                detectEquipment();
+            }
         });
 
         ctx.loop('MAIN', 4, () => {
@@ -115,7 +157,8 @@ mgu.run({
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true);
             } else if (page === 'My Car') {
-                renderEquipment(cv, theme, equipment, rows, voStatus);
+                pollOccupancy();
+                renderEquipment(cv, theme, equipment, rows, voStatus, occupancy);
             } else if (page === 'About') {
                 renderAbout(cv, theme);
             }
