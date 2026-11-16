@@ -19,9 +19,9 @@ function drawMessage(socket, target, frame) {
     const labelStyle = { font: 'bold', literal: true };
     const temperatureStyle = { align: 'right', literal: true };
     const temperature = target + ' °C';
-    canvas.text('Olej zohriaty', 25, 49, 32, [0, 0, 0, 190], labelStyle);
+    canvas.text('Oil warmed up', 25, 49, 32, [0, 0, 0, 190], labelStyle);
     canvas.text(temperature, WIDTH - 23, 49, 30, [0, 0, 0, 190], temperatureStyle);
-    canvas.text('Olej zohriaty', 24, 47, 32, '#ffffff', labelStyle);
+    canvas.text('Oil warmed up', 24, 47, 32, '#ffffff', labelStyle);
     canvas.text(temperature, WIDTH - 24, 47, 30, '#ffb547', temperatureStyle);
     const body = Buffer.alloc(14 + canvas.d.length);
     body.writeUInt32LE(1, 0);
