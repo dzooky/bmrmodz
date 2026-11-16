@@ -12,6 +12,7 @@ const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
+const turboIconPreview = require('./turbo-icon-preview');
 const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
@@ -21,6 +22,7 @@ const W = 1600, H = 520;
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
+        turboIconPreview.start(log);
         let page = 0;
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
