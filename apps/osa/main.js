@@ -18,7 +18,6 @@ const path = require('path');
 const { decode: decodePng } = require('./png');
 
 const W = 1600, H = 520;
-const OIL_WARMUP_RAMP = ['#2580ff', '#ffd82a', '#ff2a2a'];
 const ENGINE_RUNNING_RPM = 300;
 
 mgu.run({
@@ -119,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.36', 'Four-second oil warm-up message on the cluster'],
                 ['0.2.35', 'Timed BC test with temporary map replacement'],
                 ['0.2.34', 'Map test records slot and layer states'],
                 ['0.2.33', 'BC test in the cluster map area'],
@@ -140,14 +140,14 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 15;
+                const y = 104 + index * 14;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
 
             cv.text('CLUSTER BC TEST', newsX, 390, 17, t.text, { font: 'bold' });
             const phase = testPhase();
-            const instructions = ['1/3 Baseline: press BC', '2/3 Press BC when the drop appears', '3/3 Drop off: wait for release, then press BC'];
+            const instructions = ['1/3 Before message: check BC', '2/3 Message on: check BC', '3/3 Message off: check BC again'];
             cv.text(phase < 0 ? (testResult ? 'Capture complete' : 'Start the test from Settings') :
                 instructions[phase] + ' (' + Math.ceil((testStarted + testEnds[phase] - mono()) / 1000) + ' s)',
                 newsX, 410, 14, t.dim);
@@ -173,7 +173,7 @@ mgu.run({
                 changes.sort((a, b) => priority(a) - priority(b));
                 return label + ': ' + (changes.join(', ') || 'no slot change');
             });
-            for (const prefix of ['Map', 'Layer', 'Renderer']) {
+            for (const prefix of ['Panel', 'Layer', 'Renderer']) {
                 const events = clusterEvents.get(prefix);
                 if (events && events.size) lines.push(prefix + ': ' + [...events].join(' / '));
             }
@@ -308,10 +308,8 @@ mgu.run({
         const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
         const oilWarmTarget = () => Number(ctx.settings.get('warmOil')) || 80;
-        const oilColour = (temperature, target) =>
-            G.ramp(OIL_WARMUP_RAMP, temperature / target);
-        const warmupIndicator = turboIconPreview.createWarmupIndicator(oilColour);
-        const testEnds = [8000, 28000, 36000];
+        const warmupMessage = turboIconPreview.createWarmupMessage();
+        const testEnds = [8000, 8000 + turboIconPreview.MESSAGE_MS, 16000 + turboIconPreview.MESSAGE_MS];
         const clusterSlots = [new Map(), new Map(), new Map()];
         let testStarted = null;
         let testResult = false;
@@ -331,7 +329,7 @@ mgu.run({
             const phase = testPhase();
             if (phase < 0) return;
             if (!Array.isArray(event)) {
-                const match = /^(Map|Layer|Renderer): (.+)$/.exec(event);
+                const match = /^(Panel|Layer|Renderer): (.+)$/.exec(event);
                 if (match && (phase === 1 || match[1] === 'Renderer')) {
                     const [, key, detail] = match;
                     const seen = clusterEvents.get(key) || new Set();
@@ -356,14 +354,14 @@ mgu.run({
         turboIconPreview.start(log, () => {
             if (testStarted !== null) {
                 const phase = testPhase();
-                if (phase >= 0) return phase === 1 ? [255, 174, 42, 255] : null;
+                if (phase >= 0) return phase === 1 ? oilWarmTarget() : null;
                 testResult = true;
                 ctx.settings.set('clusterBcTest', false);
             }
             const { demo, oil } = car.data();
             if (demo || !G.isNum(oil)) return null;
-            const colour = warmupIndicator(oil, oilWarmTarget(), mono());
-            return ctx.settings.get('oilCluster') ? colour : null;
+            const message = warmupMessage(oil, oilWarmTarget(), mono());
+            return ctx.settings.get('oilCluster') ? message : null;
         }, recordCluster, () => testPhase() >= 0);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;

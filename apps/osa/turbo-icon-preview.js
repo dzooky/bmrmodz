@@ -1,7 +1,10 @@
 'use strict';
 
 const net = require('net');
-const size = 38;
+const { Canvas } = require('./kit/canvas');
+const WIDTH = 430;
+const HEIGHT = 76;
+const MESSAGE_MS = 4000;
 const socketPath = '/dev/shm/cluster-render/render.sock';
 
 function send(socket, type, body) {
@@ -11,60 +14,36 @@ function send(socket, type, body) {
     socket.write(Buffer.concat([header, body]));
 }
 const command = (socket, value) => send(socket, 0x4a, Buffer.from(JSON.stringify(value)));
-function drawDrop(socket, colour, frame) {
-    const body = Buffer.alloc(14 + size * size * 4);
+function drawMessage(socket, target, frame) {
+    const canvas = new Canvas(WIDTH, HEIGHT);
+    canvas.roundRect(0, 0, WIDTH, HEIGHT, 12, '#111820');
+    canvas.text('Olej zohriaty', 24, 47, 32, '#ffffff', { font: 'bold', literal: true });
+    canvas.text(target + ' °C', WIDTH - 24, 47, 30, '#ffb547',
+        { align: 'right', literal: true });
+    const body = Buffer.alloc(14 + canvas.d.length);
     body.writeUInt32LE(1, 0);
     body.writeUInt32LE(frame, 4);
-    const centreX = (size - 1) / 2;
-    const tip = 2;
-    const widest = 25;
-    const bottom = 36;
-    const halfWidth = 9.5;
-    for (let row = tip; row <= bottom; row++) {
-        const taper = (row - tip) / (widest - tip);
-        const base = (row - widest) / (bottom - widest);
-        const radius = halfWidth * (row <= widest
-            ? Math.sin(taper * Math.PI / 2) ** 1.35
-            : Math.sqrt(Math.max(0, 1 - base ** 2)));
-        for (let col = 0; col < size; col++) {
-            const coverage = Math.max(0, Math.min(1, radius + 1 - Math.abs(col - centreX)));
-            if (!coverage) continue;
-            const offset = 14 + (row * size + col) * 4;
-            body.set(colour, offset);
-            body[offset + 3] = Math.round(colour[3] * coverage);
-        }
-    }
+    body.set(canvas.d, 14);
     send(socket, 0x46, body);
 }
 
-const BLINK_MS = 10000;
-const BLINK_HALF_PERIOD_MS = 500;
-const REARM_MARGIN_C = 2;
-const TRANSPARENT = [0, 0, 0, 0];
-
-function createWarmupIndicator(colourAt) {
+function createWarmupMessage() {
     let previousTarget = null;
-    let warming = false;
+    let armed = false;
     let reachedAt = null;
 
     return (temperature, target, now) => {
         if (target !== previousTarget) {
             previousTarget = target;
-            warming = temperature < target;
+            armed = temperature < target;
             reachedAt = null;
         }
-        if (temperature <= target - REARM_MARGIN_C) {
-            warming = true;
-            reachedAt = null;
-        }
-        if (warming && temperature < target) return colourAt(temperature, target);
-        if (warming) {
-            warming = false;
-            reachedAt = now;
-        }
-        if (reachedAt === null || now - reachedAt >= BLINK_MS) return null;
-        return Math.floor((now - reachedAt) / BLINK_HALF_PERIOD_MS) % 2 === 0
-            ? colourAt(target, target) : TRANSPARENT;
+        if (reachedAt !== null && now - reachedAt < MESSAGE_MS) return target;
+        if (temperature <= target - 2) armed = true;
+        if (!armed || temperature < target) return null;
+        armed = false;
+        reachedAt = now;
+        return target;
     };
 }
 
@@ -83,8 +62,8 @@ function readEvents(socket, report) {
             let event;
             try { event = JSON.parse(body.toString('utf8')); } catch (error) { continue; }
             if (!event) continue;
-            if (event.ev === 'target' && event.target === 'map') {
-                report(['Map:', event.state, event.holder === 'none' ? '' : event.holder, event.reason].filter(Boolean).join(' '));
+            if (event.ev === 'target' && event.target === 'panel') {
+                report(['Panel:', event.state, event.holder === 'none' ? '' : event.holder, event.reason].filter(Boolean).join(' '));
             } else if (event.ev === 'layer' && event.ref === 1) {
                 report(['Layer:', event.state, event.reason].filter(Boolean).join(' '));
             } else if (event.ev === 'status' && typeof event.text === 'string') {
@@ -98,8 +77,8 @@ function readEvents(socket, report) {
     });
 }
 
-// Keep the cluster pictogram independent of the currently visible iDrive page.
-function start(log, getColour, report, testing) {
+// Keep the cluster message independent of the currently visible iDrive page.
+function start(log, getMessage, report, testing) {
     if (process.env.MGU_RENDERD_SOCKET && /mgu-emu-/.test(process.env.MGU_RENDERD_SOCKET)) return;
 
     let client = null;
@@ -107,7 +86,7 @@ function start(log, getColour, report, testing) {
 
     function connect() {
         const socket = net.createConnection(socketPath);
-        const connection = { socket, ready: false, frame: 0, colourKey: null, nextStatus: 0, target: null };
+        const connection = { socket, ready: false, frame: 0, message: null, nextStatus: 0, target: null };
         client = connection;
         const deadline = setTimeout(() => socket.destroy(), 4000);
         deadline.unref();
@@ -117,7 +96,7 @@ function start(log, getColour, report, testing) {
             command(socket, { op: 'hello', app: 'osa', proto: 1 });
             connection.ready = true;
             refresh();
-            log.info('OSA: connected to cluster-render for oil drop');
+            log.info('OSA: connected to cluster-render for oil warm-up message');
         });
         readEvents(socket, report);
         socket.on('error', error => report('Renderer: socket ' + (error.code || error.message)));
@@ -131,9 +110,9 @@ function start(log, getColour, report, testing) {
     }
 
     function refresh() {
-        const colour = getColour();
+        const message = getMessage();
         const testActive = testing();
-        if (!colour && !testActive) {
+        if (message === null && !testActive) {
             const connection = client;
             client = null;
             retryAt = 0;
@@ -154,33 +133,29 @@ function start(log, getColour, report, testing) {
         }
         if (!client.ready || client.socket.destroyed) return;
         const socket = client.socket;
-        const target = colour ? (testActive ? 'map' : 'panel') : null;
+        const target = message === null ? null : 'panel';
         if (target !== client.target) {
             if (client.target) command(socket, { op: 'drop', ref: 1 });
             client.target = target;
-            client.colourKey = null;
+            client.message = null;
             if (target) {
-                const x = testActive ? 525 : 1728;
-                const y = testActive ? 360 : 665;
                 command(socket, { op: 'layer', ref: 1, kind: 'image', target, class: 'overlay',
-                    x, y, w: size, h: size, iw: size, ih: size,
-                    exclusive: 0, contend: target === 'map' ? 1 : 0, guide_hold: 0 });
+                    x: 745, y: 525, w: WIDTH, h: HEIGHT, iw: WIDTH, ih: HEIGHT,
+                    exclusive: 0, contend: 0 });
             }
         }
         if (testActive && Date.now() >= client.nextStatus) {
             command(socket, { op: 'status' });
             client.nextStatus = Date.now() + 750;
         }
-        if (!colour) return;
-        const colourKey = colour.join(',');
-        if (colourKey === client.colourKey) return;
-        client.colourKey = colourKey;
+        if (message === null || message === client.message) return;
+        client.message = message;
         client.frame = (client.frame + 1) >>> 0;
-        drawDrop(client.socket, colour, client.frame);
+        drawMessage(client.socket, message, client.frame);
     }
 
     refresh();
     setInterval(refresh, 250).unref();
 }
 
-module.exports = { start, createWarmupIndicator, readEvents };
+module.exports = { start, createWarmupMessage, readEvents, MESSAGE_MS };
