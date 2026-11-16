@@ -54,7 +54,7 @@ function draw(socket, message, frame) {
 }
 
 function start(log, getMessage) {
-    cluster.start(log, getMessage, { app: 'dpf', x: 745, y: 507, width: WIDTH, height: HEIGHT,
+    cluster.start(log, getMessage, { app: 'dpf', x: 745, y: 539, width: WIDTH, height: HEIGHT,
         key: message => message.text, draw });
 }
 
