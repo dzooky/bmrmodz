@@ -119,6 +119,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.32', 'Three-phase BC diagnostics and refined oil drop'],
                 ['0.2.31', 'Cluster BC test and slimmer oil drop'],
                 ['0.2.30', 'Oil warm-up alert and cluster toggle'],
                 ['0.2.29', 'Oil drop preview below the coolant gauge'],
@@ -136,15 +137,36 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 20;
+                const y = 104 + index * 18;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
 
             cv.text('CLUSTER BC TEST', newsX, 390, 17, t.text, { font: 'bold' });
-            cv.text(testUntil > mono() ? 'Test active: ' + Math.ceil((testUntil - mono()) / 1000) + ' s' :
-                'Start the test from Settings', newsX, 410, 14, t.dim);
-            clusterTrace.forEach((line, index) => {
+            const phase = testPhase();
+            const instructions = ['1/3 Baseline: press BC', '2/3 Drop on: press BC', '3/3 Drop off: wait for release, then press BC'];
+            cv.text(phase < 0 ? (testResult ? 'Capture complete' : 'Start the test from Settings') :
+                instructions[phase] + ' (' + Math.ceil((testStarted + testEnds[phase] - mono()) / 1000) + ' s)',
+                newsX, 410, 14, t.dim);
+            const lines = clusterSlots.map((snapshot, index) => {
+                const label = ['Before', 'On', 'After'][index];
+                if (!snapshot.size) return label + ': no slot data yet';
+                const changes = Array.from(snapshot, ([slot, states]) => {
+                    const before = clusterSlots[0].get(slot);
+                    const changed = index === 0 ? slot === '0x203' || states.size > 1 :
+                        !before || [...states].some(state => !before.has(state));
+                    return changed ? slot + ' ' + [...states].join('/') : '';
+                }).filter(Boolean);
+                if (index > 0) {
+                    for (const slot of clusterSlots[0].keys()) {
+                        if (!snapshot.has(slot)) changes.push(slot + ' gone');
+                    }
+                }
+                changes.sort((a, b) => Number(b.startsWith('0x203 ')) - Number(a.startsWith('0x203 ')));
+                return label + ': ' + (changes.join(', ') || 'no slot change');
+            });
+            if (clusterError) lines.push(clusterError);
+            lines.forEach((line, index) => {
                 while (cv.textWidth(line, 13) > 428) line = line.slice(0, -1);
                 cv.text(line, newsX, 432 + index * 18, 13, t.text);
             });
@@ -278,29 +300,52 @@ mgu.run({
         const oilColour = (temperature, target) =>
             G.ramp(OIL_WARMUP_RAMP, temperature / target);
         const warmupIndicator = turboIconPreview.createWarmupIndicator(oilColour);
-        const clusterTrace = [];
-        let testUntil = 0;
+        const testEnds = [8000, 28000, 36000];
+        const clusterSlots = [new Map(), new Map(), new Map()];
+        let testStarted = null;
+        let testResult = false;
+        let clusterError = '';
+        const testPhase = () => testStarted === null ? -1 : testEnds.findIndex(end => mono() - testStarted < end);
         if (ctx.settings.get('clusterBcTest')) ctx.settings.set('clusterBcTest', false);
         ctx.settings.onChange((key, value) => {
             if (key !== 'clusterBcTest') return;
-            testUntil = value ? mono() + 30000 : 0;
-            if (value) clusterTrace.length = 0;
+            testStarted = value ? mono() : null;
+            if (value) {
+                clusterSlots.forEach(snapshot => snapshot.clear());
+                testResult = false;
+                clusterError = '';
+            }
         });
-        const recordCluster = (line) => {
-            if (!testUntil || clusterTrace.indexOf(line) !== -1) return;
-            clusterTrace.push(line);
-            if (clusterTrace.length > 4) clusterTrace.shift();
+        const recordCluster = (event) => {
+            const phase = testPhase();
+            if (phase < 0) return;
+            if (!Array.isArray(event)) {
+                if (event.startsWith('Renderer')) clusterError = event;
+                return;
+            }
+            for (const line of event) {
+                const match = /^(?:slot )?(0x[0-9a-f]+)\s+(.*)$/i.exec(line);
+                if (!match) continue;
+                const [, slot, state] = match;
+                const snapshot = clusterSlots[phase];
+                const seen = snapshot.get(slot) || new Set();
+                const mappings = state.match(/0x[0-9a-f]+ class \d+ map [1-9]/gi) || [];
+                seen.add(mappings.map(mapping => mapping.replace(/ class \d+ map /i, ':')).join('+') || 'free');
+                snapshot.set(slot, seen);
+            }
         };
         turboIconPreview.start(log, () => {
-            if (testUntil) {
-                if (mono() < testUntil) return [255, 174, 42, 255];
+            if (testStarted !== null) {
+                const phase = testPhase();
+                if (phase >= 0) return phase === 1 ? [255, 174, 42, 255] : null;
+                testResult = true;
                 ctx.settings.set('clusterBcTest', false);
             }
             const { demo, oil } = car.data();
             if (demo || !G.isNum(oil)) return null;
             const colour = warmupIndicator(oil, oilWarmTarget(), mono());
             return ctx.settings.get('oilCluster') ? colour : null;
-        }, recordCluster, () => testUntil > 0);
+        }, recordCluster, () => testPhase() >= 0);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {

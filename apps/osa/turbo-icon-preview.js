@@ -16,15 +16,22 @@ function drawDrop(socket, colour, frame) {
     body.writeUInt32LE(1, 0);
     body.writeUInt32LE(frame, 4);
     const centreX = (size - 1) / 2;
-    for (let row = 0; row < size; row++) {
+    const tip = 2;
+    const widest = 25;
+    const bottom = 36;
+    const halfWidth = 9.5;
+    for (let row = tip; row <= bottom; row++) {
+        const taper = (row - tip) / (widest - tip);
+        const base = (row - widest) / (bottom - widest);
+        const radius = halfWidth * (row <= widest
+            ? Math.sin(taper * Math.PI / 2) ** 1.35
+            : Math.sqrt(Math.max(0, 1 - base ** 2)));
         for (let col = 0; col < size; col++) {
-            const distanceX = Math.abs(col - centreX);
-            const roundedBase = (distanceX / 0.76) ** 2 + (row - 22) ** 2 <= 15 ** 2;
-            const taperedTop = row >= 3 && row <= 22 && distanceX <= (row - 3) * 0.56;
-            if (roundedBase || taperedTop) {
-                const offset = 14 + (row * size + col) * 4;
-                body.set(colour, offset);
-            }
+            const coverage = Math.max(0, Math.min(1, radius + 1 - Math.abs(col - centreX)));
+            if (!coverage) continue;
+            const offset = 14 + (row * size + col) * 4;
+            body.set(colour, offset);
+            body[offset + 3] = Math.round(colour[3] * coverage);
         }
     }
     send(socket, 0x46, body);
@@ -79,8 +86,9 @@ function readEvents(socket, report) {
             if (event.ev === 'target' && event.target === 'panel') {
                 report(['Panel:', event.state, event.holder, event.reason].filter(Boolean).join(' '));
             } else if (event.ev === 'status' && typeof event.text === 'string') {
-                const slot = event.text.split(/\r?\n/).find(line => /^\s*slot 0x203\b/i.test(line));
-                if (slot) report(slot.trim());
+                const slots = event.text.split(/\r?\n/).map(line => line.trim())
+                    .filter(line => /^slot 0x[0-9a-f]+\b/i.test(line));
+                if (slots.length) report(slots);
             } else if (event.ev === 'error') {
                 report('Renderer: ' + (event.reason || event.op || 'error'));
             }
@@ -97,7 +105,7 @@ function start(log, getColour, report, testing) {
 
     function connect() {
         const socket = net.createConnection(socketPath);
-        const connection = { socket, ready: false, frame: 0, colourKey: null, nextStatus: 0 };
+        const connection = { socket, ready: false, frame: 0, colourKey: null, nextStatus: 0, layer: false };
         client = connection;
         const deadline = setTimeout(() => socket.destroy(), 4000);
         deadline.unref();
@@ -105,8 +113,6 @@ function start(log, getColour, report, testing) {
         socket.once('connect', () => {
             clearTimeout(deadline);
             command(socket, { op: 'hello', app: 'osa', proto: 1 });
-            command(socket, { op: 'layer', ref: 1, kind: 'image', target: 'panel', class: 'overlay',
-                x: 1728, y: 665, w: size, h: size, iw: size, ih: size, exclusive: 0, contend: 0 });
             connection.ready = true;
             refresh();
             log.info('OSA: connected to cluster-render for oil drop');
@@ -124,12 +130,12 @@ function start(log, getColour, report, testing) {
 
     function refresh() {
         const colour = getColour();
-        if (!colour) {
+        if (!colour && !testing()) {
             const connection = client;
             client = null;
             retryAt = 0;
             if (connection && connection.ready && !connection.socket.destroyed) {
-                command(connection.socket, { op: 'drop', ref: 1 });
+                if (connection.layer) command(connection.socket, { op: 'drop', ref: 1 });
                 connection.socket.end();
                 const deadline = setTimeout(() => connection.socket.destroy(), 1000);
                 deadline.unref();
@@ -144,10 +150,21 @@ function start(log, getColour, report, testing) {
             return;
         }
         if (!client.ready || client.socket.destroyed) return;
-        if (testing() && Date.now() >= client.nextStatus) {
-            command(client.socket, { op: 'status' });
-            client.nextStatus = Date.now() + 1000;
+        const socket = client.socket;
+        if (colour && !client.layer) {
+            command(socket, { op: 'layer', ref: 1, kind: 'image', target: 'panel', class: 'overlay',
+                x: 1728, y: 665, w: size, h: size, iw: size, ih: size, exclusive: 0, contend: 0 });
+            client.layer = true;
+        } else if (!colour && client.layer) {
+            command(socket, { op: 'drop', ref: 1 });
+            client.layer = false;
+            client.colourKey = null;
         }
+        if (testing() && Date.now() >= client.nextStatus) {
+            command(socket, { op: 'status' });
+            client.nextStatus = Date.now() + 750;
+        }
+        if (!colour) return;
         const colourKey = colour.join(',');
         if (colourKey === client.colourKey) return;
         client.colourKey = colourKey;
