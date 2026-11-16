@@ -54,7 +54,7 @@ mgu.run({
         let voStatus = null;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
 
-        async function detectSteering() {
+        async function detectEquipment() {
             if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
             voStatus = 'Reading vehicle order...';
             try {
@@ -66,6 +66,11 @@ mgu.run({
                     return;
                 }
                 Object.keys(VO_CODES).forEach(key => { equipment[key] = codes.has(VO_CODES[key]); });
+                if (codes.has('453')) equipment.frontSeatVentilation = true;
+                if (codes.has('454')) equipment.rearSeatVentilation = true;
+                const heatedFrontAndRear = codes.has('4HA');
+                if (heatedFrontAndRear || codes.has('494')) equipment.frontSeatHeating = true;
+                if (heatedFrontAndRear) equipment.rearSeatHeating = true;
                 voStatus = 'Vehicle order read';
             } catch (error) {
                 voStatus = 'Vehicle order unavailable';
@@ -73,10 +78,10 @@ mgu.run({
             }
         }
 
-        detectSteering();
+        detectEquipment();
         ctx.onTab(index => {
             if (tabs[index]) page = tabs[index];
-            if (page === 'My Car') detectSteering();
+            if (page === 'My Car') detectEquipment();
         });
 
         ctx.loop('MAIN', 4, () => {
