@@ -118,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.39', 'Transparent background for cluster messages'],
                 ['0.2.38', 'Cluster message above factory notifications'],
                 ['0.2.37', 'Lower cluster message placement test'],
                 ['0.2.36', 'Four-second oil warm-up message on the cluster'],
