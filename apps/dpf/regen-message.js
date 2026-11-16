@@ -5,7 +5,7 @@ const { Canvas } = require('./kit/canvas');
 const WIDTH = 430;
 const HEIGHT = 76;
 const BASELINE = 47;
-const PREFIX = 'DPF Status:';
+const PREFIX = 'DPF Regeneration:';
 const FONT_SIZE = 28;
 const STATE_GAP = 8;
 const HALF_BLINK_MS = 500;
@@ -47,15 +47,20 @@ function draw(socket, message, frame) {
     const canvas = new Canvas(WIDTH, HEIGHT);
     if (message.text) {
         const style = { font: 'bold', literal: true };
-        const prefixWidth = canvas.textWidth(PREFIX, FONT_SIZE, style);
-        const stateWidth = canvas.textWidth(message.text, FONT_SIZE, style);
+        const longestState = Math.max(...[REQUESTED, ACTIVE, COMPLETE]
+            .map(state => canvas.textWidth(state.text, FONT_SIZE, style)));
+        const maxTextWidth = canvas.textWidth(PREFIX, FONT_SIZE, style) + longestState;
+        const fontSize = maxTextWidth > WIDTH - STATE_GAP - 16
+            ? Math.floor(FONT_SIZE * (WIDTH - STATE_GAP - 16) / maxTextWidth) : FONT_SIZE;
+        const prefixWidth = canvas.textWidth(PREFIX, fontSize, style);
+        const stateWidth = canvas.textWidth(message.text, fontSize, style);
         const x = Math.round((WIDTH - prefixWidth - STATE_GAP - stateWidth) / 2);
         const stateX = x + prefixWidth + STATE_GAP;
         const shadow = [0, 0, 0, 190];
-        canvas.text(PREFIX, x + 1, BASELINE + 2, FONT_SIZE, shadow, style);
-        canvas.text(message.text, stateX + 1, BASELINE + 2, FONT_SIZE, shadow, style);
-        canvas.text(PREFIX, x, BASELINE, FONT_SIZE, '#ffffff', style);
-        canvas.text(message.text, stateX, BASELINE, FONT_SIZE, message.colour, style);
+        canvas.text(PREFIX, x + 1, BASELINE + 2, fontSize, shadow, style);
+        canvas.text(message.text, stateX + 1, BASELINE + 2, fontSize, shadow, style);
+        canvas.text(PREFIX, x, BASELINE, fontSize, '#ffffff', style);
+        canvas.text(message.text, stateX, BASELINE, fontSize, message.colour, style);
     }
     const body = Buffer.alloc(14 + canvas.d.length);
     body.writeUInt32LE(1, 0);
