@@ -1,7 +1,7 @@
 'use strict';
 
 const net = require('net');
-const size = 32;
+const size = 38;
 const socketPath = '/dev/shm/cluster-render/render.sock';
 
 function send(socket, type, body) {
@@ -16,13 +16,13 @@ function showAmber(socket) {
     body.writeUInt32LE(1, 0);
     body.writeUInt32LE(1, 4);
     const rgb = [255, 174, 42, 255];
+    const centreX = (size - 1) / 2;
     for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
-            const radius = (col - 12) ** 2 + (row - 17) ** 2;
-            const housing = radius <= 100 && radius >= 56;
-            const outlet = col >= 13 && col <= 28 && (row === 7 || row === 10)
-                || col >= 27 && col <= 29 && row >= 6 && row <= 11;
-            if (housing || radius <= 9 || outlet) {
+            const distanceX = Math.abs(col - centreX);
+            const roundedBase = distanceX ** 2 + (row - 22) ** 2 <= 15 ** 2;
+            const taperedTop = row >= 3 && row <= 22 && distanceX <= (row - 3) * 0.72;
+            if (roundedBase || taperedTop) {
                 const offset = 14 + (row * size + col) * 4;
                 body.set(rgb, offset);
             }
@@ -44,9 +44,9 @@ function start(log) {
             clearTimeout(deadline);
             command(socket, { op: 'hello', app: 'osa', proto: 1 });
             command(socket, { op: 'layer', ref: 1, kind: 'image', target: 'panel', class: 'overlay',
-                x: 1570, y: 620, w: size, h: size, iw: size, ih: size, exclusive: 0, contend: 0 });
+                x: 1740, y: 665, w: size, h: size, iw: size, ih: size, exclusive: 0, contend: 0 });
             showAmber(socket);
-            log.info('OSA: connected to cluster-render for turbo icon preview');
+            log.info('OSA: connected to cluster-render for oil drop preview');
         });
         socket.on('data', () => {}); // Drain renderer notifications.
         socket.on('error', () => {}); // The optional renderer may be unavailable.

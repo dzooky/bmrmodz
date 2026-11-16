@@ -118,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.29', 'Oil drop preview below the coolant gauge'],
                 ['0.2.28', 'Turbo icon placement preview on the cluster'],
                 ['0.2.27', 'Larger engine oil gauge'],
                 ['0.2.26', 'Redesigned About and release milestones'],
