@@ -2,6 +2,7 @@
 
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
+const { hex } = require('./kit/diag');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
@@ -24,7 +25,7 @@ function equipmentTabs(equipment) {
 }
 
 const ACSM_ADDRESS = 0x01;
-const BELT_CONTACT_DID = 0x4054;
+const FRONT_BELT_DID = 0x4048;
 const ENGINE_IFACE = 'de.bmw.infotainment.vehicle.CDS';
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -35,24 +36,18 @@ function drawUnconfirmed(cv, x, y) {
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
 }
 
-function beltContacts(reply) {
+function frontBeltStatus(reply) {
     if (!reply) return 'Belts: No response';
     if (reply[0] === 0x7F && reply[1] === 0x22) {
-        return 'Belts: ACSM refused (NRC ' + reply[2].toString(16).toUpperCase().padStart(2, '0') + ')';
+        return 'Belts: ACSM refused (NRC ' + hex(reply[2]) + ')';
     }
-    if (reply.length < 8 || reply[0] !== 0x62 || reply[1] !== 0x40 || reply[2] !== 0x54) {
+    if (reply.length < 12 || reply[0] !== 0x62 || reply[1] !== 0x40 || reply[2] !== 0x48) {
         return 'Belts: Unrecognized response';
     }
 
-    // ACSM5 4054 returns contact current in units of 0.1 mA. The middle seat
-    // is between the two rear fields. FF means that the input is absent.
-    const labels = ['FL', 'FR', 'RL', 'RR'];
-    const indexes = [3, 4, 5, 7];
-    const values = indexes.map((index, seat) => {
-        const raw = reply[index];
-        return labels[seat] + ' ' + (raw === 0xFF ? '-' : (raw / 10).toFixed(1));
-    });
-    return 'Belts (mA)  ' + values.join('   ');
+    // ACSM5 4048 contains passenger and driver latch states plus their error bytes.
+    return 'Belts 4048   Driver ' + hex(reply[10]) + '/' + hex(reply[11]) +
+        '   Passenger ' + hex(reply[8]) + '/' + hex(reply[9]);
 }
 
 function renderEquipment(cv, theme, equipment, rows, voStatus, beltStatus) {
@@ -125,7 +120,7 @@ mgu.run({
 
             beltReadPending = true;
             try {
-                beltStatus = beltContacts(await link.read(ACSM_ADDRESS, BELT_CONTACT_DID, 1500));
+                beltStatus = frontBeltStatus(await link.read(ACSM_ADDRESS, FRONT_BELT_DID, 1500));
             } catch (error) {
                 beltStatus = 'Belts: Read failed';
                 ctx.log.warn('Climate Comfort: belt contact read failed: ' + error.message);
