@@ -118,6 +118,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.45', 'Aligned the cluster message with DPF Status'],
                 ['0.2.44', 'Raised the oil warm-up message in the map area'],
                 ['0.2.43', 'Transparent message at the cluster bottom edge'],
                 ['0.2.42', 'Bottom-edge cluster message test with black background'],
