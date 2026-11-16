@@ -14,6 +14,7 @@ const G = require('./kit/gauges');
 const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
+const regenMessage = require('./regen-message');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 
 const W = 1600;
@@ -61,8 +62,9 @@ mgu.run({
             ['REMAINING', 0x4C78, 2, 10]
         ];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-        async function testSelected() {
-            if (!identified || page === 'about') return;
+        const regenDids = dids.slice(-2);
+        async function testSelected(regenOnly = false) {
+            if (!identified || (!regenOnly && page === 'about')) return;
             if (testing) {
                 readPending = true;
                 return;
@@ -70,7 +72,7 @@ mgu.run({
             testing = true;
             const address = DDE;
             const readingPage = page;
-            const selected = readingPage === 'detail' ? detailDids : dids;
+            const selected = regenOnly ? regenDids : readingPage === 'detail' ? detailDids : dids;
             try {
                 link.wake(address);
                 for (const [name, did, len, factor, offset = 0] of selected) {
@@ -103,11 +105,13 @@ mgu.run({
             } catch (e) { log.warn('DPF read: ' + String(e)); }
             finally {
                 testing = false;
-                if (readingPage === 'detail') detailReadAttempted = true;
-                else readAttempted = true;
+                if (!regenOnly) {
+                    if (readingPage === 'detail') detailReadAttempted = true;
+                    else readAttempted = true;
+                }
                 if (readPending) {
                     readPending = false;
-                    if (page !== readingPage && ui.isVisible('MAIN')) await testSelected();
+                    if ((regenOnly || page !== readingPage) && ui.isVisible('MAIN')) await testSelected();
                 }
             }
         }
@@ -145,6 +149,31 @@ mgu.run({
         const hasMeasurements = () => ['SOOT', 'ASH', 'SINCE', 'AVERAGE'].some(hasReading);
         const hasDetailMeasurements = () => detailDids.some(([key]) => hasReading(key) && !stale(key));
         const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
+
+        function regenState(maxAge = 90000) {
+            const now = Date.now();
+            const mode = readings.MODE;
+            if (!mode || now - mode.at >= maxAge) return null;
+            if (mode.raw & 0x02) return 'active';
+            const request = readings.REQUEST;
+            if (!request || now - request.at >= maxAge) return null;
+            return request.raw >= 4 && request.raw <= 6 ? 'requested' : 'idle';
+        }
+
+        const clusterEnabled = () => ctx.settings.get('regenCluster') === true;
+        const indicator = regenMessage.createIndicator();
+        let clusterTestStartedAt = null;
+        ctx.settings.onAction('regenClusterTest', () => { clusterTestStartedAt = Date.now(); });
+        regenMessage.start(log, () => {
+            const now = Date.now();
+            const liveMessage = indicator(clusterEnabled() ? regenState(15000) : null, now);
+            if (clusterTestStartedAt !== null) {
+                const message = regenMessage.testMessage(now - clusterTestStartedAt);
+                if (message) return message;
+                clusterTestStartedAt = null;
+            }
+            return liveMessage;
+        });
 
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
@@ -240,6 +269,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.26', 'Cluster regeneration messages'],
                 ['0.1.24', 'Equal-height gauges on Overview'],
                 ['0.1.23', 'Milestones and clearer regen estimate'],
                 ['0.1.21', 'Feedback QR codes in About'],
@@ -356,20 +386,11 @@ mgu.run({
             G.panel(cv, t, statusX, 44, statusWidth, 464, null);
             cv.text('REGENERATION', statusX + 18, 83, 20, t.text, { font: 'bold' });
             // D83BX7C0A STATUS_REGENERATION_CSF decoding, using direct ReadDataByIdentifier.
-            const modeKnown = hasReading('MODE') && !stale('MODE');
-            const requestKnown = hasReading('REQUEST') && !stale('REQUEST');
-            const inProgress = modeKnown && (readings.MODE.raw & 0x02) !== 0;
-            let statusText = 'UNKNOWN';
-            let statusColor = t.warn;
-            if (inProgress) {
-                statusText = 'IN PROGRESS';
-                statusColor = t.ok;
-            } else if (modeKnown && requestKnown) {
-                const request = readings.REQUEST.raw;
-                const requested = request >= 4 && request <= 6;
-                statusText = requested ? 'REQUESTED' : 'NOT NEEDED';
-                statusColor = requested ? t.warn : t.dim;
-            }
+            const state = regenState();
+            const inProgress = state === 'active';
+            const statusText = inProgress ? 'IN PROGRESS' : state === 'requested' ? 'REQUESTED'
+                : state === 'idle' ? 'NOT NEEDED' : 'UNKNOWN';
+            const statusColor = inProgress ? t.ok : state === 'idle' ? t.dim : t.warn;
             cv.text(statusText, statusX + 18, 150, 30, statusColor, { font: 'bold' });
 
             const estimateAvailable = !inProgress && averageKm > 0 && !stale('AVERAGE')
@@ -419,13 +440,23 @@ mgu.run({
             await identify();
             identifying = false;
             if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
-            // Retry startup failures promptly while the data screen is open.
+            let nextPageRead = 0;
             while (true) {
                 const dataReady = page === 'detail' ? hasDetailMeasurements() : hasMeasurements();
-                await sleep(dataReady ? 60000 : 5000);
-                if (testing || page === 'about' || !ui.isVisible('MAIN')) continue;
+                await sleep(5000);
+                const pageVisible = page !== 'about' && ui.isVisible('MAIN');
+                const clusterActive = clusterEnabled();
+                if (testing || (!pageVisible && !clusterActive)) continue;
                 if (!identified) await identify();
-                if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
+                if (!identified) continue;
+
+                const now = Date.now();
+                if (pageVisible && now >= nextPageRead) {
+                    nextPageRead = now + (dataReady ? 60000 : 5000);
+                    await testSelected();
+                } else if (clusterActive) {
+                    await testSelected(true);
+                }
             }
         })().catch(e => log.warn('DPF polling: ' + e));
         render()

@@ -88,6 +88,7 @@ class Settings {
         this.file = path.join(DATA_DIR, 'settings.json');
         this.values = {};
         this.listeners = [];
+        this.actions = new Map();
         for (const s of this.schema) this.values[s.key] = s.default;
         try { Object.assign(this.values, JSON.parse(fs.readFileSync(this.file, 'utf8'))); } catch (e) {}
         // "aliases": { old value: new value } - a value saved before the setting's values were renamed
@@ -133,6 +134,7 @@ class Settings {
         this.listeners.forEach((fn) => { try { fn(key, value); } catch (e) { log.error(e); } });
     }
     onChange(fn) { this.listeners.push(fn); }
+    onAction(key, fn) { this.actions.set(key, fn); }
     item(key) { return this.schema.find((s) => s.key === key); }
     /**
      * Whether a setting is offered: not "hidden", and its "when" holds - { key: value or [values] }, each other
@@ -147,6 +149,7 @@ class Settings {
     display(key) {
         const s = this.item(key), v = this.get(key);
         if (!s) return String(v);
+        if (s.type === 'action') return s.hint || '';
         if (s.type === 'choice') { const o = (s.options || []).find((x) => x[0] === v); return o ? o[1] : String(v); }
         if (s.type === 'number') return (s.labels && s.labels[String(v)] !== undefined ? s.labels[String(v)] : String(v) + (s.unit ? ' ' + s.unit : '')) + (s.markDefault && v === s.default ? ' (default)' : '');
         if (s.type === 'bool') return v ? 'On' : 'Off';
@@ -156,6 +159,11 @@ class Settings {
     cycle(key) {
         const s = this.item(key);
         if (!s) return;
+        if (s.type === 'action') {
+            const action = this.actions.get(key);
+            if (action) action();
+            return;
+        }
         if (s.type === 'bool') return this.set(key, !this.get(key));
         const list = s.type === 'choice' ? s.options.map((o) => o[0]) : (s.steps || []);
         if (!list.length) return;
