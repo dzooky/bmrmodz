@@ -47,9 +47,19 @@ function start(log, getColour, { app, x, y, size, width = size, height = size, k
     function refresh() {
         const colour = getColour();
         if (!colour) {
-            if (client) client.socket.destroy();
+            const connection = client;
             client = null;
             retryAt = 0;
+            if (connection && connection.ready && !connection.socket.destroyed) {
+                const socket = connection.socket;
+                command(socket, { op: 'drop', ref: 1 });
+                socket.end();
+                const deadline = setTimeout(() => socket.destroy(), 1000);
+                deadline.unref();
+                socket.once('close', () => clearTimeout(deadline));
+            } else if (connection) {
+                connection.socket.destroy();
+            }
             return;
         }
         if (!client) {
