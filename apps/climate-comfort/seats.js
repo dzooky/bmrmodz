@@ -51,11 +51,11 @@ function renderSeats(cv, theme, settings, equipment, row) {
         cv.blit(seatLayers[row][index], center - WIDTH / 2, 93);
         const side = index === 0 ? 'Left' : 'Right';
         const key = prefix + side;
-        if (equipment[prefix + 'SeatVentilation'] !== false) {
+        if (equipment[prefix + 'SeatVentilation'] === true) {
             renderControls(cv, theme, settings, key + 'Ventilation',
                 center - 180, 'Ventilation', '#5bc9ef');
         }
-        if (equipment[prefix + 'SeatHeating'] !== false) {
+        if (equipment[prefix + 'SeatHeating'] === true) {
             renderControls(cv, theme, settings, key + 'Heating',
                 center + 180, 'Heating', '#ff945e');
         }

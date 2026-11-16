@@ -42,19 +42,22 @@ function renderAbout(cv, theme) {
 
     cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
     cv.text(version, 1120, 105, 14, theme.text, { font: 'bold' });
-    cv.text('Detect seat heating and ventilation from VO.', 1186, 105, 14, theme.dim);
-    cv.text('0.1.2', 1120, 145, 14, theme.text, { font: 'bold' });
-    cv.text('Automatic steering equipment detection from VO.', 1186, 145, 14, theme.dim);
-    cv.text('0.1.1', 1120, 185, 14, theme.text, { font: 'bold' });
-    cv.text('Manual steering equipment preview.', 1186, 185, 14, theme.dim);
-    cv.text('0.1.0', 1120, 225, 14, theme.text, { font: 'bold' });
-    cv.text('Initial preview with Info, My Car and About.', 1186, 225, 14, theme.dim);
-    cv.text('Five equipment items listed in My Car.', 1186, 245, 14, theme.dim);
-    cv.text('Toggle equipment in the emulator panel.', 1186, 265, 14, theme.dim);
-    cv.text('Seat graphics added to Front.', 1186, 285, 14, theme.dim);
-    cv.text('Two steering wheel variants and a heating threshold.', 1186, 305, 14, theme.dim);
-    cv.text('Separate controls for the outer rear seats.', 1186, 325, 14, theme.dim);
-    cv.text('iDrive preview and Climate Comfort app icon.', 1186, 345, 14, theme.dim);
+    cv.text('Show controls only for confirmed equipment.', 1186, 105, 14, theme.dim);
+    cv.text('Mark unconfirmed equipment with a red icon.', 1186, 125, 14, theme.dim);
+    cv.text('0.1.3', 1120, 165, 14, theme.text, { font: 'bold' });
+    cv.text('Detect seat heating and ventilation from VO.', 1186, 165, 14, theme.dim);
+    cv.text('0.1.2', 1120, 205, 14, theme.text, { font: 'bold' });
+    cv.text('Automatic steering equipment detection from VO.', 1186, 205, 14, theme.dim);
+    cv.text('0.1.1', 1120, 245, 14, theme.text, { font: 'bold' });
+    cv.text('Manual steering equipment preview.', 1186, 245, 14, theme.dim);
+    cv.text('0.1.0', 1120, 285, 14, theme.text, { font: 'bold' });
+    cv.text('Initial preview with Info, My Car and About.', 1186, 285, 14, theme.dim);
+    cv.text('Five equipment items listed in My Car.', 1186, 305, 14, theme.dim);
+    cv.text('Toggle equipment in the emulator panel.', 1186, 325, 14, theme.dim);
+    cv.text('Seat graphics added to Front.', 1186, 345, 14, theme.dim);
+    cv.text('Two steering wheel variants and a heating threshold.', 1186, 365, 14, theme.dim);
+    cv.text('Separate controls for the outer rear seats.', 1186, 385, 14, theme.dim);
+    cv.text('iDrive preview and Climate Comfort app icon.', 1186, 405, 14, theme.dim);
 }
 
 module.exports = renderAbout;

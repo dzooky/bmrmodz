@@ -16,14 +16,20 @@ const NOTICE = [
 
 function equipmentTabs(equipment) {
     const tabs = ['Info'];
-    if (equipment.frontSeatHeating !== false || equipment.frontSeatVentilation !== false) tabs.push('Front');
-    if (equipment.rearSeatHeating !== false || equipment.rearSeatVentilation !== false) tabs.push('Rear');
-    if (equipment.steeringWheelHeating !== false) tabs.push('Steering');
+    if (equipment.frontSeatHeating === true || equipment.frontSeatVentilation === true) tabs.push('Front');
+    if (equipment.rearSeatHeating === true || equipment.rearSeatVentilation === true) tabs.push('Rear');
+    if (equipment.steeringWheelHeating === true) tabs.push('Steering');
     tabs.push('My Car', 'About');
     return tabs;
 }
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
+
+function drawUnconfirmed(cv, x, y) {
+    const color = '#ff5555';
+    cv.arc(x, y, 9, 12, 0, 360, color);
+    cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
+}
 
 function renderEquipment(cv, theme, equipment, rows, voStatus) {
     const center = { align: 'center' };
@@ -37,11 +43,17 @@ function renderEquipment(cv, theme, equipment, rows, voStatus) {
         cv.text(label, 66, y + 13, 24, theme.text);
         if (equipment[key] === true) {
             cv.polyline([[1438, y - 1], [1446, y + 7], [1462, y - 9]], 4, '#55d884');
+        } else if (equipment[key] === false) {
+            cv.text('-', 1450, y + 13, 19, theme.dim, center);
         } else {
-            const status = equipment[key] === false ? '-' : 'Unknown';
-            cv.text(status, 1450, y + 13, 19, theme.dim, center);
+            drawUnconfirmed(cv, 1450, y);
         }
     });
+
+    if (rows.some(({ key }) => equipment[key] === undefined)) {
+        drawUnconfirmed(cv, 77, 488);
+        cv.text('Unconfirmed equipment', 100, 494, 17, theme.dim);
+    }
 }
 
 mgu.run({
