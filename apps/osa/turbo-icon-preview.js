@@ -84,7 +84,9 @@ function readEvents(socket, report) {
             try { event = JSON.parse(body.toString('utf8')); } catch (error) { continue; }
             if (!event) continue;
             if (event.ev === 'target' && event.target === 'map') {
-                report(['Map:', event.state, event.holder, event.reason].filter(Boolean).join(' '));
+                report(['Map:', event.state, event.holder === 'none' ? '' : event.holder, event.reason].filter(Boolean).join(' '));
+            } else if (event.ev === 'layer' && event.ref === 1) {
+                report(['Layer:', event.state, event.reason].filter(Boolean).join(' '));
             } else if (event.ev === 'status' && typeof event.text === 'string') {
                 const slots = event.text.split(/\r?\n/).map(line => line.trim())
                     .filter(line => /^slot 0x[0-9a-f]+\b/i.test(line));
@@ -118,7 +120,7 @@ function start(log, getColour, report, testing) {
             log.info('OSA: connected to cluster-render for oil drop');
         });
         readEvents(socket, report);
-        socket.on('error', error => report('Renderer socket: ' + (error.code || error.message)));
+        socket.on('error', error => report('Renderer: socket ' + (error.code || error.message)));
         socket.once('close', () => {
             clearTimeout(deadline);
             if (client === connection) {

@@ -119,6 +119,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.34', 'Map test records slot and layer states'],
                 ['0.2.33', 'BC test in the cluster map area'],
                 ['0.2.32', 'Three-phase BC diagnostics and refined oil drop'],
                 ['0.2.31', 'Cluster BC test and slimmer oil drop'],
@@ -138,7 +139,7 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 17;
+                const y = 104 + index * 16;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
@@ -155,7 +156,7 @@ mgu.run({
                 const changes = Array.from(snapshot, ([slot, states]) => {
                     const before = clusterSlots[0].get(slot);
                     const changed = index === 0 ? ['0x100', '0x200', '0x203'].includes(slot) || states.size > 1 :
-                        !before || [...states].some(state => !before.has(state));
+                        slot === '0x100' || !before || [...states].some(state => !before.has(state));
                     return changed ? slot + ' ' + [...states].join('/') : '';
                 }).filter(Boolean);
                 if (index > 0) {
@@ -171,10 +172,13 @@ mgu.run({
                 changes.sort((a, b) => priority(a) - priority(b));
                 return label + ': ' + (changes.join(', ') || 'no slot change');
             });
-            if (clusterError) lines.push(clusterError);
+            for (const prefix of ['Map', 'Layer', 'Renderer']) {
+                const events = clusterEvents.get(prefix);
+                if (events && events.size) lines.push(prefix + ': ' + [...events].join(' / '));
+            }
             lines.forEach((line, index) => {
                 while (cv.textWidth(line, 13) > 428) line = line.slice(0, -1);
-                cv.text(line, newsX, 432 + index * 18, 13, t.text);
+                cv.text(line, newsX, 429 + index * 14, 13, t.text);
             });
 
             cv.text('Developed by dzooky@bmrmodz', 640, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
@@ -310,7 +314,7 @@ mgu.run({
         const clusterSlots = [new Map(), new Map(), new Map()];
         let testStarted = null;
         let testResult = false;
-        let clusterError = '';
+        const clusterEvents = new Map();
         const testPhase = () => testStarted === null ? -1 : testEnds.findIndex(end => mono() - testStarted < end);
         if (ctx.settings.get('clusterBcTest')) ctx.settings.set('clusterBcTest', false);
         ctx.settings.onChange((key, value) => {
@@ -319,14 +323,20 @@ mgu.run({
             if (value) {
                 clusterSlots.forEach(snapshot => snapshot.clear());
                 testResult = false;
-                clusterError = '';
+                clusterEvents.clear();
             }
         });
         const recordCluster = (event) => {
             const phase = testPhase();
             if (phase < 0) return;
             if (!Array.isArray(event)) {
-                if (/^(Renderer|Map:)/.test(event)) clusterError = event;
+                const match = /^(Map|Layer|Renderer): (.+)$/.exec(event);
+                if (match && (phase === 1 || match[1] === 'Renderer')) {
+                    const [, key, detail] = match;
+                    const seen = clusterEvents.get(key) || new Set();
+                    seen.add(detail);
+                    clusterEvents.set(key, seen);
+                }
                 return;
             }
             for (const line of event) {
@@ -335,8 +345,10 @@ mgu.run({
                 const [, slot, state] = match;
                 const snapshot = clusterSlots[phase];
                 const seen = snapshot.get(slot) || new Set();
+                const status = /\bstatus (\d+)/i.exec(state);
                 const mappings = state.match(/0x[0-9a-f]+ class \d+ map [1-9]/gi) || [];
-                seen.add(mappings.map(mapping => mapping.replace(/ class \d+ map /i, ':')).join('+') || 'free');
+                const scene = mappings.map(mapping => mapping.replace(/ class \d+ map /i, ':')).join('+');
+                seen.add((status ? 's' + status[1] : 's?') + (scene ? '=' + scene : ''));
                 snapshot.set(slot, seen);
             }
         };
