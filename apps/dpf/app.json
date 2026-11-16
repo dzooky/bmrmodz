@@ -2,7 +2,7 @@
   "id": "dpf",
   "title": "DPF Status",
   "description": "Read-only diesel particulate filter status monitoring",
-  "version": "0.1.28",
+  "version": "0.1.29",
   "vendor": "custom",
   "loggingId": "DPF1",
   "iconGlyph": "temp",
@@ -43,7 +43,7 @@
       "key": "regenClusterTest",
       "label": "Test DPF cluster message",
       "type": "action",
-      "hint": "Yellow, red, then three green flashes"
+      "hint": "Three flashes each: yellow, red and green"
     }
   ]
 }
