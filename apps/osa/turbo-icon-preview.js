@@ -19,8 +19,8 @@ function drawDrop(socket, colour, frame) {
     for (let row = 0; row < size; row++) {
         for (let col = 0; col < size; col++) {
             const distanceX = Math.abs(col - centreX);
-            const roundedBase = distanceX ** 2 + (row - 22) ** 2 <= 15 ** 2;
-            const taperedTop = row >= 3 && row <= 22 && distanceX <= (row - 3) * 0.72;
+            const roundedBase = (distanceX / 0.76) ** 2 + (row - 22) ** 2 <= 15 ** 2;
+            const taperedTop = row >= 3 && row <= 22 && distanceX <= (row - 3) * 0.56;
             if (roundedBase || taperedTop) {
                 const offset = 14 + (row * size + col) * 4;
                 body.set(colour, offset);
@@ -61,8 +61,35 @@ function createWarmupIndicator(colourAt) {
     };
 }
 
+function readEvents(socket, report) {
+    let pending = Buffer.alloc(0);
+    socket.on('data', chunk => {
+        pending = Buffer.concat([pending, chunk]);
+        while (pending.length >= 5) {
+            const length = pending.readUInt32LE(0);
+            if (length < 1 || length > 1024 * 1024) { socket.destroy(); return; }
+            if (pending.length < length + 4) return;
+            const type = pending[4];
+            const body = pending.slice(5, length + 4);
+            pending = pending.slice(length + 4);
+            if (type !== 0x4a) continue;
+            let event;
+            try { event = JSON.parse(body.toString('utf8')); } catch (error) { continue; }
+            if (!event) continue;
+            if (event.ev === 'target' && event.target === 'panel') {
+                report(['Panel:', event.state, event.holder, event.reason].filter(Boolean).join(' '));
+            } else if (event.ev === 'status' && typeof event.text === 'string') {
+                const slot = event.text.split(/\r?\n/).find(line => /^\s*slot 0x203\b/i.test(line));
+                if (slot) report(slot.trim());
+            } else if (event.ev === 'error') {
+                report('Renderer: ' + (event.reason || event.op || 'error'));
+            }
+        }
+    });
+}
+
 // Keep the cluster pictogram independent of the currently visible iDrive page.
-function start(log, getColour) {
+function start(log, getColour, report, testing) {
     if (process.env.MGU_RENDERD_SOCKET && /mgu-emu-/.test(process.env.MGU_RENDERD_SOCKET)) return;
 
     let client = null;
@@ -70,7 +97,7 @@ function start(log, getColour) {
 
     function connect() {
         const socket = net.createConnection(socketPath);
-        const connection = { socket, ready: false, frame: 0, colourKey: null };
+        const connection = { socket, ready: false, frame: 0, colourKey: null, nextStatus: 0 };
         client = connection;
         const deadline = setTimeout(() => socket.destroy(), 4000);
         deadline.unref();
@@ -84,8 +111,8 @@ function start(log, getColour) {
             refresh();
             log.info('OSA: connected to cluster-render for oil drop');
         });
-        socket.on('data', () => {}); // Drain renderer notifications.
-        socket.on('error', () => {}); // The optional renderer may be unavailable.
+        readEvents(socket, report);
+        socket.on('error', error => report('Renderer socket: ' + (error.code || error.message)));
         socket.once('close', () => {
             clearTimeout(deadline);
             if (client === connection) {
@@ -98,9 +125,18 @@ function start(log, getColour) {
     function refresh() {
         const colour = getColour();
         if (!colour) {
-            if (client) client.socket.destroy();
+            const connection = client;
             client = null;
             retryAt = 0;
+            if (connection && connection.ready && !connection.socket.destroyed) {
+                command(connection.socket, { op: 'drop', ref: 1 });
+                connection.socket.end();
+                const deadline = setTimeout(() => connection.socket.destroy(), 1000);
+                deadline.unref();
+                connection.socket.once('close', () => clearTimeout(deadline));
+            } else if (connection) {
+                connection.socket.destroy();
+            }
             return;
         }
         if (!client) {
@@ -108,6 +144,10 @@ function start(log, getColour) {
             return;
         }
         if (!client.ready || client.socket.destroyed) return;
+        if (testing() && Date.now() >= client.nextStatus) {
+            command(client.socket, { op: 'status' });
+            client.nextStatus = Date.now() + 1000;
+        }
         const colourKey = colour.join(',');
         if (colourKey === client.colourKey) return;
         client.colourKey = colourKey;
@@ -119,4 +159,4 @@ function start(log, getColour) {
     setInterval(refresh, 250).unref();
 }
 
-module.exports = { start, createWarmupIndicator };
+module.exports = { start, createWarmupIndicator, readEvents };

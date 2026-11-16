@@ -119,6 +119,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.31', 'Cluster BC test and slimmer oil drop'],
                 ['0.2.30', 'Oil warm-up alert and cluster toggle'],
                 ['0.2.29', 'Oil drop preview below the coolant gauge'],
                 ['0.2.28', 'Turbo icon placement preview on the cluster'],
@@ -138,6 +139,14 @@ mgu.run({
                 const y = 104 + index * 20;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
+            });
+
+            cv.text('CLUSTER BC TEST', newsX, 390, 17, t.text, { font: 'bold' });
+            cv.text(testUntil > mono() ? 'Test active: ' + Math.ceil((testUntil - mono()) / 1000) + ' s' :
+                'Start the test from Settings', newsX, 410, 14, t.dim);
+            clusterTrace.forEach((line, index) => {
+                while (cv.textWidth(line, 13) > 428) line = line.slice(0, -1);
+                cv.text(line, newsX, 432 + index * 18, 13, t.text);
             });
 
             cv.text('Developed by dzooky@bmrmodz', 640, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
@@ -269,12 +278,29 @@ mgu.run({
         const oilColour = (temperature, target) =>
             G.ramp(OIL_WARMUP_RAMP, temperature / target);
         const warmupIndicator = turboIconPreview.createWarmupIndicator(oilColour);
+        const clusterTrace = [];
+        let testUntil = 0;
+        if (ctx.settings.get('clusterBcTest')) ctx.settings.set('clusterBcTest', false);
+        ctx.settings.onChange((key, value) => {
+            if (key !== 'clusterBcTest') return;
+            testUntil = value ? mono() + 30000 : 0;
+            if (value) clusterTrace.length = 0;
+        });
+        const recordCluster = (line) => {
+            if (!testUntil || clusterTrace.indexOf(line) !== -1) return;
+            clusterTrace.push(line);
+            if (clusterTrace.length > 4) clusterTrace.shift();
+        };
         turboIconPreview.start(log, () => {
+            if (testUntil) {
+                if (mono() < testUntil) return [255, 174, 42, 255];
+                ctx.settings.set('clusterBcTest', false);
+            }
             const { demo, oil } = car.data();
             if (demo || !G.isNum(oil)) return null;
             const colour = warmupIndicator(oil, oilWarmTarget(), mono());
             return ctx.settings.get('oilCluster') ? colour : null;
-        });
+        }, recordCluster, () => testUntil > 0);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
