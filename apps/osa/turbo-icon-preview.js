@@ -140,7 +140,7 @@ function start(log, getMessage, report, testing) {
             client.message = null;
             if (target) {
                 command(socket, { op: 'layer', ref: 1, kind: 'image', target, class: 'overlay',
-                    x: 745, y: 525, w: WIDTH, h: HEIGHT, iw: WIDTH, ih: HEIGHT,
+                    x: 745, y: testActive ? 610 : 525, w: WIDTH, h: HEIGHT, iw: WIDTH, ih: HEIGHT,
                     exclusive: 0, contend: 0 });
             }
         }
