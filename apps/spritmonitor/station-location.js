@@ -21,6 +21,12 @@ for (const [iso, , api, iso3] of countries) {
     for (const code of [iso, api, iso3]) countryCodes.set(code, iso);
 }
 
+const nonEuroCurrencies = { CH: 'CHF', CZ: 'CZK', HU: 'HUF', PL: 'PLN', RO: 'RON' };
+
+function countryCurrency(code) {
+    return nonEuroCurrencies[code] || 'EUR';
+}
+
 function apiCountryCode(code) {
     const country = countries.find(([iso]) => iso === code);
     return country ? country[2] : '';
@@ -112,4 +118,4 @@ function watch(ctx, onAddress) {
     };
 }
 
-module.exports = { watch, countries, apiCountryCode, nearbyTown: gps.nearbyTown, POSITION_MAX_AGE_MS };
+module.exports = { watch, countries, apiCountryCode, countryCurrency, nearbyTown: gps.nearbyTown, POSITION_MAX_AGE_MS };

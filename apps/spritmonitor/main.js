@@ -443,11 +443,15 @@ mgu.run({
                 : 'Auto (Spritmonitor)';
         }
 
+        function setStationCountry(code) {
+            draft.country = code;
+            if (!draft.manualCurrency) draft.currency = stationLocation.countryCurrency(code);
+        }
+
         function prefillStationAddress(address, now) {
             if (!draft || now - draft.openedAt > stationLocation.POSITION_MAX_AGE_MS) return;
-            for (const key of ['location', 'country']) {
-                if (address[key] && !draft[key] && !draft.editedStation.has(key)) draft[key] = address[key];
-            }
+            if (address.location && !draft.location && !draft.editedStation.has('location')) draft.location = address.location;
+            if (address.country && !draft.country && !draft.editedStation.has('country')) setStationCountry(address.country);
         }
 
         function prefillStation(sample, now) {
@@ -484,7 +488,7 @@ mgu.run({
             const date = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
             draft = {
                 date, type: '', manualType: false, odometer: '', trip: '', quantity: '', unit: 'L',
-                price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '',
+                price: '', currency: 'EUR', manualCurrency: false, priceMode: 'Total', note: '', company: '', country: '', location: '',
                 conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set(),
                 openedAt: now.getTime(), editedStation: new Set()
             };
@@ -517,7 +521,7 @@ mgu.run({
         const choices = {
             type: ['Full', 'Partial'],
             unit: ['L', 'US gal', 'Imp gal', 'kg'],
-            currency: ['EUR', 'CZK', 'HUF', 'PLN', 'GBP', 'CHF', 'USD'],
+            currency: ['EUR', 'CZK', 'HUF', 'PLN', 'RON', 'GBP', 'CHF', 'USD'],
             priceMode: ['Total', 'Per unit']
         };
         const labels = { unit: 'Quantity unit', currency: 'Currency', priceMode: 'Price mode' };
@@ -540,7 +544,7 @@ mgu.run({
                     const y = 105 + Math.floor(index / 3) * 54;
                     const label = code ? code + ' / ' + name : name;
                     G.button(cv, theme, x, y, 470, 46, label + (draft.country === code ? ' (selected)' : ''), () => {
-                        draft.country = code;
+                        setStationCountry(code);
                         editField(null);
                     });
                 });
@@ -548,10 +552,14 @@ mgu.run({
             }
             if (choices[key]) {
                 choices[key].forEach((value, index) => {
-                    G.button(cv, theme, 48, 105 + index * 54, 900, 46,
+                    const currency = key === 'currency';
+                    const x = currency ? 48 + index % 2 * 500 : 48;
+                    const y = 105 + (currency ? Math.floor(index / 2) : index) * 54;
+                    G.button(cv, theme, x, y, currency ? 470 : 900, 46,
                         value + (draft[key] === value ? ' (selected)' : ''), () => {
                             draft[key] = value;
                             if (key === 'type') draft.manualType = true;
+                            if (key === 'currency') draft.manualCurrency = true;
                             editField(null);
                         });
                 });
@@ -864,6 +872,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.33', 'Default to the currency of the station country'],
                 ['0.1.32', 'Estimate station town and country offline from GPS'],
                 ['0.1.31', 'Use the MGU current-position interface when available'],
                 ['0.1.30', 'Show two-letter country codes in the station form'],
