@@ -37,6 +37,11 @@ function heatingLevel(reply) {
     return 'Level ' + (reply[3] === 0 ? 0 : reply[4]);
 }
 
+function formatReply(reply) {
+    if (!reply || reply.length === 0) return '-';
+    return Array.from(reply.slice(0, 12), byte => byte.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+}
+
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
 
 function drawUnconfirmed(cv, x, y) {
@@ -81,6 +86,7 @@ mgu.run({
         let voStatus = null;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
         let driverHeating = 'Reading...';
+        let driverHeatingReply = '-';
         let nextRead = 0;
         let readPending = false;
 
@@ -88,9 +94,12 @@ mgu.run({
             if (!link || !link.ready || readPending || wheelTest.isBusy() || Date.now() < nextRead) return;
             readPending = true;
             try {
-                driverHeating = heatingLevel(await link.read(BDC_ADDRESS, DRIVER_HEATING_DID, 1200));
+                const reply = await link.read(BDC_ADDRESS, DRIVER_HEATING_DID, 1200);
+                driverHeating = heatingLevel(reply);
+                driverHeatingReply = formatReply(reply);
             } catch (error) {
                 driverHeating = 'Read failed';
+                driverHeatingReply = '-';
                 ctx.log.warn('Climate Comfort: BDC driver heating read failed: ' + error.message);
             } finally {
                 readPending = false;
@@ -128,6 +137,7 @@ mgu.run({
             page = tabs[index];
             if (page === 'Front' && link) {
                 driverHeating = 'Reading...';
+                driverHeatingReply = '-';
                 nextRead = 0;
                 link.wake(BDC_ADDRESS);
             }
@@ -153,8 +163,9 @@ mgu.run({
                 renderSeats(cv, theme, ctx.settings, equipment, page);
                 if (page === 'Front' && link && equipment.frontSeatHeating === true) {
                     readDriverHeating();
-                    cv.text('Driver heat E432  |  ' + driverHeating,
-                        800, 502, 18, theme.text, { align: 'center' });
+                    cv.text('Driver heat E432', 130, 77, 22, theme.dim);
+                    cv.text(driverHeating, 410, 77, 22, theme.text);
+                    cv.text('Reply  ' + driverHeatingReply, 750, 77, 22, theme.text);
                 }
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
