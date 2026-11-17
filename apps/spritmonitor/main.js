@@ -489,7 +489,7 @@ mgu.run({
             ['price', 'Price'], ['note', 'Note']
         ];
         const stationFields = [
-            ['company', 'Company'], ['country', 'Country'], ['location', 'City / location']
+            ['company', 'Company'], ['country', 'Country'], ['location', 'City']
         ];
         const computerFields = [
             ['consumption', 'Consumption'], ['consumedQuantity', 'Quantity'], ['averageSpeed', 'Avg. speed']
@@ -844,6 +844,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.29', 'Prefill only the city, without the street or road'],
                 ['0.1.28', 'Read station location from navigation elements'],
                 ['', 'Choose the station country from a list'],
                 ['0.1.27', 'Show navigation field names for location diagnostics'],

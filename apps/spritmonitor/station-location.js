@@ -26,7 +26,7 @@ function addressParts(road, depth) {
 }
 
 function stationAddress(road) {
-    let location = '', country = '', street = '';
+    let location = '', country = '';
     for (const part of addressParts(road, 3)) {
         const type = String(part.type || part.kind || '').toUpperCase();
         const text = typeof part.text === 'string' ? part.text : part.value;
@@ -36,15 +36,10 @@ function stationAddress(road) {
             .filter(value => typeof value === 'string' && value.trim())
             .map(value => countryCodes[value.trim().toUpperCase()]).find(Boolean);
         if (!location && city) location = city.trim().slice(0, 255);
-        if (!street) {
-            const name = [part.streetName, part.roadName, /^(STREET|ROAD|ROAD_NAME)$/.test(type) && text]
-                .find(value => typeof value === 'string' && value.trim());
-            if (name) street = name.trim().slice(0, 255);
-        }
         if (!country && code) country = code;
         if (location && country) break;
     }
-    return location || street || country ? { location: location || street, country } : null;
+    return location || country ? { location, country } : null;
 }
 
 function roadFields(road, nested) {
@@ -97,8 +92,8 @@ function watch(ctx, onAddress) {
         const address = lastReport.address;
         if (!address) return 'No city or country | currentRoad: ' + lastReport.fields;
         if (!address.location) return 'Navigation sent country only';
-        if (!address.country) return 'Navigation sent location only';
-        return 'Location and country received from navigation';
+        if (!address.country) return 'Navigation sent city only';
+        return 'City and country received from navigation';
     };
 }
 
