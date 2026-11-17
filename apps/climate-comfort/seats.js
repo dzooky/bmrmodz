@@ -19,7 +19,7 @@ function renderLevelButton(cv, settings, key, x, y, direction, color) {
         key + (direction > 0 ? '-right' : '-left'));
 }
 
-function renderControls(cv, theme, settings, position, x, title, color) {
+function renderControls(cv, theme, settings, position, x, title, color, test) {
     const key = position + title;
     const temperatureKey = key + 'Temperature';
     const levelKey = key + 'Level';
@@ -31,9 +31,13 @@ function renderControls(cv, theme, settings, position, x, title, color) {
     renderLevelButton(cv, settings, levelKey, x - 46, 397, -1, color);
     cv.text(level === 0 ? '-' : String(level), x, 405, 24, theme.text, center);
     renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color);
+    const enabled = level > 0 && test.canTest(title);
+    cv.roundRect(x - 61, 442, 122, 32, 8, '#ffffff12');
+    cv.text(test.isActive(key) ? 'Testing...' : 'Test level', x, 464, 17, enabled ? theme.text : theme.dim, center);
+    if (enabled) cv.target(x - 61, 442, 122, 32, () => test.run(position, title, level), key + '-test');
 }
 
-function renderSeats(cv, theme, settings, equipment, row) {
+function renderSeats(cv, theme, settings, equipment, row, test) {
     if (!seatLayers[row]) {
         const seat = decode(path.join(__dirname, IMAGES[row]), WIDTH, HEIGHT);
         const runs = rasterRuns(seat);
@@ -54,11 +58,11 @@ function renderSeats(cv, theme, settings, equipment, row) {
         const key = prefix + side;
         if (equipment[prefix + 'SeatVentilation'] === true) {
             renderControls(cv, theme, settings, key,
-                center - 180, 'Ventilation', '#5bc9ef');
+                center - 180, 'Ventilation', '#5bc9ef', test);
         }
         if (equipment[prefix + 'SeatHeating'] === true) {
             renderControls(cv, theme, settings, key,
-                center + 180, 'Heating', '#ff945e');
+                center + 180, 'Heating', '#ff945e', test);
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
     });

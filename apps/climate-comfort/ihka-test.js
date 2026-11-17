@@ -1,101 +1,104 @@
 'use strict';
 
 const { Diag, replyTo, hex } = require('./kit/diag');
+const { pause, waitForBelt } = require('./belt-test');
 
 const IHKA = 0x78;
-const ACSM = 0x01;
-const DRIVER_BELT = [0x01, 0xA0, 0xD2, 0x01];
 const REQUEST_GAP_MS = 300;
-const BELT_CHECK_INTERVAL_MS = 5000;
-const BELT_WAIT_MS = 60000;
-const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-const PRESS = [0x01, 0xA1, 0x26, 0x1B, 0x01];
-const RELEASE = [0x01, 0xA1, 0x26, 0x1B, 0x00];
+const CLIMATE_STATUS = [0xD8, 0xDB];
 const STOP = [0x02, 0xA1, 0x26];
+const SEATS = {
+    frontLeft: { Heating: [0x1B, 19], Ventilation: [0x1D, 21] },
+    frontRight: { Heating: [0x1C, 20], Ventilation: [0x1E, 22] },
+    rearLeft: { Heating: [0x22, 23], Ventilation: [0x24, 25] },
+    rearRight: { Heating: [0x23, 24], Ventilation: [0x25, 26] },
+};
 
-function createIhkaTest(ctx) {
-    const diag = new Diag(ctx.signals, ctx.log);
-    let busy = false;
-    let detail = '';
-    let stopResult = '';
+function createIhkaTest(ctx, engineRunning, otherTestBusy) {
+    const diag = ctx.isPreview ? null : new Diag(ctx.signals, ctx.log);
+    let active = null;
 
-    function request(address, data, maxRetries = 3) {
-        return diag.physical(address, 0x31, data, 1500, replyTo(0x31, data),
+    async function request(address, service, data, maxRetries = 3) {
+        const reply = await diag.physical(address, service, data, 1500, replyTo(service, data),
             { hardTimeoutMs: 4500, callTimeoutMs: 2000, maxRetries, retryBaseMs: 400 });
+        if (!reply) throw new Error('No response from ' + hex(address));
+        if (reply[0] === 0x7F) throw new Error('ECU ' + hex(address) + ' NRC ' + hex(reply[2]));
+        return reply;
     }
 
-    function result(reply) {
-        return reply ? reply.slice(0, 8).map(byte => hex(byte)).join(' ') : 'No response';
+    async function readLevel(offset) {
+        const reply = await request(IHKA, 0x22, CLIMATE_STATUS);
+        const level = reply[3 + offset];
+        if (!Number.isInteger(level) || level < 0 || level > 3) throw new Error('IHKA level unavailable');
+        return level;
     }
 
-    async function waitForDriverBelt() {
-        const deadline = Date.now() + BELT_WAIT_MS;
-        let lastStatus = 'Driver belt: No response';
-        detail = 'Waiting for driver belt...';
-        while (Date.now() < deadline) {
-            try {
-                // Belt reads are paced here, including when TASU is busy.
-                const reply = await request(ACSM, DRIVER_BELT, 0);
-                const state = reply && reply.length === 5 && reply[0] === 0x71 ? reply[4] : undefined;
-                if (state === 0x01) return true;
-                lastStatus = state === 0x00 ? 'Driver belt: timed out waiting for latch' :
-                    'Driver belt: ' + result(reply);
-            } catch (error) {
-                lastStatus = /busy|temporarily_not_accepted/i.test(error.message) ? 'Driver belt: TASU busy' :
-                    'Driver belt: ' + error.message.slice(0, 54);
-                ctx.log.warn('Climate Comfort driver belt: ' + error.message);
+    async function pressButton(button) {
+        const command = [0x01, 0xA1, 0x26, button];
+        try {
+            await request(IHKA, 0x31, command.concat(0x01));
+            await pause(REQUEST_GAP_MS);
+        } finally {
+            await request(IHKA, 0x31, command.concat(0x00));
+        }
+    }
+
+    async function waitForLevelChange(offset, previous) {
+        for (const delay of [300, 400, 600, 800]) {
+            await pause(delay);
+            const level = await readLevel(offset);
+            if (level !== previous) return level;
+        }
+        throw new Error('IHKA level did not change');
+    }
+
+    function canTest(mode) {
+        return !active && !otherTestBusy() && (ctx.isPreview || mode !== 'Ventilation' || engineRunning());
+    }
+
+    async function run(position, mode, target) {
+        const control = SEATS[position] && SEATS[position][mode];
+        if (!control || !Number.isInteger(target) || target < 1 || target > 3 || !canTest(mode)) return;
+        active = position + mode;
+        const [button, offset] = control;
+        let attempted = false;
+        try {
+            if (!diag) {
+                await pause(REQUEST_GAP_MS);
+                return;
             }
-            const remaining = deadline - Date.now();
-            if (remaining > 0) await pause(Math.min(BELT_CHECK_INTERVAL_MS, remaining));
-        }
-        detail = lastStatus;
-        return false;
-    }
-
-    async function showRequest(address, data) {
-        try {
-            return result(await request(address, data));
-        } catch (error) {
-            ctx.log.warn('Climate Comfort IHKA test: ' + error.message);
-            return /busy|temporarily_not_accepted/i.test(error.message) ? 'TASU busy' : 'Transport error';
-        }
-    }
-
-    async function run(stopOnly) {
-        if (busy) return;
-        busy = true;
-        detail = '';
-        stopResult = '';
-        try {
             if (!diag.p) await diag.init();
             if (!diag.p) throw new Error('Diagnostics unavailable');
-            if (!stopOnly) {
-                if (!await waitForDriverBelt()) return;
-                detail = '';
-                await pause(REQUEST_GAP_MS);
+            if (!await waitForBelt((address, service, data) => request(address, service, data, 0),
+                position, ctx.log)) return;
+            if (mode === 'Ventilation' && !engineRunning()) return;
+            await pause(REQUEST_GAP_MS);
+            let level = await readLevel(offset);
+            const visited = new Set();
+            while (level !== target && !visited.has(level)) {
+                if (mode === 'Ventilation' && !engineRunning()) return;
+                visited.add(level);
+                attempted = true;
+                await pressButton(button);
+                level = await waitForLevelChange(offset, level);
             }
-            try {
-                if (!stopOnly) {
-                    try {
-                        detail = 'Press ' + (await showRequest(IHKA, PRESS));
-                        await pause(REQUEST_GAP_MS);
-                    } finally {
-                        detail += '   Release ' + (await showRequest(IHKA, RELEASE));
-                    }
-                    await pause(REQUEST_GAP_MS);
-                }
-            } finally {
-                stopResult = 'Stop ' + (await showRequest(IHKA, STOP));
-            }
+            if (level !== target) throw new Error('IHKA did not reach level ' + target);
         } catch (error) {
-            ctx.log.warn('Climate Comfort IHKA test: ' + error.message);
-            detail = 'Diagnostics unavailable';
+            ctx.log.warn('Climate Comfort ' + active + ': ' + error.message);
         } finally {
-            busy = false;
+            if (attempted) {
+                try {
+                    await pause(REQUEST_GAP_MS);
+                    await request(IHKA, 0x31, STOP);
+                } catch (error) {
+                    ctx.log.warn('Climate Comfort IHKA stop: ' + error.message);
+                }
+            }
+            active = null;
         }
     }
 
-    return { run, isBusy: () => busy, detail: () => detail, stopResult: () => stopResult };
+    return { run, canTest, isBusy: () => !!active, isActive: key => active === key };
 }
 
 module.exports = createIhkaTest;

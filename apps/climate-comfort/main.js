@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
+const Car = require('./kit/car');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
@@ -25,22 +26,6 @@ function equipmentTabs(equipment) {
     if (equipment.steeringWheelHeating === true) tabs.push('Steering');
     tabs.push('My Car', 'About');
     return tabs;
-}
-
-function renderIhkaTest(cv, theme, test, wheelTest) {
-    const disabled = test.isBusy() || wheelTest.isBusy();
-    const center = { align: 'center' };
-    const button = (x, text, stopOnly) => {
-        cv.roundRect(x, 477, 180, 31, 8, '#ffffff19');
-        cv.text(text, x + 90, 498, 18, disabled ? theme.dim : theme.text, center);
-        if (!disabled) cv.target(x, 477, 180, 31, () => {
-            if (!wheelTest.isBusy()) return test.run(stopOnly);
-        }, stopOnly ? 'ihka-stop' : 'ihka-test');
-    };
-    button(82, 'Test driver heat', false);
-    button(277, 'Stop A126', true);
-    cv.text(test.stopResult(), 480, 498, 18, theme.text);
-    cv.text(test.detail() || (test.isBusy() ? 'Testing...' : ''), 860, 498, 17, theme.text);
 }
 
 function equipmentFromCodes(codes) {
@@ -120,7 +105,14 @@ mgu.run({
         const savedCodes = cacheFile && loadSavedCodes(cacheFile, ctx.log);
         let equipment = savedCodes ? equipmentFromCodes(savedCodes) : {};
         const wheelTest = createWheelTest(ctx);
-        const ihkaTest = link ? createIhkaTest(ctx) : null;
+        const car = link ? new Car(ctx, ['rpm']) : null;
+        const engineRunning = () => {
+            if (!car) return false;
+            const { rpm, demo } = car.data();
+            return !demo && Date.now() - car.lastCar <= 5000 && Number.isFinite(rpm) && rpm >= 300;
+        };
+        const ihkaTest = createIhkaTest(ctx, engineRunning, () =>
+            wheelTest.isBusy() || voStatus === 'Reading vehicle order...');
         let tabs = [];
         let page = 'Info';
         let voStatus = savedCodes ? 'Saved vehicle order' : null;
@@ -166,7 +158,7 @@ mgu.run({
         });
 
         ctx.loop('MAIN', 4, () => {
-            if (!ihkaTest || !ihkaTest.isBusy()) wheelTest.tick();
+            if (!ihkaTest.isBusy() && voStatus !== 'Reading vehicle order...') wheelTest.tick();
             detectEquipment();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
@@ -182,12 +174,10 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page);
-                if (page === 'Front' && ihkaTest && equipment.frontSeatHeating === true) {
-                    renderIhkaTest(cv, theme, ihkaTest, wheelTest);
-                }
+                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest,
+                    ihkaTest.isBusy() || voStatus === 'Reading vehicle order...');
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
                 if (link) {

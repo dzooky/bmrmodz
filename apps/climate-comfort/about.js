@@ -42,9 +42,9 @@ function renderAbout(cv, theme) {
 
     cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
     cv.text(version, 1120, 105, 14, theme.text, { font: 'bold' });
-    cv.text('Wait up to a minute for the driver belt to latch.', 1186, 105, 14, theme.dim);
-    cv.text('0.1.25', 1120, 127, 14, theme.text, { font: 'bold' });
-    cv.text('Allow more time for the driver heating test sequence.', 1186, 127, 14, theme.dim);
+    cv.text('Test the selected seat heating and ventilation level.', 1186, 105, 14, theme.dim);
+    cv.text('0.1.26', 1120, 127, 14, theme.text, { font: 'bold' });
+    cv.text('Wait up to a minute for the driver belt to latch.', 1186, 127, 14, theme.dim);
     cv.text('0.1.15', 1120, 149, 14, theme.text, { font: 'bold' });
     cv.text('Read seat heating levels from BDC for testing.', 1186, 149, 14, theme.dim);
     cv.text('0.1.14', 1120, 171, 14, theme.text, { font: 'bold' });
