@@ -9,7 +9,9 @@ const { toggle } = require('./kit/sheet');
 const { withAlpha } = require('./kit/canvas');
 const { decode: decodePng } = require('./png');
 
-const TABS = ['Info', 'My Car', 'About'];
+const TABS = ['My Car', 'About'];
+const MY_CAR = 0, ABOUT = 1;
+const ABOUT_TOP = 54, ABOUT_BOTTOM = 508;
 
 mgu.run({
     start(ctx) {
@@ -23,7 +25,8 @@ mgu.run({
         let savedEntryId;
         let refreshOnOpen = false;
         const maxFormScroll = () => entry === 'Fuel' ? 915 : 184;
-        let page = 0;
+        let page = MY_CAR;
+        let aboutScroll = 0;
         let artwork;
         let vehicle;
         const readings = {};
@@ -346,10 +349,6 @@ mgu.run({
                             y + (row + 4) * cell, cell, cell, 0x000000ff);
                     }
                 }
-                G.button(cv, theme, 65, 425, 275, 50, 'Cancel', () => {
-                    cancelPairingGuide();
-                    page = 0;
-                });
                 if (firstStep) {
                     G.button(cv, theme, 1210, 425, 315, 50, 'Next', startPhonePairing);
                 } else {
@@ -775,6 +774,12 @@ mgu.run({
         }
 
         ctx.onScroll(delta => {
+            if (page === ABOUT && !draft && !savedEntryId) {
+                const next = Math.max(0, Math.min(maxAboutScroll, aboutScroll + delta));
+                if (next === aboutScroll) return false;
+                aboutScroll = next;
+                return true;
+            }
             if (!draft || activeField) return false;
             const next = Math.max(0, Math.min(maxFormScroll(), formScroll + delta));
             if (next === formScroll) return false;
@@ -784,12 +789,12 @@ mgu.run({
 
         ctx.onTab(index => {
             if (!TABS[index]) return;
-            if (index !== 1) cancelPairingGuide();
+            if (index !== MY_CAR) cancelPairingGuide();
             draft = null;
             savedEntryId = undefined;
             activeField = null;
             page = index;
-            if (page === 1 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
+            if (page === MY_CAR && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
 
         const rasterRuns = src => {
@@ -836,88 +841,99 @@ mgu.run({
             return runs;
         };
 
+        const releases = [
+            ['0.1.34', 'Open My Car first and scroll through About'],
+            ['', 'Mark the reset setting as experimental'],
+            ['', 'Match the feedback QR codes to the social QR sizes'],
+            ['0.1.33', 'Default to the currency of the station country'],
+            ['0.1.32', 'Estimate station town and country offline from GPS'],
+            ['0.1.31', 'Use the MGU current-position interface when available'],
+            ['0.1.30', 'Show two-letter country codes in the station form'],
+            ['0.1.29', 'Prefill only the city, without the street or road'],
+            ['0.1.28', 'Read station location from navigation elements'],
+            ['', 'Choose the station country from a list'],
+            ['0.1.27', 'Show navigation field names for location diagnostics'],
+            ['0.1.26', 'Show navigation status and prefill partial addresses'],
+            ['0.1.25', 'Experimental city and country from iDrive'],
+            ['0.1.24', 'Open QR pairing automatically in My Car'],
+            ['0.1.23', 'Hide phone pairing when connected'],
+            ['0.1.22', 'Disconnect the Spritmonitor account'],
+            ['', 'Hide fuelling buttons until a vehicle is selected'],
+            ['0.1.21', 'Show automatic tank capacity in Settings'],
+            ['0.1.20', 'Remove the selected vehicle in My Car'],
+            ['', 'Retry fuel tank capacity from Spritmonitor'],
+            ['0.1.19', 'Restored the original fuelling buttons'],
+            ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
+            ['0.1.17', 'Fixed startup on BMW iDrive 7'],
+            ['0.1.16', 'Offline fuelling and automatic sync'],
+            ['', 'Last driving settings available offline'],
+            ['0.1.15', 'Prefill driving conditions from last fill-up'],
+            ['0.1.14', 'Direct tank selection in charts'],
+            ['0.1.13', 'Fuel and AdBlue in one table'],
+            ['', 'More history points per chart'],
+            ['0.1.12', 'Consumption, distance and unit price charts'],
+            ['', 'Fuel tanks shown before AdBlue'],
+            ['0.1.11', 'Tank statistics in My Car'],
+            ['', 'Two-step phone pairing guide'],
+            ['0.1.10', 'Secure phone pairing with a QR code'],
+            ['0.1.9', 'Removed token entry from iDrive'],
+            ['0.1.8', 'Select a vehicle from the connected account'],
+            ['', 'BC1 averages and manual refilled quantity'],
+            ['0.1.7', 'Tank capacity from Spritmonitor'],
+            ['0.1.6', 'Live fuel and trip readings'],
+            ['0.1.4', 'Trip reset setting'],
+            ['0.1.3', 'Settings tab'],
+            ['0.1.2', 'Feedback QR codes in About'],
+            ['0.1.1', 'BMRMODZ layout and About']
+        ];
+        const maxAboutScroll = Math.max(0, Math.max(512, 105 + (releases.length - 1) * 20 + 20) - ABOUT_BOTTOM);
+
         function renderAbout(cv, theme) {
             if (!artwork) {
                 artwork = [
                     ['brmodz_logo.png', 300, 124, 490, 58],
                     ['qr_instagram.png', 116, 120, 332, 375, 'Instagram'],
                     ['qr_facebook.png', 116, 120, 496, 375, 'Facebook'],
-                    ['qr_report_bug.png', 102, 102, 667, 384, 'Report a bug', true],
-                    ['qr_request_feature.png', 102, 102, 831, 384, 'Request a feature', true]
-                ].map(([file, width, height, x, y, label, feedback]) => ({
-                    x, y, width, height, label, feedback,
+                    ['qr_report_bug.png', 103, 104, 666.5, 383, 'Report a bug'],
+                    ['qr_request_feature.png', 103, 104, 830.5, 383, 'Request a feature']
+                ].map(([file, width, height, x, y, label]) => ({
+                    x, y, width, label,
                     runs: rasterRuns(decodePng(path.join(__dirname, file), width, height))
-                        .filter(run => !feedback || run.color !== 0xffffffff)
                 }));
             }
             const scale = cv.place ? cv.place.scale : 1;
             const edge = coordinate => Math.round(coordinate * scale) / scale;
-            for (const { x, y, width, height, label, feedback, runs } of artwork) {
-                if (feedback) cv.fillRect(edge(x), edge(y), edge(x + width) - edge(x),
-                    edge(y + height) - edge(y), 0xffffffff);
+            const offset = aboutScroll;
+            cv.clip(40, ABOUT_TOP, 1518, ABOUT_BOTTOM - ABOUT_TOP);
+            for (const { x, y, width, label, runs } of artwork) {
                 for (const run of runs) {
                     const left = edge(x + run.x);
-                    const top = edge(y + run.y);
+                    const top = edge(y + run.y - offset);
                     cv.fillRect(left, top, edge(x + run.x + run.width) - left,
-                        edge(y + run.y + run.height) - top, run.color);
+                        edge(y + run.y + run.height - offset) - top, run.color);
                 }
-                cv.text(label, x + width / 2, 512, 15, theme.text, { align: 'center' });
+                if (label) cv.text(label, x + width / 2, 504 - offset, 15, theme.text, { align: 'center' });
             }
 
             const center = { align: 'center' };
             const heading = { align: 'center', font: 'bold', spacing: 2.5 };
-            cv.text('SPRITMONITOR', 640, 225, 30, theme.text, heading);
-            cv.text('Third-party app for Spritmonitor.de.', 640, 258, 19, theme.dim, center);
-            cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285, 19, theme.dim, center);
-            cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
-            cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
-            const releases = [
-                ['0.1.33', 'Default to the currency of the station country'],
-                ['0.1.32', 'Estimate station town and country offline from GPS'],
-                ['0.1.31', 'Use the MGU current-position interface when available'],
-                ['0.1.30', 'Show two-letter country codes in the station form'],
-                ['0.1.29', 'Prefill only the city, without the street or road'],
-                ['0.1.28', 'Read station location from navigation elements'],
-                ['', 'Choose the station country from a list'],
-                ['0.1.27', 'Show navigation field names for location diagnostics'],
-                ['0.1.26', 'Show navigation status and prefill partial addresses'],
-                ['0.1.25', 'Experimental city and country from iDrive'],
-                ['0.1.24', 'Open QR pairing automatically in My Car'],
-                ['0.1.23', 'Hide phone pairing when connected'],
-                ['0.1.22', 'Disconnect the Spritmonitor account'],
-                ['', 'Hide fuelling buttons until a vehicle is selected'],
-                ['0.1.21', 'Show automatic tank capacity in Settings'],
-                ['0.1.20', 'Remove the selected vehicle in My Car'],
-                ['', 'Retry fuel tank capacity from Spritmonitor'],
-                ['0.1.19', 'Restored the original fuelling buttons'],
-                ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
-                ['0.1.17', 'Fixed startup on BMW iDrive 7'],
-                ['0.1.16', 'Offline fuelling and automatic sync'],
-                ['', 'Last driving settings available offline'],
-                ['0.1.15', 'Prefill driving conditions from last fill-up'],
-                ['0.1.14', 'Direct tank selection in charts'],
-                ['0.1.13', 'Fuel and AdBlue in one table'],
-                ['', 'More history points per chart'],
-                ['0.1.12', 'Consumption, distance and unit price charts'],
-                ['', 'Fuel tanks shown before AdBlue'],
-                ['0.1.11', 'Tank statistics in My Car'],
-                ['', 'Two-step phone pairing guide'],
-                ['0.1.10', 'Secure phone pairing with a QR code'],
-                ['0.1.9', 'Removed token entry from iDrive'],
-                ['0.1.8', 'Select a vehicle from the connected account'],
-                ['', 'BC1 averages and manual refilled quantity'],
-                ['0.1.7', 'Tank capacity from Spritmonitor'],
-                ['0.1.6', 'Live fuel and trip readings'],
-                ['0.1.4', 'Trip reset setting'],
-                ['0.1.3', 'Settings tab'],
-                ['0.1.2', 'Feedback QR codes in About'],
-                ['0.1.1', 'BMRMODZ layout and About']
-            ];
+            cv.text('SPRITMONITOR', 640, 225 - offset, 30, theme.text, heading);
+            cv.text('Third-party app for Spritmonitor.de.', 640, 258 - offset, 19, theme.dim, center);
+            cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285 - offset, 19, theme.dim, center);
+            cv.text('Developed by dzooky@bmrmodz', 640, 353 - offset, 18, theme.text, center);
+            cv.text("WHAT'S NEW", 1120, 80 - offset, 22, theme.text, { font: 'bold' });
             releases.forEach(([version, description], index) => {
-                const y = 105 + index * 20;
+                const y = 105 + index * 20 - offset;
+                if (y < ABOUT_TOP || y > ABOUT_BOTTOM) return;
                 if (version) cv.text(version, 1120, y, 14, theme.text, { font: 'bold' });
-                cv.text(description, 1186, y, 14, theme.dim);
+                const width = cv.textWidth(description, 14);
+                cv.text(description, 1186, y, width > 360 ? 14 * 360 / width : 14, theme.dim);
             });
+            cv.noclip();
+            const bar = { x: 1563, y: ABOUT_TOP, w: 6, h: ABOUT_BOTTOM - ABOUT_TOP };
+            const thumb = bar.h * bar.h / (bar.h + maxAboutScroll);
+            cv.scroll = { y: ABOUT_TOP, bar };
+            cv.roundRect(bar.x, bar.y + offset / maxAboutScroll * (bar.h - thumb), bar.w, thumb, 3, theme.dim);
         }
 
         ctx.loop('MAIN', 4, () => {
@@ -927,9 +943,9 @@ mgu.run({
             const showingFuelling = Boolean(draft || savedEntryId);
             if (showingFuelling) {
                 renderFuelling(cv, theme);
-            } else if (page === 2) {
+            } else if (page === ABOUT) {
                 renderAbout(cv, theme);
-            } else if (page === 1 && vehicle) {
+            } else if (vehicle) {
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
                 const capacity = fuelTankCapacity();
                 const tankLabel = capacity.litres
@@ -996,15 +1012,8 @@ mgu.run({
                         });
                     }
                 }
-            } else if (page === 1) {
+            } else {
                 renderAccount(cv, theme);
-            } else if (page === 0) {
-                const centered = { align: 'center' };
-                cv.text('This application is still in development phase and not ready for public use.',
-                    800, 218, 30, theme.text, centered);
-                cv.text('We still working on it and will be available soon.',
-                    800, 260, 30, theme.text, centered);
-                cv.text('Thank you', 800, 302, 30, theme.text, centered);
             }
             G.frame(cv, theme, TABS, showingFuelling ? -1 : page, []);
             return ctx.ui.image('MAIN_GFX', cv);
