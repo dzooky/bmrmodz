@@ -25,7 +25,8 @@ function equipmentTabs(equipment) {
 }
 
 const ACSM_ADDRESS = 0x01;
-const FRONT_BELT_DID = 0x4048;
+const FRONT_BELT_DID = 0x4047;
+const REAR_BELT_DID = 0x4048;
 const ENGINE_IFACE = 'de.bmw.infotainment.vehicle.CDS';
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -36,18 +37,25 @@ function drawUnconfirmed(cv, x, y) {
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
 }
 
-function frontBeltStatus(reply) {
-    if (!reply) return 'Belts: No response';
-    if (reply[0] === 0x7F && reply[1] === 0x22) {
-        return 'Belts: ACSM refused (NRC ' + hex(reply[2]) + ')';
+function beltReplyError(reply, did, minLength) {
+    if (!reply) return 'No response';
+    if (reply.length >= 3 && reply[0] === 0x7F && reply[1] === 0x22) return 'NRC ' + hex(reply[2]);
+    if (reply.length < minLength || reply[0] !== 0x62 || ((reply[1] << 8) | reply[2]) !== did) {
+        return 'Unrecognized response';
     }
-    if (reply.length < 12 || reply[0] !== 0x62 || reply[1] !== 0x40 || reply[2] !== 0x48) {
-        return 'Belts: Unrecognized response';
-    }
+    return null;
+}
 
-    // ACSM5 4048 contains passenger and driver latch states plus their error bytes.
-    return 'Belts 4048   Driver ' + hex(reply[10]) + '/' + hex(reply[11]) +
-        '   Passenger ' + hex(reply[8]) + '/' + hex(reply[9]);
+function frontBeltStatus(reply) {
+    const error = beltReplyError(reply, FRONT_BELT_DID, 12);
+    return error || 'FL ' + hex(reply[10]) + '/' + hex(reply[11]) +
+        '  FR ' + hex(reply[8]) + '/' + hex(reply[9]);
+}
+
+function rearBeltStatus(reply) {
+    const error = beltReplyError(reply, REAR_BELT_DID, 10);
+    // 4048 returns the second-row seat belt reminder state, in left/middle/right order.
+    return error || 'RL ' + hex(reply[7]) + '  RM ' + hex(reply[8]) + '  RR ' + hex(reply[9]);
 }
 
 function renderEquipment(cv, theme, equipment, rows, voStatus, beltStatus) {
@@ -120,7 +128,10 @@ mgu.run({
 
             beltReadPending = true;
             try {
-                beltStatus = frontBeltStatus(await link.read(ACSM_ADDRESS, FRONT_BELT_DID, 1500));
+                const front = frontBeltStatus(await link.read(ACSM_ADDRESS, FRONT_BELT_DID, 1500));
+                if (page !== 'My Car') return;
+                const rear = rearBeltStatus(await link.read(ACSM_ADDRESS, REAR_BELT_DID, 1500));
+                beltStatus = '4047: ' + front + '   |   4048: ' + rear;
             } catch (error) {
                 beltStatus = 'Belts: Read failed';
                 ctx.log.warn('Climate Comfort: belt contact read failed: ' + error.message);
