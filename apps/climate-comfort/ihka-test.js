@@ -52,13 +52,13 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
         throw new Error('IHKA level did not change');
     }
 
-    function canTest(mode) {
-        return !active && !otherTestBusy() && (ctx.isPreview || mode !== 'Ventilation' || engineRunning());
+    function canTest() {
+        return !active && !otherTestBusy();
     }
 
     async function run(position, mode, target) {
         const control = SEATS[position] && SEATS[position][mode];
-        if (!control || !Number.isInteger(target) || target < 1 || target > 3 || !canTest(mode)) return;
+        if (!control || !Number.isInteger(target) || target < 1 || target > 3 || !canTest()) return;
         active = position + mode;
         const [button, offset] = control;
         let attempted = false;
@@ -70,7 +70,7 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
             if (!diag.p) await diag.init();
             if (!diag.p) throw new Error('Diagnostics unavailable');
             if (!await waitForBelt((address, service, data) => request(address, service, data, 0),
-                position, ctx.log)) return;
+                position, ctx.log, () => mode !== 'Ventilation' || engineRunning())) return;
             if (mode === 'Ventilation' && !engineRunning()) return;
             await pause(REQUEST_GAP_MS);
             let level = await readLevel(offset);
