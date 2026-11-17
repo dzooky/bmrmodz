@@ -446,11 +446,11 @@ mgu.run({
         function prefillStationAddress(address, now) {
             if (!draft || now - draft.openedAt > stationLocation.POSITION_MAX_AGE_MS) return;
             for (const key of ['location', 'country']) {
-                if (!draft[key] && !draft.editedStation.has(key)) draft[key] = address[key];
+                if (address[key] && !draft[key] && !draft.editedStation.has(key)) draft[key] = address[key];
             }
         }
 
-        stationLocation.watch(ctx, address => {
+        const stationStatus = stationLocation.watch(ctx, address => {
             const now = Date.now();
             lastStationAddress = address ? { address, at: now } : null;
             if (address) prefillStationAddress(address, now);
@@ -713,6 +713,7 @@ mgu.run({
             if (entry === 'Fuel') renderDrivingConditions(cv, theme, offset);
             const stationY = entry === 'Fuel' ? 1040 : 480;
             renderDetails(cv, theme, 'Gas Station', stationFields, stationY - offset, true);
+            cv.text(stationStatus(), 1506, stationY - offset, 19, theme.dim, { align: 'right' });
             if (entry === 'Fuel') {
                 draft.consumption = reading(data.consumption, data.consumptionUnit, 1);
                 draft.averageSpeed = reading(data.speed, data.speedUnit, 1);
@@ -829,6 +830,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.26', 'Show navigation status and prefill partial addresses'],
                 ['0.1.25', 'Experimental city and country from iDrive'],
                 ['0.1.24', 'Open QR pairing automatically in My Car'],
                 ['0.1.23', 'Hide phone pairing when connected'],

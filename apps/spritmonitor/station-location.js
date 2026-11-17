@@ -14,33 +14,48 @@ const countryCodes = {
 
 function stationAddress(road) {
     if (!road || typeof road !== 'object' || road.valid === false || road.isValid === false) return null;
-    for (const address of [road.address, road]) {
-        if (!address || typeof address !== 'object') continue;
-        const city = [address.city, address.locality, address.town].find(value =>
-            typeof value === 'string' && value.trim());
-        const country = [address.countryCode, address.country].find(value =>
-            typeof value === 'string' && value.trim());
-        const code = country && countryCodes[country.trim().toUpperCase()];
-        if (city && code) return { location: city.trim().slice(0, 255), country: code };
-    }
-    return null;
+    const addresses = [road.address, road].filter(value => value && typeof value === 'object');
+    const text = names => addresses.map(address => names.map(name => address[name]))
+        .reduce((values, group) => values.concat(group), [])
+        .find(value => typeof value === 'string' && value.trim());
+    const city = text(['city', 'locality', 'town']);
+    const country = text(['countryCode', 'country']);
+    const code = country && countryCodes[country.trim().toUpperCase()];
+    return city || code ? { location: city ? city.trim().slice(0, 255) : '', country: code || '' } : null;
 }
 
 function watch(ctx, onAddress) {
     let logged = false;
+    let subscription;
+    let failed = false;
+    let lastReport;
     ctx.signals.watch(GUIDANCE, 'Main_Instance', {
         currentRoad(road) {
             const address = stationAddress(road);
-            if (!logged && road && typeof road === 'object' && Object.keys(road).length) {
+            lastReport = { address, at: Date.now() };
+            if (!logged && road != null) {
                 logged = true;
-                ctx.log.info('currentRoad fields: ' + Object.keys(road).join(', '));
+                const keys = typeof road === 'object' ? Object.keys(road).join(', ') : typeof road;
+                ctx.log.info('currentRoad fields: ' + keys);
                 if (road.address && typeof road.address === 'object') {
                     ctx.log.info('currentRoad address fields: ' + Object.keys(road.address).join(', '));
                 }
             }
             onAddress(address);
         }
-    }, ctx.log, { pollMs: 3000 }).catch(error => ctx.log.warn('Station location: ' + error.message));
+    }, ctx.log, { pollMs: 3000 }).then(result => { subscription = result; }).catch(error => {
+        failed = true;
+        ctx.log.warn('Station location: ' + error.message);
+    });
+    return function status() {
+        if (failed || (subscription && subscription.error)) return 'Navigation signal unavailable';
+        if (!lastReport || Date.now() - lastReport.at > POSITION_MAX_AGE_MS) return 'No recent navigation data';
+        const address = lastReport.address;
+        if (!address) return 'Navigation sent no city or country';
+        if (!address.location) return 'Navigation sent country only';
+        if (!address.country) return 'Navigation sent city only';
+        return 'City and country received from navigation';
+    };
 }
 
 module.exports = { watch, POSITION_MAX_AGE_MS };
