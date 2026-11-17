@@ -86,15 +86,19 @@ mgu.run({
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
         const ihkaTest = link ? createIhkaTest(ctx) : null;
 
+        let equipmentAttempts = 0;
+        let nextEquipmentRead = 0;
+
         async function detectEquipment() {
-            if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
+            if (!link || equipmentAttempts >= 3 || Date.now() < nextEquipmentRead ||
+                voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
+            equipmentAttempts++;
             voStatus = 'Reading vehicle order...';
             try {
-                const codes = await readVehicleOrder(link);
+                const { codes, error } = await readVehicleOrder(link);
                 if (!codes) {
-                    // A later visit to My Car can retry after the gateway wakes up.
-                    voStatus = 'Vehicle order unavailable';
-                    ctx.log.warn('Climate Comfort: no supported Vehicle Order response from gateway 10 DID 3F06');
+                    voStatus = error;
+                    ctx.log.warn('Climate Comfort: ' + error);
                     return;
                 }
                 Object.keys(VO_CODES).forEach(key => { equipment[key] = codes.has(VO_CODES[key]); });
@@ -105,20 +109,27 @@ mgu.run({
                 if (heatedFrontAndRear) equipment.rearSeatHeating = true;
                 voStatus = 'Vehicle order read';
             } catch (error) {
-                voStatus = 'Vehicle order unavailable';
+                voStatus = 'Vehicle order: transport error';
                 ctx.log.warn('Climate Comfort: Vehicle Order read failed: ' + error.message);
+            } finally {
+                nextEquipmentRead = Date.now() + 3000;
             }
         }
 
-        detectEquipment();
         ctx.onTab(index => {
             if (!tabs[index] || tabs[index] === page) return;
             page = tabs[index];
-            if (page === 'My Car') detectEquipment();
+            if (page === 'My Car' && link && equipmentAttempts >= 3 &&
+                voStatus !== 'Vehicle order read' && voStatus !== 'Reading vehicle order...') {
+                equipmentAttempts = 0;
+                nextEquipmentRead = 0;
+                link.wake();
+            }
         });
 
         ctx.loop('MAIN', 4, () => {
             if (!ihkaTest || !ihkaTest.isBusy()) wheelTest.tick();
+            detectEquipment();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }

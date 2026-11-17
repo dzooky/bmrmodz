@@ -49,8 +49,14 @@ function decodeVehicleOrder(reply) {
 
 async function readVehicleOrder(link) {
     if (!link.ready) await link.init();
-    if (!link.ready) return null;
-    return decodeVehicleOrder(await link.read(GATEWAY, VEHICLE_ORDER_DID, 3000));
+    if (!link.ready) return { error: 'Vehicle order: diagnostics unavailable' };
+    const reply = await link.read(GATEWAY, VEHICLE_ORDER_DID, 3000);
+    if (!reply) return { error: 'Vehicle order: gateway did not respond' };
+    if (reply[0] === 0x7F && reply.length >= 3) {
+        return { error: 'Vehicle order: gateway NRC ' + reply[2].toString(16).toUpperCase().padStart(2, '0') };
+    }
+    const codes = decodeVehicleOrder(reply);
+    return codes ? { codes } : { error: 'Vehicle order: unsupported reply (' + reply.length + ' bytes)' };
 }
 
 module.exports = { decodeVehicleOrder, readVehicleOrder };
