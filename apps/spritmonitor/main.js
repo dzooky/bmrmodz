@@ -845,6 +845,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.31', 'Use the MGU current-position interface when available'],
                 ['0.1.30', 'Show two-letter country codes in the station form'],
                 ['0.1.29', 'Prefill only the city, without the street or road'],
                 ['0.1.28', 'Read station location from navigation elements'],

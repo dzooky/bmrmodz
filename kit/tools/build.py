@@ -416,6 +416,46 @@ def build_start_widget(spec, app_id, icon_src, out, pkg_out=None):
     return {'component': comp, 'layout': ui['containers']['500']['components'][str(WIDGET_COMPONENT_ID)]['cells']['Widget']['value']}
 
 
+def discover_spritmonitor_location(spec):
+    """Register the location field and instance offered by this MGU's installed firmware."""
+    catalog_path = os.environ.get('MGU_SOMEIP_CATALOG', '/etc/oap/someip/someip-interfaces.json')
+    try:
+        with open(catalog_path, encoding='utf-8') as file:
+            catalog = json.load(file)
+        interfaces = catalog['interfaces']
+        instances = catalog['instanceIDs']
+    except (OSError, ValueError, KeyError, TypeError):
+        return
+
+    if not isinstance(interfaces, dict) or not isinstance(instances, dict):
+        return
+
+    candidates = []
+    for name, interface in interfaces.items():
+        if name.rsplit('.', 1)[-1].lower() != 'positioning' or not isinstance(interface, dict):
+            continue
+        fields = interface.get('fields')
+        field = fields.get('currentLocation') if isinstance(fields, dict) else None
+        known = instances.get(name)
+        if not isinstance(field, dict) or not isinstance(known, dict):
+            continue
+        access = ('r' if field.get('getter') is not None else '') + ('s' if field.get('notifier') is not None else '')
+        instance = 'Main_Instance' if 'Main_Instance' in known else None
+        if not instance and len(known) == 1:
+            instance = next(iter(known))
+        if access and instance:
+            candidates.append((name, instance, access))
+
+    if len(candidates) == 1:
+        name, instance, access = candidates[0]
+        spec['signals'][name] = {
+            '_optional': 'Automatic fuelling location',
+            '_instances': instance,
+            'currentLocation': access
+        }
+        spec.setdefault('config', {})['stationPositioning'] = {'interface': name, 'instance': instance}
+
+
 def build(app_id, language='en', preview_only=False):
     language = normalize_language(language)
     # mgu-store supplies the BMW SDK donor and links it into the app on the head unit.
@@ -427,6 +467,8 @@ def build(app_id, language='en', preview_only=False):
     spec = json.load(open(os.path.join(adir, 'app.json'), encoding='utf-8'))
     spec = localize_spec(spec, language)
     spec.setdefault('id', app_id)
+    if spec['id'] == 'spritmonitor':
+        discover_spritmonitor_location(spec)
     ver = spec['version']
     stage = os.path.join(DIST, app_id)
     # The source folder may use display casing; keep the installed identity stable.

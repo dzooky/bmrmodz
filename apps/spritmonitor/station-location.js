@@ -74,16 +74,19 @@ function watch(ctx, onAddress) {
     let subscription;
     let failed = false;
     let lastReport;
-    ctx.signals.watch(GUIDANCE, 'Main_Instance', {
-        currentRoad(road) {
+    const positioning = ctx.spec && ctx.spec.config && ctx.spec.config.stationPositioning;
+    const source = positioning ? 'currentLocation' : 'currentRoad';
+    ctx.signals.watch(positioning ? positioning.interface : GUIDANCE,
+        positioning ? positioning.instance : 'Main_Instance', {
+        [source](road) {
             const address = stationAddress(road);
             lastReport = { address, at: Date.now(), fields: address ? '' : roadFields(road) };
             if (!logged && road != null) {
                 logged = true;
                 const keys = typeof road === 'object' ? Object.keys(road).join(', ') : typeof road;
-                ctx.log.info('currentRoad fields: ' + keys);
+                ctx.log.info(source + ' fields: ' + keys);
                 if (road.address && typeof road.address === 'object') {
-                    ctx.log.info('currentRoad address fields: ' + Object.keys(road.address).join(', '));
+                    ctx.log.info(source + ' address fields: ' + Object.keys(road.address).join(', '));
                 }
             }
             onAddress(address);
@@ -96,7 +99,7 @@ function watch(ctx, onAddress) {
         if (failed || (subscription && subscription.error)) return 'Navigation signal unavailable';
         if (!lastReport || Date.now() - lastReport.at > POSITION_MAX_AGE_MS) return 'No recent navigation data';
         const address = lastReport.address;
-        if (!address) return 'No city or country | currentRoad: ' + lastReport.fields;
+        if (!address) return 'No city or country | ' + source + ': ' + lastReport.fields;
         if (!address.location) return 'Navigation sent country only';
         if (!address.country) return 'Navigation sent city only';
         return 'City and country received from navigation';
