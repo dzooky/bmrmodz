@@ -5,6 +5,7 @@ const { Diag, replyTo, hex } = require('./kit/diag');
 const IHKA = 0x78;
 const ACSM = 0x01;
 const DRIVER_BELT = [0x01, 0xA0, 0xD2, 0x01];
+const REQUEST_GAP_MS = 300;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PRESS = [0x01, 0xA1, 0x26, 0x1B, 0x01];
 const RELEASE = [0x01, 0xA1, 0x26, 0x1B, 0x00];
@@ -18,7 +19,7 @@ function createIhkaTest(ctx) {
 
     function request(address, data) {
         return diag.physical(address, 0x31, data, 1500, replyTo(0x31, data),
-            { hardTimeoutMs: 3000, callTimeoutMs: 2000, maxRetries: 2, retryBaseMs: 200 });
+            { hardTimeoutMs: 4500, callTimeoutMs: 2000, maxRetries: 3, retryBaseMs: 400 });
     }
 
     function result(reply) {
@@ -64,15 +65,17 @@ function createIhkaTest(ctx) {
                     detail = state === 0x00 ? 'Fasten driver belt and retry' : 'Driver belt: ' + result(belt);
                     return;
                 }
+                await pause(REQUEST_GAP_MS);
             }
             try {
                 if (!stopOnly) {
                     try {
                         detail = 'Press ' + (await showRequest(IHKA, PRESS));
-                        await pause(250);
+                        await pause(REQUEST_GAP_MS);
                     } finally {
                         detail += '   Release ' + (await showRequest(IHKA, RELEASE));
                     }
+                    await pause(REQUEST_GAP_MS);
                 }
             } finally {
                 stopResult = 'Stop ' + (await showRequest(IHKA, STOP));
