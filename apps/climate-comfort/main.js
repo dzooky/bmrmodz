@@ -25,15 +25,22 @@ function equipmentTabs(equipment) {
 }
 
 const BDC_ADDRESS = 0x40;
-const BDC_HEATING_DIDS = { Front: [0xD737, 0xD72A], Rear: [0xD7EB, 0xD7AA] };
+const BDC_HEATING_DIDS = {
+    Front: [[0xE432, 0xD737], [0xE430, 0xD72A]],
+    Rear: [[0xE433, 0xD7EB], [0xE431, 0xD7AA]],
+};
 
 function heatingLevel(reply, did) {
     if (!reply) return 'No response';
     if (reply[0] === 0x7F) return 'NRC ' + (reply.length >= 3
         ? reply[2].toString(16).toUpperCase().padStart(2, '0') : '?');
-    if (reply.length !== 4 || reply[0] !== 0x62 || ((reply[1] << 8) | reply[2]) !== did ||
-        reply[3] > 3) return 'Unsupported reply';
-    return String(reply[3]);
+    const detailed = (did & 0xFF00) === 0xE400;
+    const expectedLength = detailed ? 12 : 4;
+    const level = reply[detailed ? 4 : 3];
+    if (reply.length !== expectedLength || reply[0] !== 0x62 ||
+        ((reply[1] << 8) | reply[2]) !== did || level > 3 ||
+        (detailed && reply[3] > 1)) return 'Unsupported reply';
+    return String(detailed && reply[3] === 0 ? 0 : level);
 }
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -83,15 +90,33 @@ mgu.run({
         let nextRead = 0;
         let readPending = false;
         let sideToRead = 0;
+        const rejectedHeatingDids = new Set();
 
         async function readHeating(row) {
             if (!link || !link.ready || readPending || wheelTest.isBusy() || Date.now() < nextRead) return;
             const side = sideToRead;
             sideToRead = 1 - sideToRead;
-            const did = BDC_HEATING_DIDS[row][side];
+            const candidates = BDC_HEATING_DIDS[row][side];
+            if (candidates.every(did => rejectedHeatingDids.has(did))) return;
             readPending = true;
             try {
-                heatingLevels[row][side] = heatingLevel(await link.read(BDC_ADDRESS, did, 1200), did);
+                const results = [];
+                for (const did of candidates) {
+                    const id = did.toString(16).toUpperCase();
+                    if (rejectedHeatingDids.has(did)) {
+                        results.push(id + ' NRC 31');
+                        continue;
+                    }
+                    const result = heatingLevel(await link.read(BDC_ADDRESS, did, 1200), did);
+                    results.push(id + ' ' + result);
+                    if (result !== 'NRC 31') {
+                        heatingLevels[row][side] = id + ' ' + result;
+                        return;
+                    }
+                    rejectedHeatingDids.add(did);
+                    if (page !== row) break;
+                }
+                heatingLevels[row][side] = results.join(', ');
             } catch (error) {
                 heatingLevels[row][side] = 'Read failed';
                 ctx.log.warn('Climate Comfort: BDC seat heating read failed: ' + error.message);
@@ -131,6 +156,9 @@ mgu.run({
             if (!tabs[index] || tabs[index] === page) return;
             page = tabs[index];
             if (BDC_HEATING_DIDS[page] && link) {
+                BDC_HEATING_DIDS[page].forEach(candidates => {
+                    candidates.forEach(did => rejectedHeatingDids.delete(did));
+                });
                 heatingLevels[page] = ['-', '-'];
                 sideToRead = 0;
                 nextRead = 0;
