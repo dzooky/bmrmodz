@@ -3,20 +3,26 @@
 const GUIDANCE = 'de.bmw.infotainment.navigation.guiding.Guidance';
 const POSITION_MAX_AGE_MS = 10000;
 
-// Spritmonitor uses vehicle country identifiers (e.g. D rather than DE).
-const countryCodes = {
-    AT: 'A', AUT: 'A', A: 'A', BE: 'B', BEL: 'B', B: 'B',
-    CH: 'CH', CHE: 'CH', CZ: 'CZ', CZE: 'CZ', DE: 'D', DEU: 'D', D: 'D',
-    FR: 'F', FRA: 'F', F: 'F', HR: 'HR', HRV: 'HR', HU: 'H', HUN: 'H', H: 'H',
-    IT: 'I', ITA: 'I', I: 'I', NL: 'NL', NLD: 'NL', PL: 'PL', POL: 'PL',
-    RO: 'RO', ROU: 'RO', SK: 'SK', SVK: 'SK', SI: 'SLO', SVN: 'SLO', SLO: 'SLO'
-};
-
+// Keep ISO codes in the form and translate them to Spritmonitor's vehicle country codes at save time.
 const countries = [
-    ['A', 'Austria'], ['B', 'Belgium'], ['HR', 'Croatia'], ['CZ', 'Czechia'], ['F', 'France'],
-    ['D', 'Germany'], ['H', 'Hungary'], ['I', 'Italy'], ['NL', 'Netherlands'], ['PL', 'Poland'],
-    ['RO', 'Romania'], ['SK', 'Slovakia'], ['SLO', 'Slovenia'], ['CH', 'Switzerland']
+    ['AT', 'Austria', 'A', 'AUT'], ['BE', 'Belgium', 'B', 'BEL'],
+    ['HR', 'Croatia', 'HR', 'HRV'], ['CZ', 'Czechia', 'CZ', 'CZE'],
+    ['FR', 'France', 'F', 'FRA'], ['DE', 'Germany', 'D', 'DEU'],
+    ['HU', 'Hungary', 'H', 'HUN'], ['IT', 'Italy', 'I', 'ITA'],
+    ['NL', 'Netherlands', 'NL', 'NLD'], ['PL', 'Poland', 'PL', 'POL'],
+    ['RO', 'Romania', 'RO', 'ROU'], ['SK', 'Slovakia', 'SK', 'SVK'],
+    ['SI', 'Slovenia', 'SLO', 'SVN'], ['CH', 'Switzerland', 'CH', 'CHE']
 ];
+
+const countryCodes = new Map();
+for (const [iso, , api, iso3] of countries) {
+    for (const code of [iso, api, iso3]) countryCodes.set(code, iso);
+}
+
+function apiCountryCode(code) {
+    const country = countries.find(([iso]) => iso === code);
+    return country ? country[2] : '';
+}
 
 function addressParts(road, depth) {
     if (!road || typeof road !== 'object' || road.valid === false || road.isValid === false || depth === 0) return [];
@@ -34,7 +40,7 @@ function stationAddress(road) {
             .find(value => typeof value === 'string' && value.trim());
         const code = [part.countryCode, part.country, /^(COUNTRY|COUNTRY_CODE)$/.test(type) && text]
             .filter(value => typeof value === 'string' && value.trim())
-            .map(value => countryCodes[value.trim().toUpperCase()]).find(Boolean);
+            .map(value => countryCodes.get(value.trim().toUpperCase())).find(Boolean);
         if (!location && city) location = city.trim().slice(0, 255);
         if (!country && code) country = code;
         if (location && country) break;
@@ -97,4 +103,4 @@ function watch(ctx, onAddress) {
     };
 }
 
-module.exports = { watch, countries, POSITION_MAX_AGE_MS };
+module.exports = { watch, countries, apiCountryCode, POSITION_MAX_AGE_MS };

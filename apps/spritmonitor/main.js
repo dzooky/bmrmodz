@@ -519,7 +519,8 @@ mgu.run({
                 options.forEach(([code, name], index) => {
                     const x = 48 + index % 3 * 500;
                     const y = 105 + Math.floor(index / 3) * 54;
-                    G.button(cv, theme, x, y, 470, 46, name + (draft.country === code ? ' (selected)' : ''), () => {
+                    const label = code ? code + ' / ' + name : name;
+                    G.button(cv, theme, x, y, 470, 46, label + (draft.country === code ? ' (selected)' : ''), () => {
                         draft.country = code;
                         editField(null);
                     });
@@ -543,7 +544,7 @@ mgu.run({
                 G.button(cv, theme, 1255, 95, 290, 44, draft.priceMode, () => editField('priceMode'));
             }
             cv.text(draft[key].slice(-78) || '--', 48, 132, 27, theme.text);
-            const textField = ['note', 'company', 'country', 'location'].includes(key);
+            const textField = ['note', 'company', 'location'].includes(key);
             const keys = textField
                 ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').concat(['Space', '.', ',', 'Delete', 'Clear'])
                 : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'Delete', 'Clear'];
@@ -613,9 +614,7 @@ mgu.run({
             fields.forEach(([key, label], index) => {
                 const y = start + 12 + index * 44;
                 const canEdit = editable;
-                const country = key === 'country' && stationLocation.countries.find(([code]) => code === draft.country);
-                const value = canEdit ? (country ? country[1] : (draft[key] || '--').slice(0, 52))
-                    : (draft[key] || 'Unavailable');
+                const value = canEdit ? (draft[key] || '--').slice(0, 52) : (draft[key] || 'Unavailable');
                 cv.roundRect(40, y, 1520, 40, 10, withAlpha('#ffffff', 0.05));
                 cv.text(label, 65, y + 28, 23, theme.text);
                 cv.text(value, 1506, y + 28, 22, theme.dim, { align: 'right' });
@@ -647,9 +646,11 @@ mgu.run({
             };
             if (draft.odometer != null) fields.odometer = draft.odometer;
             for (const [key, apiKey] of [['note', 'note'], ['company', 'stationname'],
-                ['country', 'country'], ['location', 'location']]) {
+                ['location', 'location']]) {
                 if (draft[key]) fields[apiKey] = draft[key];
             }
+            const country = stationLocation.apiCountryCode(draft.country);
+            if (country) fields.country = country;
             if (entry === 'Fuel') {
                 const conditions = draft.conditions;
                 const codes = {
@@ -844,6 +845,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.30', 'Show two-letter country codes in the station form'],
                 ['0.1.29', 'Prefill only the city, without the street or road'],
                 ['0.1.28', 'Read station location from navigation elements'],
                 ['', 'Choose the station country from a list'],
