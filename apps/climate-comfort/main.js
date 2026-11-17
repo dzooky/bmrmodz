@@ -6,7 +6,7 @@ const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
 const renderSeats = require('./seats');
-const createSeatTest = require('./seat-test');
+const createWheelTest = require('./wheel-test');
 const renderSteering = require('./steering');
 
 const NOTICE = [
@@ -62,7 +62,7 @@ mgu.run({
         const rows = ctx.spec.config.previewEquipment;
         // Vehicle equipment will be populated from diagnostics when available.
         const equipment = {};
-        const seatTest = createSeatTest(ctx);
+        const wheelTest = createWheelTest(ctx);
         let tabs = [];
         let page = 'Info';
         let voStatus = null;
@@ -100,7 +100,7 @@ mgu.run({
         });
 
         ctx.loop('MAIN', 4, () => {
-            seatTest.tick();
+            wheelTest.tick();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }
@@ -115,9 +115,9 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page, seatTest);
+                renderSeats(cv, theme, ctx.settings, equipment, page);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, seatTest);
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
             } else if (page === 'About') {

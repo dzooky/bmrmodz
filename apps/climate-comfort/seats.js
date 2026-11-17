@@ -19,7 +19,7 @@ function renderLevelButton(cv, settings, key, x, y, direction, color) {
         key + (direction > 0 ? '-right' : '-left'));
 }
 
-function renderControls(cv, theme, settings, position, x, title, color, seatTest) {
+function renderControls(cv, theme, settings, position, x, title, color) {
     const key = position + title;
     const temperatureKey = key + 'Temperature';
     const levelKey = key + 'Level';
@@ -31,17 +31,9 @@ function renderControls(cv, theme, settings, position, x, title, color, seatTest
     renderLevelButton(cv, settings, levelKey, x - 46, 397, -1, color);
     cv.text(level === 0 ? '-' : String(level), x, 405, 24, theme.text, center);
     renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color);
-    const active = seatTest.isActive(key);
-    const enabled = !seatTest.isBusy();
-    const action = active ? 'Deactivate' : seatTest.isPending(key) ? 'Cancel' : 'Activate';
-    cv.roundRect(x - 64, 424, 128, 38, 8, '#ffffff12');
-    cv.text(action, x, 449, 18, enabled ? theme.text : theme.dim, center);
-    if (enabled) {
-        cv.target(x - 64, 424, 128, 38, () => seatTest.run(position, title, level), key + '-test');
-    }
 }
 
-function renderSeats(cv, theme, settings, equipment, row, seatTest) {
+function renderSeats(cv, theme, settings, equipment, row) {
     if (!seatLayers[row]) {
         const seat = decode(path.join(__dirname, IMAGES[row]), WIDTH, HEIGHT);
         const runs = rasterRuns(seat);
@@ -62,16 +54,14 @@ function renderSeats(cv, theme, settings, equipment, row, seatTest) {
         const key = prefix + side;
         if (equipment[prefix + 'SeatVentilation'] === true) {
             renderControls(cv, theme, settings, key,
-                center - 180, 'Ventilation', '#5bc9ef', seatTest);
+                center - 180, 'Ventilation', '#5bc9ef');
         }
         if (equipment[prefix + 'SeatHeating'] === true) {
             renderControls(cv, theme, settings, key,
-                center + 180, 'Heating', '#ff945e', seatTest);
+                center + 180, 'Heating', '#ff945e');
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
     });
-    const message = seatTest.message();
-    if (message) cv.text(message, 800, 502, 18, theme.text, { align: 'center' });
 }
 
 module.exports = renderSeats;
