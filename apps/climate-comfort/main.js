@@ -6,6 +6,7 @@ const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
 const renderSeats = require('./seats');
+const createIhkaTest = require('./ihka-test');
 const createWheelTest = require('./wheel-test');
 const renderSteering = require('./steering');
 
@@ -24,22 +25,20 @@ function equipmentTabs(equipment) {
     return tabs;
 }
 
-const BDC_ADDRESS = 0x40;
-const DRIVER_HEATING_DID = 0xE432;
-
-function heatingLevel(reply) {
-    if (!reply) return 'No response';
-    if (reply[0] === 0x7F) return 'NRC ' + (reply.length >= 3
-        ? reply[2].toString(16).toUpperCase().padStart(2, '0') : '?');
-    if (reply.length !== 12 || reply[0] !== 0x62 ||
-        ((reply[1] << 8) | reply[2]) !== DRIVER_HEATING_DID || reply[3] > 1 ||
-        (reply[3] === 1 && reply[4] > 3)) return 'Unsupported reply';
-    return 'Level ' + (reply[3] === 0 ? 0 : reply[4]);
-}
-
-function formatReply(reply) {
-    if (!reply || reply.length === 0) return '-';
-    return Array.from(reply.slice(0, 12), byte => byte.toString(16).toUpperCase().padStart(2, '0')).join(' ');
+function renderIhkaTest(cv, theme, test, wheelTest) {
+    const disabled = test.isBusy() || wheelTest.isBusy();
+    const center = { align: 'center' };
+    const button = (x, text, stopOnly) => {
+        cv.roundRect(x, 52, 180, 35, 8, '#ffffff19');
+        cv.text(text, x + 90, 76, 18, disabled ? theme.dim : theme.text, center);
+        if (!disabled) cv.target(x, 52, 180, 35, () => {
+            if (!wheelTest.isBusy()) return test.run(stopOnly);
+        }, stopOnly ? 'ihka-stop' : 'ihka-test');
+    };
+    button(82, 'Test driver heat', false);
+    button(277, 'Stop A126', true);
+    cv.text(test.isBusy() ? 'Testing...' : test.detail(), 485, 76, 17, theme.text);
+    cv.text(test.stopResult(), 1160, 76, 18, theme.text);
 }
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -85,27 +84,7 @@ mgu.run({
         let page = 'Info';
         let voStatus = null;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
-        let driverHeating = 'Reading...';
-        let driverHeatingReply = '-';
-        let nextRead = 0;
-        let readPending = false;
-
-        async function readDriverHeating() {
-            if (!link || !link.ready || readPending || wheelTest.isBusy() || Date.now() < nextRead) return;
-            readPending = true;
-            try {
-                const reply = await link.read(BDC_ADDRESS, DRIVER_HEATING_DID, 1200);
-                driverHeating = heatingLevel(reply);
-                driverHeatingReply = formatReply(reply);
-            } catch (error) {
-                driverHeating = 'Read failed';
-                driverHeatingReply = '-';
-                ctx.log.warn('Climate Comfort: BDC driver heating read failed: ' + error.message);
-            } finally {
-                readPending = false;
-                nextRead = Date.now() + 1000;
-            }
-        }
+        const ihkaTest = link ? createIhkaTest(ctx) : null;
 
         async function detectEquipment() {
             if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
@@ -135,17 +114,11 @@ mgu.run({
         ctx.onTab(index => {
             if (!tabs[index] || tabs[index] === page) return;
             page = tabs[index];
-            if (page === 'Front' && link) {
-                driverHeating = 'Reading...';
-                driverHeatingReply = '-';
-                nextRead = 0;
-                link.wake(BDC_ADDRESS);
-            }
             if (page === 'My Car') detectEquipment();
         });
 
         ctx.loop('MAIN', 4, () => {
-            wheelTest.tick();
+            if (!ihkaTest || !ihkaTest.isBusy()) wheelTest.tick();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }
@@ -161,11 +134,8 @@ mgu.run({
                 });
             } else if (page === 'Front' || page === 'Rear') {
                 renderSeats(cv, theme, ctx.settings, equipment, page);
-                if (page === 'Front' && link && equipment.frontSeatHeating === true) {
-                    readDriverHeating();
-                    cv.text('Driver heat E432', 130, 77, 22, theme.dim);
-                    cv.text(driverHeating, 410, 77, 22, theme.text);
-                    cv.text('Reply  ' + driverHeatingReply, 750, 77, 22, theme.text);
+                if (page === 'Front' && ihkaTest && equipment.frontSeatHeating === true) {
+                    renderIhkaTest(cv, theme, ihkaTest, wheelTest);
                 }
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
