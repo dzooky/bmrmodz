@@ -830,6 +830,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.27', 'Show navigation field names for location diagnostics'],
                 ['0.1.26', 'Show navigation status and prefill partial addresses'],
                 ['0.1.25', 'Experimental city and country from iDrive'],
                 ['0.1.24', 'Open QR pairing automatically in My Car'],

@@ -24,6 +24,22 @@ function stationAddress(road) {
     return city || code ? { location: city ? city.trim().slice(0, 255) : '', country: code || '' } : null;
 }
 
+function roadFields(road) {
+    if (road == null) return 'empty';
+    if (Array.isArray(road)) return 'list';
+    if (typeof road !== 'object') return typeof road;
+    const paths = [];
+    for (const key of Object.keys(road).filter(key => /^[a-zA-Z_][a-zA-Z_0-9]{0,39}$/.test(key))) {
+        const value = road[key];
+        const children = value && typeof value === 'object' && !Array.isArray(value)
+            ? Object.keys(value).filter(name => /^[a-zA-Z_][a-zA-Z_0-9]{0,39}$/.test(name)) : [];
+        if (children.length) paths.push(key + ' (' + children.join(', ') + ')');
+        else paths.push(key);
+    }
+    const fields = paths.join(', ');
+    return fields.length > 100 ? fields.slice(0, 97) + '...' : fields || 'empty object';
+}
+
 function watch(ctx, onAddress) {
     let logged = false;
     let subscription;
@@ -32,7 +48,7 @@ function watch(ctx, onAddress) {
     ctx.signals.watch(GUIDANCE, 'Main_Instance', {
         currentRoad(road) {
             const address = stationAddress(road);
-            lastReport = { address, at: Date.now() };
+            lastReport = { address, at: Date.now(), fields: address ? '' : roadFields(road) };
             if (!logged && road != null) {
                 logged = true;
                 const keys = typeof road === 'object' ? Object.keys(road).join(', ') : typeof road;
@@ -51,7 +67,7 @@ function watch(ctx, onAddress) {
         if (failed || (subscription && subscription.error)) return 'Navigation signal unavailable';
         if (!lastReport || Date.now() - lastReport.at > POSITION_MAX_AGE_MS) return 'No recent navigation data';
         const address = lastReport.address;
-        if (!address) return 'Navigation sent no city or country';
+        if (!address) return 'No city or country | currentRoad: ' + lastReport.fields;
         if (!address.location) return 'Navigation sent country only';
         if (!address.country) return 'Navigation sent city only';
         return 'City and country received from navigation';
