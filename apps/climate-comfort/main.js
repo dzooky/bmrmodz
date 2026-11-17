@@ -2,7 +2,7 @@
 
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
-const { hex } = require('./kit/diag');
+const frontBeltReader = require('./front-belts');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
@@ -24,8 +24,6 @@ function equipmentTabs(equipment) {
     return tabs;
 }
 
-const ACSM_ADDRESS = 0x01;
-const BELT_CURRENT_DID = 0x4053;
 const ENGINE_IFACE = 'de.bmw.infotainment.vehicle.CDS';
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -34,28 +32,6 @@ function drawUnconfirmed(cv, x, y) {
     const color = '#ff5555';
     cv.arc(x, y, 9, 12, 0, 360, color);
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
-}
-
-function beltReplyError(reply, did, minLength) {
-    if (!reply) return 'No response';
-    if (reply.length >= 3 && reply[0] === 0x7F && reply[1] === 0x22) return 'NRC ' + hex(reply[2]);
-    if (reply.length < minLength || reply[0] !== 0x62 || ((reply[1] << 8) | reply[2]) !== did) {
-        return 'Unrecognized response';
-    }
-    return null;
-}
-
-function beltCurrentStatus(reply) {
-    const error = beltReplyError(reply, BELT_CURRENT_DID, 8);
-    if (error) return '4053: ' + error;
-
-    // ACSM5 reports current in tenths of a milliamp; FF means the input is absent.
-    const labels = ['FL', 'FR', 'RL', 'RM', 'RR'];
-    const contacts = labels.map((label, index) => {
-        const value = reply[3 + index];
-        return label + ' ' + (value === 0xFF ? '-' : (value / 10).toFixed(1));
-    });
-    return '4053 (mA): ' + contacts.join('  ');
 }
 
 function renderEquipment(cv, theme, equipment, rows, voStatus, beltStatus) {
@@ -97,6 +73,7 @@ mgu.run({
         let beltReadPending = false;
         let engineStatus = 'Unknown';
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
+        const readFrontBelts = ctx.isPreview ? null : frontBeltReader(ctx.signals, ctx.log);
 
         async function detectEquipment() {
             if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
@@ -123,12 +100,13 @@ mgu.run({
         }
 
         async function readBelts() {
-            if (!link || beltReadPending || !link.ready || voStatus === 'Reading vehicle order...' ||
+            if (!readFrontBelts || beltReadPending || voStatus === 'Reading vehicle order...' ||
                 Date.now() < nextBeltRead) return;
 
             beltReadPending = true;
             try {
-                beltStatus = beltCurrentStatus(await link.read(ACSM_ADDRESS, BELT_CURRENT_DID, 1500));
+                const status = await readFrontBelts(() => page === 'My Car');
+                if (page === 'My Car' && status) beltStatus = status;
             } catch (error) {
                 beltStatus = 'Belts: Read failed';
                 ctx.log.warn('Climate Comfort: belt contact read failed: ' + error.message);
@@ -157,7 +135,6 @@ mgu.run({
             if (page === 'My Car' && link) {
                 nextBeltRead = 0;
                 beltStatus = 'Belts: Reading...';
-                link.wake(ACSM_ADDRESS);
                 detectEquipment();
             }
         });
@@ -182,8 +159,7 @@ mgu.run({
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true);
             } else if (page === 'My Car') {
                 readBelts();
-                const belts = link && (link.ready || voStatus === 'Reading vehicle order...'
-                    ? beltStatus : 'Belts: Diagnostics unavailable');
+                const belts = readFrontBelts && beltStatus;
                 renderEquipment(cv, theme, equipment, rows, voStatus,
                     belts && belts + '   |   Engine: ' + engineStatus);
             } else if (page === 'About') {
