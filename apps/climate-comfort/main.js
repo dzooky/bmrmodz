@@ -40,7 +40,7 @@ function renderIhkaTest(cv, theme, test, wheelTest) {
     button(82, 'Test driver heat', false);
     button(277, 'Stop A126', true);
     cv.text(test.stopResult(), 480, 498, 18, theme.text);
-    cv.text(test.isBusy() ? 'Testing...' : test.detail(), 860, 498, 17, theme.text);
+    cv.text(test.detail() || (test.isBusy() ? 'Testing...' : ''), 860, 498, 17, theme.text);
 }
 
 function equipmentFromCodes(codes) {

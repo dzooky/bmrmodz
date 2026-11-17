@@ -6,6 +6,8 @@ const IHKA = 0x78;
 const ACSM = 0x01;
 const DRIVER_BELT = [0x01, 0xA0, 0xD2, 0x01];
 const REQUEST_GAP_MS = 300;
+const BELT_CHECK_INTERVAL_MS = 5000;
+const BELT_WAIT_MS = 60000;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const PRESS = [0x01, 0xA1, 0x26, 0x1B, 0x01];
 const RELEASE = [0x01, 0xA1, 0x26, 0x1B, 0x00];
@@ -17,28 +19,37 @@ function createIhkaTest(ctx) {
     let detail = '';
     let stopResult = '';
 
-    function request(address, data) {
+    function request(address, data, maxRetries = 3) {
         return diag.physical(address, 0x31, data, 1500, replyTo(0x31, data),
-            { hardTimeoutMs: 4500, callTimeoutMs: 2000, maxRetries: 3, retryBaseMs: 400 });
+            { hardTimeoutMs: 4500, callTimeoutMs: 2000, maxRetries, retryBaseMs: 400 });
     }
 
     function result(reply) {
         return reply ? reply.slice(0, 8).map(byte => hex(byte)).join(' ') : 'No response';
     }
 
-    async function readDriverBelt() {
-        let failure;
-        for (let attempt = 0; attempt < 3; attempt++) {
-            if (attempt > 0) await pause(350 * attempt);
+    async function waitForDriverBelt() {
+        const deadline = Date.now() + BELT_WAIT_MS;
+        let lastStatus = 'Driver belt: No response';
+        detail = 'Waiting for driver belt...';
+        while (Date.now() < deadline) {
             try {
-                const reply = await request(ACSM, DRIVER_BELT);
-                if (reply) return reply;
+                // Belt reads are paced here, including when TASU is busy.
+                const reply = await request(ACSM, DRIVER_BELT, 0);
+                const state = reply && reply.length === 5 && reply[0] === 0x71 ? reply[4] : undefined;
+                if (state === 0x01) return true;
+                lastStatus = state === 0x00 ? 'Driver belt: timed out waiting for latch' :
+                    'Driver belt: ' + result(reply);
             } catch (error) {
-                failure = error;
+                lastStatus = /busy|temporarily_not_accepted/i.test(error.message) ? 'Driver belt: TASU busy' :
+                    'Driver belt: ' + error.message.slice(0, 54);
+                ctx.log.warn('Climate Comfort driver belt: ' + error.message);
             }
+            const remaining = deadline - Date.now();
+            if (remaining > 0) await pause(Math.min(BELT_CHECK_INTERVAL_MS, remaining));
         }
-        if (failure) throw failure;
-        return null;
+        detail = lastStatus;
+        return false;
     }
 
     async function showRequest(address, data) {
@@ -59,12 +70,8 @@ function createIhkaTest(ctx) {
             if (!diag.p) await diag.init();
             if (!diag.p) throw new Error('Diagnostics unavailable');
             if (!stopOnly) {
-                const belt = await readDriverBelt();
-                const state = belt && belt.length === 5 && belt[0] === 0x71 ? belt[4] : undefined;
-                if (state !== 0x01) {
-                    detail = state === 0x00 ? 'Fasten driver belt and retry' : 'Driver belt: ' + result(belt);
-                    return;
-                }
+                if (!await waitForDriverBelt()) return;
+                detail = '';
                 await pause(REQUEST_GAP_MS);
             }
             try {
@@ -82,9 +89,7 @@ function createIhkaTest(ctx) {
             }
         } catch (error) {
             ctx.log.warn('Climate Comfort IHKA test: ' + error.message);
-            if (!diag.p) detail = 'Diagnostics unavailable';
-            else if (/busy|temporarily_not_accepted/i.test(error.message)) detail = 'Driver belt: TASU busy';
-            else detail = 'Driver belt: ' + error.message.slice(0, 54);
+            detail = 'Diagnostics unavailable';
         } finally {
             busy = false;
         }
