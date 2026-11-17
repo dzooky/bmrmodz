@@ -42,9 +42,9 @@ function renderAbout(cv, theme) {
 
     cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
     cv.text(version, 1120, 105, 14, theme.text, { font: 'bold' });
-    cv.text('Save vehicle equipment and add a reload button.', 1186, 105, 14, theme.dim);
-    cv.text('0.1.21', 1120, 127, 14, theme.text, { font: 'bold' });
-    cv.text('Retry vehicle order reads and report gateway errors.', 1186, 127, 14, theme.dim);
+    cv.text('Move driver heating test controls to the bottom.', 1186, 105, 14, theme.dim);
+    cv.text('0.1.22', 1120, 127, 14, theme.text, { font: 'bold' });
+    cv.text('Save vehicle equipment and add a reload button.', 1186, 127, 14, theme.dim);
     cv.text('0.1.15', 1120, 149, 14, theme.text, { font: 'bold' });
     cv.text('Read seat heating levels from BDC for testing.', 1186, 149, 14, theme.dim);
     cv.text('0.1.14', 1120, 171, 14, theme.text, { font: 'bold' });

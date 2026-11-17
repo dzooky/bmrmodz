@@ -31,16 +31,16 @@ function renderIhkaTest(cv, theme, test, wheelTest) {
     const disabled = test.isBusy() || wheelTest.isBusy();
     const center = { align: 'center' };
     const button = (x, text, stopOnly) => {
-        cv.roundRect(x, 52, 180, 35, 8, '#ffffff19');
-        cv.text(text, x + 90, 76, 18, disabled ? theme.dim : theme.text, center);
-        if (!disabled) cv.target(x, 52, 180, 35, () => {
+        cv.roundRect(x, 477, 180, 31, 8, '#ffffff19');
+        cv.text(text, x + 90, 498, 18, disabled ? theme.dim : theme.text, center);
+        if (!disabled) cv.target(x, 477, 180, 31, () => {
             if (!wheelTest.isBusy()) return test.run(stopOnly);
         }, stopOnly ? 'ihka-stop' : 'ihka-test');
     };
     button(82, 'Test driver heat', false);
     button(277, 'Stop A126', true);
-    cv.text(test.stopResult(), 480, 76, 18, theme.text);
-    cv.text(test.isBusy() ? 'Testing...' : test.detail(), 860, 76, 17, theme.text);
+    cv.text(test.stopResult(), 480, 498, 18, theme.text);
+    cv.text(test.isBusy() ? 'Testing...' : test.detail(), 860, 498, 17, theme.text);
 }
 
 function equipmentFromCodes(codes) {
