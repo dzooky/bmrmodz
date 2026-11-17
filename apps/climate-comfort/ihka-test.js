@@ -61,6 +61,8 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
         if (!control || !Number.isInteger(target) || target < 1 || target > 3 || !canTest()) return;
         active = position + mode;
         const [button, offset] = control;
+        const requiresEngine = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
+        const ready = () => !requiresEngine || engineRunning();
         let attempted = false;
         try {
             if (!diag) {
@@ -70,13 +72,13 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
             if (!diag.p) await diag.init();
             if (!diag.p) throw new Error('Diagnostics unavailable');
             if (!await waitForBelt((address, service, data) => request(address, service, data, 0),
-                position, ctx.log, () => mode !== 'Ventilation' || engineRunning())) return;
-            if (mode === 'Ventilation' && !engineRunning()) return;
+                position, ctx.log, ready)) return;
+            if (!ready()) return;
             await pause(REQUEST_GAP_MS);
             let level = await readLevel(offset);
             const visited = new Set();
             while (level !== target && !visited.has(level)) {
-                if (mode === 'Ventilation' && !engineRunning()) return;
+                if (!ready()) return;
                 visited.add(level);
                 attempted = true;
                 await pressButton(button);
