@@ -2,11 +2,11 @@
 
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
-const frontBeltReader = require('./front-belts');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
 const renderAbout = require('./about');
 const renderSeats = require('./seats');
+const createSeatTest = require('./seat-test');
 const renderSteering = require('./steering');
 
 const NOTICE = [
@@ -24,8 +24,6 @@ function equipmentTabs(equipment) {
     return tabs;
 }
 
-const ENGINE_IFACE = 'de.bmw.infotainment.vehicle.CDS';
-
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
 
 function drawUnconfirmed(cv, x, y) {
@@ -34,7 +32,7 @@ function drawUnconfirmed(cv, x, y) {
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
 }
 
-function renderEquipment(cv, theme, equipment, rows, voStatus, beltStatus) {
+function renderEquipment(cv, theme, equipment, rows, voStatus) {
     const center = { align: 'center' };
     cv.text('Equipment', 66, 96, 19, theme.dim);
     cv.text('Installed', 1450, 96, 19, theme.dim, center);
@@ -53,7 +51,6 @@ function renderEquipment(cv, theme, equipment, rows, voStatus, beltStatus) {
         }
     });
 
-    if (beltStatus) cv.text(beltStatus, 850, 494, 17, theme.text, center);
     if (rows.some(({ key }) => equipment[key] === undefined)) {
         drawUnconfirmed(cv, 77, 488);
         cv.text('Unconfirmed equipment', 100, 494, 17, theme.dim);
@@ -65,15 +62,11 @@ mgu.run({
         const rows = ctx.spec.config.previewEquipment;
         // Vehicle equipment will be populated from diagnostics when available.
         const equipment = {};
+        const seatTest = createSeatTest(ctx);
         let tabs = [];
         let page = 'Info';
         let voStatus = null;
-        let beltStatus = 'Belts: Reading...';
-        let nextBeltRead = 0;
-        let beltReadPending = false;
-        let engineStatus = 'Unknown';
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
-        const readFrontBelts = ctx.isPreview ? null : frontBeltReader(ctx.signals, ctx.log);
 
         async function detectEquipment() {
             if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
@@ -99,47 +92,15 @@ mgu.run({
             }
         }
 
-        async function readBelts() {
-            if (!readFrontBelts || beltReadPending || voStatus === 'Reading vehicle order...' ||
-                Date.now() < nextBeltRead) return;
-
-            beltReadPending = true;
-            try {
-                const status = await readFrontBelts(() => page === 'My Car');
-                if (page === 'My Car' && status) beltStatus = status;
-            } catch (error) {
-                beltStatus = 'Belts: Read failed';
-                ctx.log.warn('Climate Comfort: belt contact read failed: ' + error.message);
-            } finally {
-                nextBeltRead = Date.now() + 1000;
-                beltReadPending = false;
-            }
-        }
-
-        if (link) {
-            ctx.signals.watch(ENGINE_IFACE, '1', {
-                statusEngineStatus(value) {
-                    const state = value && value.statusEngineRunDrive;
-                    if (state === 'MOTOR_LAEUFT' || state === 2) engineStatus = 'Running';
-                    else if (state === 'MOTOR_STARTET' || state === 1) engineStatus = 'Starting';
-                    else if (state === 'MOTOR_AUS' || state === 0) engineStatus = 'Off';
-                    else engineStatus = 'Unknown';
-                },
-            }, ctx.log).catch(error => ctx.log.warn('Climate Comfort: engine status unavailable: ' + error.message));
-        }
-
         detectEquipment();
         ctx.onTab(index => {
             if (!tabs[index] || tabs[index] === page) return;
             page = tabs[index];
-            if (page === 'My Car' && link) {
-                nextBeltRead = 0;
-                beltStatus = 'Belts: Reading...';
-                detectEquipment();
-            }
+            if (page === 'My Car') detectEquipment();
         });
 
         ctx.loop('MAIN', 4, () => {
+            seatTest.tick();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }
@@ -154,14 +115,11 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page);
+                renderSeats(cv, theme, ctx.settings, equipment, page, seatTest);
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true);
             } else if (page === 'My Car') {
-                readBelts();
-                const belts = readFrontBelts && beltStatus;
-                renderEquipment(cv, theme, equipment, rows, voStatus,
-                    belts && belts + '   |   Engine: ' + engineStatus);
+                renderEquipment(cv, theme, equipment, rows, voStatus);
             } else if (page === 'About') {
                 renderAbout(cv, theme);
             }
