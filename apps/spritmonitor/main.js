@@ -15,7 +15,7 @@ mgu.run({
     start(ctx) {
         let entry = '';
         let draft;
-        let lastStationAddress;
+        let lastStationPosition;
         const stationLocation = require('./station-location');
         let activeField = null;
         let formStatus = '';
@@ -450,10 +450,29 @@ mgu.run({
             }
         }
 
-        const stationStatus = stationLocation.watch(ctx, address => {
+        function prefillStation(sample, now) {
+            if (!draft || now - draft.openedAt > stationLocation.POSITION_MAX_AGE_MS) return;
+            if (sample.address) prefillStationAddress(sample.address, now);
+            if (!sample.position || draft.gpsChecked || (draft.location && draft.country)) return;
+            draft.gpsChecked = true;
+            try {
+                const town = stationLocation.nearbyTown(sample.position);
+                if (town && stationLocation.apiCountryCode(town.country) &&
+                    (!draft.country || draft.country === town.country)) {
+                    prefillStationAddress(town, now);
+                    draft.gpsResult = 'Nearby town from GPS (GeoNames)';
+                } else {
+                    draft.gpsResult = 'No clear nearby town in offline data';
+                }
+            } catch (_) {
+                draft.gpsResult = 'Offline town data unavailable';
+            }
+        }
+
+        const stationStatus = stationLocation.watch(ctx, (address, position) => {
             const now = Date.now();
-            lastStationAddress = address ? { address, at: now } : null;
-            if (address) prefillStationAddress(address, now);
+            lastStationPosition = address || position ? { address, position, at: now } : null;
+            if (lastStationPosition) prefillStation(lastStationPosition, now);
         });
 
         function openFuelling(type) {
@@ -469,8 +488,8 @@ mgu.run({
                 conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set(),
                 openedAt: now.getTime(), editedStation: new Set()
             };
-            if (lastStationAddress && now.getTime() - lastStationAddress.at <= stationLocation.POSITION_MAX_AGE_MS) {
-                prefillStationAddress(lastStationAddress.address, now.getTime());
+            if (lastStationPosition && now.getTime() - lastStationPosition.at <= stationLocation.POSITION_MAX_AGE_MS) {
+                prefillStation(lastStationPosition, now.getTime());
             }
             activeField = null;
             formStatus = '';
@@ -728,7 +747,7 @@ mgu.run({
             if (entry === 'Fuel') renderDrivingConditions(cv, theme, offset);
             const stationY = entry === 'Fuel' ? 1040 : 480;
             renderDetails(cv, theme, 'Gas Station', stationFields, stationY - offset, true);
-            cv.text(stationStatus(), 1506, stationY - offset, 19, theme.dim, { align: 'right' });
+            cv.text(draft.gpsResult || stationStatus(), 1506, stationY - offset, 19, theme.dim, { align: 'right' });
             if (entry === 'Fuel') {
                 draft.consumption = reading(data.consumption, data.consumptionUnit, 1);
                 draft.averageSpeed = reading(data.speed, data.speedUnit, 1);
@@ -845,6 +864,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.32', 'Estimate station town and country offline from GPS'],
                 ['0.1.31', 'Use the MGU current-position interface when available'],
                 ['0.1.30', 'Show two-letter country codes in the station form'],
                 ['0.1.29', 'Prefill only the city, without the street or road'],

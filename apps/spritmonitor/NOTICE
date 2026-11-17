@@ -1,0 +1,7 @@
+Station town data is derived from GeoNames (https://www.geonames.org/).
+Source: https://download.geonames.org/export/dump/cities500.zip
+Additional Slovakia settlement data: https://download.geonames.org/export/dump/SK.zip
+License: Creative Commons Attribution 4.0 (https://creativecommons.org/licenses/by/4.0/).
+Snapshot: 2026-11-17. Selected European settlement records were filtered to remove
+neighbourhoods and historical or abandoned places. Coordinates were rounded to
+five decimal places and records were grouped into one-degree tiles.

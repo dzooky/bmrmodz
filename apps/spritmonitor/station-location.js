@@ -1,5 +1,7 @@
 'use strict';
 
+const gps = require('./station-gps');
+
 const GUIDANCE = 'de.bmw.infotainment.navigation.guiding.Guidance';
 const POSITION_MAX_AGE_MS = 10000;
 
@@ -80,7 +82,9 @@ function watch(ctx, onAddress) {
         positioning ? positioning.instance : 'Main_Instance', {
         [source](road) {
             const address = stationAddress(road);
-            lastReport = { address, at: Date.now(), fields: address ? '' : roadFields(road) };
+            const position = positioning ? gps.coordinates(road) : null;
+            lastReport = { address, position, at: Date.now(),
+                hasCoordinates: positioning && road && Object.prototype.hasOwnProperty.call(road, 'coordinatesValid'), fields: address ? '' : roadFields(road) };
             if (!logged && road != null) {
                 logged = true;
                 const keys = typeof road === 'object' ? Object.keys(road).join(', ') : typeof road;
@@ -89,7 +93,7 @@ function watch(ctx, onAddress) {
                     ctx.log.info(source + ' address fields: ' + Object.keys(road.address).join(', '));
                 }
             }
-            onAddress(address);
+            onAddress(address, position);
         }
     }, ctx.log, { pollMs: 3000 }).then(result => { subscription = result; }).catch(error => {
         failed = true;
@@ -99,6 +103,8 @@ function watch(ctx, onAddress) {
         if (failed || (subscription && subscription.error)) return 'Navigation signal unavailable';
         if (!lastReport || Date.now() - lastReport.at > POSITION_MAX_AGE_MS) return 'No recent navigation data';
         const address = lastReport.address;
+        if (!address && lastReport.position) return 'GPS position available';
+        if (!address && lastReport.hasCoordinates) return 'GPS coordinates invalid or unsupported';
         if (!address) return 'No city or country | ' + source + ': ' + lastReport.fields;
         if (!address.location) return 'Navigation sent country only';
         if (!address.country) return 'Navigation sent city only';
@@ -106,4 +112,4 @@ function watch(ctx, onAddress) {
     };
 }
 
-module.exports = { watch, countries, apiCountryCode, POSITION_MAX_AGE_MS };
+module.exports = { watch, countries, apiCountryCode, nearbyTown: gps.nearbyTown, POSITION_MAX_AGE_MS };
