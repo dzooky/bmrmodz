@@ -514,6 +514,18 @@ mgu.run({
             const label = labels[key] || basicFields.concat(stationFields).find(field => field[0] === key)[1];
             cv.text(label, 48, 80, 32, theme.text, { font: 'bold' });
             G.button(cv, theme, 1350, 53, 195, 42, 'Done', () => editField(null));
+            if (key === 'country') {
+                const options = [['', 'Clear'], ...stationLocation.countries];
+                options.forEach(([code, name], index) => {
+                    const x = 48 + index % 3 * 500;
+                    const y = 105 + Math.floor(index / 3) * 54;
+                    G.button(cv, theme, x, y, 470, 46, name + (draft.country === code ? ' (selected)' : ''), () => {
+                        draft.country = code;
+                        editField(null);
+                    });
+                });
+                return;
+            }
             if (choices[key]) {
                 choices[key].forEach((value, index) => {
                     G.button(cv, theme, 48, 105 + index * 54, 900, 46,
@@ -601,7 +613,9 @@ mgu.run({
             fields.forEach(([key, label], index) => {
                 const y = start + 12 + index * 44;
                 const canEdit = editable;
-                const value = canEdit ? (draft[key] || '--').slice(0, 52) : (draft[key] || 'Unavailable');
+                const country = key === 'country' && stationLocation.countries.find(([code]) => code === draft.country);
+                const value = canEdit ? (country ? country[1] : (draft[key] || '--').slice(0, 52))
+                    : (draft[key] || 'Unavailable');
                 cv.roundRect(40, y, 1520, 40, 10, withAlpha('#ffffff', 0.05));
                 cv.text(label, 65, y + 28, 23, theme.text);
                 cv.text(value, 1506, y + 28, 22, theme.dim, { align: 'right' });
@@ -830,6 +844,8 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.28', 'Read station location from navigation elements'],
+                ['', 'Choose the station country from a list'],
                 ['0.1.27', 'Show navigation field names for location diagnostics'],
                 ['0.1.26', 'Show navigation status and prefill partial addresses'],
                 ['0.1.25', 'Experimental city and country from iDrive'],
