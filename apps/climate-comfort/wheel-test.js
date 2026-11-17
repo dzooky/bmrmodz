@@ -8,7 +8,7 @@ const WHEEL_HEATING = [0xD0, 0x74];
 const WHEEL_TEST_SECONDS = 30;
 const WHEEL_KEY = 'steeringHeating';
 
-function createWheelTest(ctx) {
+function createWheelTest(ctx, enqueue) {
     const diag = ctx.isPreview ? null : new Diag(ctx.signals, ctx.log);
     const active = new Set();
     const pending = new Set();
@@ -52,37 +52,43 @@ function createWheelTest(ctx) {
     async function perform(on) {
         busy = true;
         try {
-            if (diag) {
-                if (!diag.p) await diag.init();
-                if (!diag.p) throw new Error('Diagnostics unavailable');
-                if (on) {
-                    let state = null;
-                    try {
-                        state = await readBelt(request, 'frontLeft');
-                    } catch (error) {
-                        ctx.log.warn('Climate Comfort steering belt: ' + error.message);
-                    }
-                    if (Date.now() >= beltDeadline) {
+            await enqueue(async () => {
+                if (diag) {
+                    if (on && Date.now() >= beltDeadline) {
                         pending.delete(WHEEL_KEY);
                         return;
                     }
-                    if (state !== 1) {
-                        nextCheck = Date.now() + beltCheckDelay(state);
-                        return;
+                    if (!diag.p) await diag.init();
+                    if (!diag.p) throw new Error('Diagnostics unavailable');
+                    if (on) {
+                        let state = null;
+                        try {
+                            state = await readBelt(request, 'frontLeft');
+                        } catch (error) {
+                            ctx.log.warn('Climate Comfort steering belt: ' + error.message);
+                        }
+                        if (Date.now() >= beltDeadline) {
+                            pending.delete(WHEEL_KEY);
+                            return;
+                        }
+                        if (state !== 1) {
+                            nextCheck = Date.now() + beltCheckDelay(state);
+                            return;
+                        }
                     }
+                    pending.delete(WHEEL_KEY);
+                    await testWheel(on ? 1 : 0);
                 }
                 pending.delete(WHEEL_KEY);
-                await testWheel(on ? 1 : 0);
-            }
-            pending.delete(WHEEL_KEY);
-            attempted.delete(WHEEL_KEY);
-            if (on) {
-                active.add(WHEEL_KEY);
-                if (!diag) wheelExpires = Date.now() + WHEEL_TEST_SECONDS * 1000;
-            } else {
-                wheelExpires = 0;
-                active.delete(WHEEL_KEY);
-            }
+                attempted.delete(WHEEL_KEY);
+                if (on) {
+                    active.add(WHEEL_KEY);
+                    if (!diag) wheelExpires = Date.now() + WHEEL_TEST_SECONDS * 1000;
+                } else {
+                    wheelExpires = 0;
+                    active.delete(WHEEL_KEY);
+                }
+            });
         } catch (error) {
             pending.delete(WHEEL_KEY);
             ctx.log.warn('Climate Comfort steering test: ' + error.message);

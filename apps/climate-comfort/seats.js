@@ -31,7 +31,7 @@ function renderControls(cv, theme, settings, position, x, title, color, test) {
     renderLevelButton(cv, settings, levelKey, x - 46, 397, -1, color);
     cv.text(level === 0 ? '-' : String(level), x, 405, 24, theme.text, center);
     renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color);
-    const enabled = level > 0 && test.canTest();
+    const enabled = level > 0 && !test.isActive(key);
     cv.roundRect(x - 61, 442, 122, 32, 8, '#ffffff12');
     cv.text(test.isActive(key) ? 'Testing...' : 'Test level', x, 464, 17, enabled ? theme.text : theme.dim, center);
     if (enabled) cv.target(x - 61, 442, 122, 32, () => test.run(position, title, level), key + '-test');

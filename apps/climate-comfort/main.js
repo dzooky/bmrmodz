@@ -104,15 +104,20 @@ mgu.run({
         const cacheFile = link && path.join(ctx.dataDir, 'vehicle-order.json');
         const savedCodes = cacheFile && loadSavedCodes(cacheFile, ctx.log);
         let equipment = savedCodes ? equipmentFromCodes(savedCodes) : {};
-        const wheelTest = createWheelTest(ctx);
+        let diagnosticTail = Promise.resolve();
+        function enqueueDiagnostic(operation) {
+            const result = diagnosticTail.then(operation);
+            diagnosticTail = result.catch(() => {});
+            return result;
+        }
+        const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
         const car = link ? new Car(ctx, ['rpm']) : null;
         const engineRunning = () => {
             if (!car) return false;
             const { rpm, demo } = car.data();
             return !demo && Date.now() - car.lastCar <= 5000 && Number.isFinite(rpm) && rpm >= 300;
         };
-        const ihkaTest = createIhkaTest(ctx, engineRunning, () =>
-            wheelTest.isBusy() || voStatus === 'Reading vehicle order...');
+        const ihkaTest = createIhkaTest(ctx, engineRunning, enqueueDiagnostic);
         let tabs = [];
         let page = 'Info';
         let voStatus = savedCodes ? 'Saved vehicle order' : null;
@@ -123,11 +128,11 @@ mgu.run({
 
         async function detectEquipment() {
             if (!link || !readRequested || equipmentAttempts >= 3 || Date.now() < nextEquipmentRead ||
-                voStatus === 'Reading vehicle order...' || ihkaTest.isBusy() || wheelTest.isBusy()) return;
+                voStatus === 'Reading vehicle order...') return;
             equipmentAttempts++;
             voStatus = 'Reading vehicle order...';
             try {
-                const { codes, error } = await readVehicleOrder(link);
+                const { codes, error } = await enqueueDiagnostic(() => readVehicleOrder(link));
                 if (!codes) {
                     voStatus = error;
                     ctx.log.warn('Climate Comfort: ' + error);
@@ -158,7 +163,7 @@ mgu.run({
         });
 
         ctx.loop('MAIN', 4, () => {
-            if (!ihkaTest.isBusy() && voStatus !== 'Reading vehicle order...') wheelTest.tick();
+            wheelTest.tick();
             detectEquipment();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
@@ -176,8 +181,7 @@ mgu.run({
             } else if (page === 'Front' || page === 'Rear') {
                 renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest,
-                    ihkaTest.isBusy() || voStatus === 'Reading vehicle order...');
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
                 if (link) {

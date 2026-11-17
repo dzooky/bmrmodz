@@ -22,7 +22,7 @@ function wheelLayer(variant) {
     return layers[variant];
 }
 
-function renderSteering(cv, theme, settings, mSport, wheelTest, seatTestBusy) {
+function renderSteering(cv, theme, settings, mSport, wheelTest) {
     const center = { align: 'center' };
     cv.blit(wheelLayer(mSport ? 'm-sport' : 'standard'), 800 - SIZE / 2, 93);
     cv.text(mSport ? 'M Sport' : 'Standard', 800, 473, 24, theme.text, center);
@@ -30,7 +30,7 @@ function renderSteering(cv, theme, settings, mSport, wheelTest, seatTestBusy) {
     cv.text('Heating', 1140, 159, 22, HEATING_COLOR, center);
     renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', 1140, HEATING_COLOR);
     const key = 'steeringHeating';
-    const enabled = !seatTestBusy && !wheelTest.isBusy();
+    const enabled = !wheelTest.isBusy();
     const action = wheelTest.isActive(key) ? 'Deactivate' : wheelTest.isPending(key) ? 'Cancel' : 'Test heating';
     cv.roundRect(1076, 350, 128, 38, 8, '#ffffff12');
     cv.text(action, 1140, 375, 18, enabled ? theme.text : theme.dim, center);

@@ -14,9 +14,9 @@ const SEATS = {
     rearRight: { Heating: [0x23, 24], Ventilation: [0x25, 26] },
 };
 
-function createIhkaTest(ctx, engineRunning, otherTestBusy) {
+function createIhkaTest(ctx, engineRunning, enqueue) {
     const diag = ctx.isPreview ? null : new Diag(ctx.signals, ctx.log);
-    let active = null;
+    const active = new Set();
 
     async function request(address, service, data, maxRetries = 3) {
         const reply = await diag.physical(address, service, data, 1500, replyTo(service, data),
@@ -52,27 +52,9 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
         throw new Error('IHKA level did not change');
     }
 
-    function canTest() {
-        return !active && !otherTestBusy();
-    }
-
-    async function run(position, mode, target) {
-        const control = SEATS[position] && SEATS[position][mode];
-        if (!control || !Number.isInteger(target) || target < 1 || target > 3 || !canTest()) return;
-        active = position + mode;
-        const [button, offset] = control;
-        const requiresEngine = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
-        const ready = () => !requiresEngine || engineRunning();
+    async function activate(button, offset, target, ready) {
         let attempted = false;
         try {
-            if (!diag) {
-                await pause(REQUEST_GAP_MS);
-                return;
-            }
-            if (!diag.p) await diag.init();
-            if (!diag.p) throw new Error('Diagnostics unavailable');
-            if (!await waitForBelt((address, service, data) => request(address, service, data, 0),
-                position, ctx.log, ready)) return;
             if (!ready()) return;
             await pause(REQUEST_GAP_MS);
             let level = await readLevel(offset);
@@ -85,8 +67,6 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
                 level = await waitForLevelChange(offset, level);
             }
             if (level !== target) throw new Error('IHKA did not reach level ' + target);
-        } catch (error) {
-            ctx.log.warn('Climate Comfort ' + active + ': ' + error.message);
         } finally {
             if (attempted) {
                 try {
@@ -96,11 +76,38 @@ function createIhkaTest(ctx, engineRunning, otherTestBusy) {
                     ctx.log.warn('Climate Comfort IHKA stop: ' + error.message);
                 }
             }
-            active = null;
         }
     }
 
-    return { run, canTest, isBusy: () => !!active, isActive: key => active === key };
+    async function readBeltRequest(address, service, data) {
+        if (!diag.p) await diag.init();
+        if (!diag.p) throw new Error('Diagnostics unavailable');
+        return request(address, service, data, 0);
+    }
+
+    async function run(position, mode, target) {
+        const key = position + mode;
+        const control = SEATS[position] && SEATS[position][mode];
+        if (!control || !Number.isInteger(target) || target < 1 || target > 3 || active.has(key)) return;
+        active.add(key);
+        const [button, offset] = control;
+        const requiresEngine = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
+        const ready = () => !requiresEngine || engineRunning();
+        try {
+            if (!diag) {
+                await pause(REQUEST_GAP_MS);
+                return;
+            }
+            await waitForBelt(readBeltRequest, position, ctx.log, ready, enqueue,
+                () => activate(button, offset, target, ready));
+        } catch (error) {
+            ctx.log.warn('Climate Comfort ' + key + ': ' + error.message);
+        } finally {
+            active.delete(key);
+        }
+    }
+
+    return { run, isActive: key => active.has(key) };
 }
 
 module.exports = createIhkaTest;
