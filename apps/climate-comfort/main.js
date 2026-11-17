@@ -25,22 +25,16 @@ function equipmentTabs(equipment) {
 }
 
 const BDC_ADDRESS = 0x40;
-const BDC_HEATING_DIDS = {
-    Front: [[0xE432, 0xD737], [0xE430, 0xD72A]],
-    Rear: [[0xE433, 0xD7EB], [0xE431, 0xD7AA]],
-};
+const DRIVER_HEATING_DID = 0xE432;
 
-function heatingLevel(reply, did) {
+function heatingLevel(reply) {
     if (!reply) return 'No response';
     if (reply[0] === 0x7F) return 'NRC ' + (reply.length >= 3
         ? reply[2].toString(16).toUpperCase().padStart(2, '0') : '?');
-    const detailed = (did & 0xFF00) === 0xE400;
-    const expectedLength = detailed ? 12 : 4;
-    const level = reply[detailed ? 4 : 3];
-    if (reply.length !== expectedLength || reply[0] !== 0x62 ||
-        ((reply[1] << 8) | reply[2]) !== did || level > 3 ||
-        (detailed && reply[3] > 1)) return 'Unsupported reply';
-    return String(detailed && reply[3] === 0 ? 0 : level);
+    if (reply.length !== 12 || reply[0] !== 0x62 ||
+        ((reply[1] << 8) | reply[2]) !== DRIVER_HEATING_DID || reply[3] > 1 ||
+        (reply[3] === 1 && reply[4] > 3)) return 'Unsupported reply';
+    return 'Level ' + (reply[3] === 0 ? 0 : reply[4]);
 }
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -86,46 +80,23 @@ mgu.run({
         let page = 'Info';
         let voStatus = null;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
-        const heatingLevels = { Front: ['-', '-'], Rear: ['-', '-'] };
+        let driverHeating = 'Reading...';
         let nextRead = 0;
         let readPending = false;
-        let sideToRead = 0;
-        const rejectedHeatingDids = new Set();
 
-        async function readHeating(row) {
+        async function readDriverHeating() {
             if (!link || !link.ready || readPending || wheelTest.isBusy() || Date.now() < nextRead) return;
-            const side = sideToRead;
-            sideToRead = 1 - sideToRead;
-            const candidates = BDC_HEATING_DIDS[row][side];
-            if (candidates.every(did => rejectedHeatingDids.has(did))) return;
             readPending = true;
             try {
-                const results = [];
-                for (const did of candidates) {
-                    const id = did.toString(16).toUpperCase();
-                    if (rejectedHeatingDids.has(did)) {
-                        results.push(id + ' NRC 31');
-                        continue;
-                    }
-                    const result = heatingLevel(await link.read(BDC_ADDRESS, did, 1200), did);
-                    results.push(id + ' ' + result);
-                    if (result !== 'NRC 31') {
-                        heatingLevels[row][side] = id + ' ' + result;
-                        return;
-                    }
-                    rejectedHeatingDids.add(did);
-                    if (page !== row) break;
-                }
-                heatingLevels[row][side] = results.join(', ');
+                driverHeating = heatingLevel(await link.read(BDC_ADDRESS, DRIVER_HEATING_DID, 1200));
             } catch (error) {
-                heatingLevels[row][side] = 'Read failed';
-                ctx.log.warn('Climate Comfort: BDC seat heating read failed: ' + error.message);
+                driverHeating = 'Read failed';
+                ctx.log.warn('Climate Comfort: BDC driver heating read failed: ' + error.message);
             } finally {
                 readPending = false;
-                nextRead = Date.now() + 600;
+                nextRead = Date.now() + 1000;
             }
         }
-
 
         async function detectEquipment() {
             if (!link || voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
@@ -155,12 +126,8 @@ mgu.run({
         ctx.onTab(index => {
             if (!tabs[index] || tabs[index] === page) return;
             page = tabs[index];
-            if (BDC_HEATING_DIDS[page] && link) {
-                BDC_HEATING_DIDS[page].forEach(candidates => {
-                    candidates.forEach(did => rejectedHeatingDids.delete(did));
-                });
-                heatingLevels[page] = ['-', '-'];
-                sideToRead = 0;
+            if (page === 'Front' && link) {
+                driverHeating = 'Reading...';
                 nextRead = 0;
                 link.wake(BDC_ADDRESS);
             }
@@ -184,11 +151,9 @@ mgu.run({
                 });
             } else if (page === 'Front' || page === 'Rear') {
                 renderSeats(cv, theme, ctx.settings, equipment, page);
-                const heatingKey = page === 'Front' ? 'frontSeatHeating' : 'rearSeatHeating';
-                if (link && equipment[heatingKey] === true) {
-                    readHeating(page);
-                    const [left, right] = heatingLevels[page];
-                    cv.text('BDC heat level    Left: ' + left + '    Right: ' + right,
+                if (page === 'Front' && link && equipment.frontSeatHeating === true) {
+                    readDriverHeating();
+                    cv.text('Driver heat E432  |  ' + driverHeating,
                         800, 502, 18, theme.text, { align: 'center' });
                 }
             } else if (page === 'Steering') {
