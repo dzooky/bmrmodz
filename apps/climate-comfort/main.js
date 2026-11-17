@@ -37,8 +37,8 @@ function renderIhkaTest(cv, theme, test, wheelTest) {
     };
     button(82, 'Test driver heat', false);
     button(277, 'Stop A126', true);
-    cv.text(test.isBusy() ? 'Testing...' : test.detail(), 485, 76, 17, theme.text);
-    cv.text(test.stopResult(), 1160, 76, 18, theme.text);
+    cv.text(test.stopResult(), 480, 76, 18, theme.text);
+    cv.text(test.isBusy() ? 'Testing...' : test.detail(), 860, 76, 17, theme.text);
 }
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
