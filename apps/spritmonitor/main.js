@@ -15,6 +15,8 @@ mgu.run({
     start(ctx) {
         let entry = '';
         let draft;
+        let lastStationAddress;
+        const stationLocation = require('./station-location');
         let activeField = null;
         let formStatus = '';
         let formScroll = 0;
@@ -441,6 +443,19 @@ mgu.run({
                 : 'Auto (Spritmonitor)';
         }
 
+        function prefillStationAddress(address, now) {
+            if (!draft || now - draft.openedAt > stationLocation.POSITION_MAX_AGE_MS) return;
+            for (const key of ['location', 'country']) {
+                if (!draft[key] && !draft.editedStation.has(key)) draft[key] = address[key];
+            }
+        }
+
+        stationLocation.watch(ctx, address => {
+            const now = Date.now();
+            lastStationAddress = address ? { address, at: now } : null;
+            if (address) prefillStationAddress(address, now);
+        });
+
         function openFuelling(type) {
             if (!account || !account.vehicleId || (type === 'AdBlue' && !hasAdBlue())) return;
             cancelPairingGuide();
@@ -451,8 +466,12 @@ mgu.run({
             draft = {
                 date, type: '', manualType: false, odometer: '', trip: '', quantity: '', unit: 'L',
                 price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '',
-                conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set()
+                conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set(),
+                openedAt: now.getTime(), editedStation: new Set()
             };
+            if (lastStationAddress && now.getTime() - lastStationAddress.at <= stationLocation.POSITION_MAX_AGE_MS) {
+                prefillStationAddress(lastStationAddress.address, now.getTime());
+            }
             activeField = null;
             formStatus = '';
             savedEntryId = undefined;
@@ -470,7 +489,7 @@ mgu.run({
             ['price', 'Price'], ['note', 'Note']
         ];
         const stationFields = [
-            ['company', 'Company'], ['country', 'Country'], ['location', 'Location']
+            ['company', 'Company'], ['country', 'Country'], ['location', 'City / location']
         ];
         const computerFields = [
             ['consumption', 'Consumption'], ['consumedQuantity', 'Quantity'], ['averageSpeed', 'Avg. speed']
@@ -485,6 +504,7 @@ mgu.run({
         const labels = { unit: 'Quantity unit', currency: 'Currency', priceMode: 'Price mode' };
 
         function editField(key) {
+            if (key === 'country' || key === 'location') draft.editedStation.add(key);
             activeField = key;
             formStatus = '';
         }
@@ -809,6 +829,7 @@ mgu.run({
             cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
             cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
             const releases = [
+                ['0.1.25', 'Experimental city and country from iDrive'],
                 ['0.1.24', 'Open QR pairing automatically in My Car'],
                 ['0.1.23', 'Hide phone pairing when connected'],
                 ['0.1.22', 'Disconnect the Spritmonitor account'],
