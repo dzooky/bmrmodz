@@ -1,5 +1,7 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
@@ -41,7 +43,43 @@ function renderIhkaTest(cv, theme, test, wheelTest) {
     cv.text(test.isBusy() ? 'Testing...' : test.detail(), 860, 76, 17, theme.text);
 }
 
-const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
+function equipmentFromCodes(codes) {
+    const heatBothRows = codes.has('4HA');
+    return {
+        steeringWheelHeating: codes.has('248'),
+        mSportSteeringWheel: codes.has('710'),
+        frontSeatVentilation: codes.has('453') || undefined,
+        rearSeatVentilation: codes.has('454') || undefined,
+        frontSeatHeating: (heatBothRows || codes.has('494')) || undefined,
+        rearSeatHeating: heatBothRows || undefined,
+    };
+}
+
+function loadSavedCodes(file, log) {
+    try {
+        const codes = JSON.parse(fs.readFileSync(file, 'utf8'));
+        if (!Array.isArray(codes) || !codes.length || !codes.every(code =>
+            typeof code === 'string' && /^[0-9A-Z]{3}$/.test(code))) {
+            throw new Error('Invalid saved vehicle order');
+        }
+        return new Set(codes);
+    } catch (error) {
+        if (error.code !== 'ENOENT') log.warn('Climate Comfort: ' + error.message);
+        return null;
+    }
+}
+
+function saveCodes(file, codes, log) {
+    const temporary = file + '.tmp';
+    try {
+        fs.writeFileSync(temporary, JSON.stringify(Array.from(codes)));
+        fs.renameSync(temporary, file);
+        return true;
+    } catch (error) {
+        log.warn('Climate Comfort: saving vehicle order failed: ' + error.message);
+        return false;
+    }
+}
 
 function drawUnconfirmed(cv, x, y) {
     const color = '#ff5555';
@@ -77,21 +115,23 @@ function renderEquipment(cv, theme, equipment, rows, voStatus) {
 mgu.run({
     start(ctx) {
         const rows = ctx.spec.config.previewEquipment;
-        // Vehicle equipment will be populated from diagnostics when available.
-        const equipment = {};
+        const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
+        const cacheFile = link && path.join(ctx.dataDir, 'vehicle-order.json');
+        const savedCodes = cacheFile && loadSavedCodes(cacheFile, ctx.log);
+        let equipment = savedCodes ? equipmentFromCodes(savedCodes) : {};
         const wheelTest = createWheelTest(ctx);
+        const ihkaTest = link ? createIhkaTest(ctx) : null;
         let tabs = [];
         let page = 'Info';
-        let voStatus = null;
-        const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
-        const ihkaTest = link ? createIhkaTest(ctx) : null;
+        let voStatus = savedCodes ? 'Saved vehicle order' : null;
+        let readRequested = !savedCodes;
 
         let equipmentAttempts = 0;
         let nextEquipmentRead = 0;
 
         async function detectEquipment() {
-            if (!link || equipmentAttempts >= 3 || Date.now() < nextEquipmentRead ||
-                voStatus === 'Reading vehicle order...' || voStatus === 'Vehicle order read') return;
+            if (!link || !readRequested || equipmentAttempts >= 3 || Date.now() < nextEquipmentRead ||
+                voStatus === 'Reading vehicle order...' || ihkaTest.isBusy() || wheelTest.isBusy()) return;
             equipmentAttempts++;
             voStatus = 'Reading vehicle order...';
             try {
@@ -101,13 +141,9 @@ mgu.run({
                     ctx.log.warn('Climate Comfort: ' + error);
                     return;
                 }
-                Object.keys(VO_CODES).forEach(key => { equipment[key] = codes.has(VO_CODES[key]); });
-                if (codes.has('453')) equipment.frontSeatVentilation = true;
-                if (codes.has('454')) equipment.rearSeatVentilation = true;
-                const heatedFrontAndRear = codes.has('4HA');
-                if (heatedFrontAndRear || codes.has('494')) equipment.frontSeatHeating = true;
-                if (heatedFrontAndRear) equipment.rearSeatHeating = true;
-                voStatus = 'Vehicle order read';
+                equipment = equipmentFromCodes(codes);
+                readRequested = false;
+                voStatus = saveCodes(cacheFile, codes, ctx.log) ? 'Vehicle order saved' : 'Vehicle order read, save failed';
             } catch (error) {
                 voStatus = 'Vehicle order: transport error';
                 ctx.log.warn('Climate Comfort: Vehicle Order read failed: ' + error.message);
@@ -116,15 +152,17 @@ mgu.run({
             }
         }
 
+        function reloadEquipment() {
+            if (!link || voStatus === 'Reading vehicle order...') return;
+            link.wake();
+            readRequested = true;
+            equipmentAttempts = 0;
+            nextEquipmentRead = 0;
+            return detectEquipment();
+        }
+
         ctx.onTab(index => {
-            if (!tabs[index] || tabs[index] === page) return;
-            page = tabs[index];
-            if (page === 'My Car' && link && equipmentAttempts >= 3 &&
-                voStatus !== 'Vehicle order read' && voStatus !== 'Reading vehicle order...') {
-                equipmentAttempts = 0;
-                nextEquipmentRead = 0;
-                link.wake();
-            }
+            if (tabs[index]) page = tabs[index];
         });
 
         ctx.loop('MAIN', 4, () => {
@@ -152,6 +190,12 @@ mgu.run({
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
+                if (link) {
+                    const busy = voStatus === 'Reading vehicle order...';
+                    cv.roundRect(1245, 465, 245, 40, 10, '#ffffff19');
+                    cv.text('Reload equipment', 1367, 491, 19, busy ? theme.dim : theme.text, { align: 'center' });
+                    if (!busy) cv.target(1245, 465, 245, 40, reloadEquipment, 'reload-equipment');
+                }
             } else if (page === 'About') {
                 renderAbout(cv, theme);
             }
