@@ -26,11 +26,17 @@ function createIhkaTest(ctx) {
     }
 
     async function readDriverBelt() {
+        let failure;
         for (let attempt = 0; attempt < 3; attempt++) {
-            if (attempt > 0) await pause(350);
-            const reply = await request(ACSM, DRIVER_BELT);
-            if (reply) return reply;
+            if (attempt > 0) await pause(350 * attempt);
+            try {
+                const reply = await request(ACSM, DRIVER_BELT);
+                if (reply) return reply;
+            } catch (error) {
+                failure = error;
+            }
         }
+        if (failure) throw failure;
         return null;
     }
 
@@ -73,7 +79,9 @@ function createIhkaTest(ctx) {
             }
         } catch (error) {
             ctx.log.warn('Climate Comfort IHKA test: ' + error.message);
-            detail = diag.p ? 'Driver belt transport error' : 'Diagnostics unavailable';
+            if (!diag.p) detail = 'Diagnostics unavailable';
+            else if (/busy|temporarily_not_accepted/i.test(error.message)) detail = 'Driver belt: TASU busy';
+            else detail = 'Driver belt: ' + error.message.slice(0, 54);
         } finally {
             busy = false;
         }
