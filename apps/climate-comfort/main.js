@@ -117,7 +117,7 @@ mgu.run({
             } else if (page === 'Front' || page === 'Rear') {
                 renderSeats(cv, theme, ctx.settings, equipment, page, seatTest);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true);
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, seatTest);
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
             } else if (page === 'About') {
