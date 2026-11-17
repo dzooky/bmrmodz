@@ -64,7 +64,7 @@ function decode(file, outW, outH) {
     }
     return cv;
 }
-const rasterRuns = src => {
+const rasterRuns = (src, colorStep = 17) => {
     const d = src.d, w = src.w, h = src.h;
     // Join matching runs across rows to avoid seams inside solid areas.
     let previousRuns = new Map();
@@ -79,9 +79,9 @@ const rasterRuns = src => {
                 const p = (y * w + x) * 4;
                 const a = Math.round(d[p + 3] / 17) * 17;
                 if (a >= 32) {
-                    const r = Math.round(d[p] / 17) * 17;
-                    const g = Math.round(d[p + 1] / 17) * 17;
-                    const b = Math.round(d[p + 2] / 17) * 17;
+                    const r = Math.min(255, Math.round(d[p] / colorStep) * colorStep);
+                    const g = Math.min(255, Math.round(d[p + 1] / colorStep) * colorStep);
+                    const b = Math.min(255, Math.round(d[p + 2] / colorStep) * colorStep);
                     color = (((r & 255) << 24) | ((g & 255) << 16) | ((b & 255) << 8) | (a & 255)) >>> 0;
                 }
             }

@@ -7,7 +7,7 @@ const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
-const renderAbout = require('./about');
+const { renderAbout, maxScroll: maxAboutScroll } = require('./about');
 const renderSeats = require('./seats');
 const createIhkaTest = require('./ihka-test');
 const createWheelTest = require('./wheel-test');
@@ -120,6 +120,7 @@ mgu.run({
         const ihkaTest = createIhkaTest(ctx, engineRunning, enqueueDiagnostic);
         let tabs = [];
         let page = 'Info';
+        let aboutScroll = 0;
         let voStatus = savedCodes ? 'Saved vehicle order' : null;
         let readRequested = !savedCodes;
 
@@ -158,6 +159,14 @@ mgu.run({
             return detectEquipment();
         }
 
+        ctx.onScroll(delta => {
+            if (page !== 'About') return false;
+            const next = Math.max(0, Math.min(maxAboutScroll, aboutScroll + delta));
+            if (next === aboutScroll) return false;
+            aboutScroll = next;
+            return true;
+        });
+
         ctx.onTab(index => {
             if (tabs[index]) page = tabs[index];
         });
@@ -174,14 +183,15 @@ mgu.run({
             const cv = ctx.canvas(1600, 520).clear(theme.bg);
             G.panel(cv, theme, 24, 44, 1552, 468, null);
 
+            const gpu = ctx.display && ctx.display.gpu;
             if (page === 'Info') {
                 NOTICE.forEach((line, index) => {
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest);
+                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest);
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu);
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
                 if (link) {
@@ -191,7 +201,7 @@ mgu.run({
                     if (!busy) cv.target(1245, 465, 245, 40, reloadEquipment, 'reload-equipment');
                 }
             } else if (page === 'About') {
-                renderAbout(cv, theme);
+                renderAbout(cv, theme, aboutScroll);
             }
 
             G.frame(cv, theme, tabs, tabs.indexOf(page), []);

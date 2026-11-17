@@ -29,4 +29,48 @@ function renderTemperature(cv, theme, settings, key, x, color) {
     renderTemperatureButton(cv, settings, key, x, 296, -1, color);
 }
 
-module.exports = { renderTemperature, adjustSetting, settingValue };
+function renderControlIcon(cv, x, y, title, color) {
+    if (title === 'Heating') {
+        cv.polyline([[x - 14, y + 6], [x + 1, y + 6], [x + 8, y - 12],
+            [x + 14, y - 10], [x + 7, y + 12], [x - 12, y + 12], [x - 14, y + 6]], 2, color);
+        for (const dx of [-8, -2, 4]) {
+            cv.polyline([[x + dx, y + 2], [x + dx - 2, y - 2],
+                [x + dx, y - 6], [x + dx - 2, y - 10]], 2, color);
+        }
+        return;
+    }
+
+    let blade = [[2, -3], [1, -10], [4, -14], [9, -13], [10, -9], [7, -5], [2, -3]];
+    for (let turn = 0; turn < 4; turn++) {
+        cv.polyline(blade.map(([dx, dy]) => [x + dx, y + dy]), 2, color);
+        blade = blade.map(([dx, dy]) => [-dy, dx]);
+    }
+}
+
+function renderControlPanel(cv, x, height, title, color, steering = false) {
+    cv.strokeRoundRect(x - 82, 92, 164, height, 15, 2, color);
+    if (steering) {
+        cv.arc(x - 4, 132, 10.5, 12.5, 76, 360, color);
+        cv.roundRect(x - 7.5, 128.5, 7, 7, 3.5, color);
+        cv.polyline([[x - 15, 132], [x - 4, 131], [x + 7, 133]], 2, color);
+        cv.polyline([[x - 4, 133], [x - 4, 143]], 2, color);
+        for (const dx of [-1, 6, 13]) {
+            const tip = x + dx;
+            cv.polyline([[tip, 124], [tip + 1, 120], [tip + 1, 117], [tip - 1, 113],
+                [tip - 1, 109], [tip, 106]], 2, color);
+            cv.polyline([[tip - 3, 110], [tip, 106], [tip + 3, 110]], 2, color);
+        }
+    } else {
+        renderControlIcon(cv, x, 125, title, color);
+    }
+    cv.text(title, x, 159, 18, color, { align: 'center' });
+}
+
+function renderControlAction(cv, theme, x, y, label, color, key, run) {
+    cv.roundRect(x - 61, y, 122, 32, 8, '#ffffff12');
+    if (run) cv.strokeRoundRect(x - 61, y, 122, 32, 8, 1, color);
+    cv.text(label, x, y + 22, 17, run ? theme.text : theme.dim, { align: 'center' });
+    if (run) cv.target(x - 61, y, 122, 32, run, key);
+}
+
+module.exports = { renderTemperature, adjustSetting, settingValue, renderControlPanel, renderControlAction };

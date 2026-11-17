@@ -1,40 +1,27 @@
 'use strict';
 
-const path = require('path');
-const { makeLayer } = require('./kit/record');
-const { decode, rasterRuns } = require('./png');
-const { renderTemperature } = require('./controls');
+const artwork = require('./artwork');
+const { renderTemperature, renderControlPanel, renderControlAction } = require('./controls');
 
 const SIZE = 344;
 const HEATING_COLOR = '#ff945e';
-const layers = {};
+const CONTROL_X = 1140;
+const standardWheel = artwork('steering-standard.png', SIZE, SIZE, 0x434305);
+const mSportWheel = artwork('steering-m-sport.png', SIZE, SIZE, 0x434306);
 
-function wheelLayer(variant) {
-    if (!layers[variant]) {
-        const image = decode(path.join(__dirname, 'steering-' + variant + '.png'), SIZE, SIZE);
-        layers[variant] = makeLayer(SIZE, SIZE, layer => {
-            for (const run of rasterRuns(image)) {
-                const color = '#' + run.color.toString(16).padStart(8, '0');
-                layer.fillRect(run.x, run.y, run.width, run.height, color);
-            }
-        });
-    }
-    return layers[variant];
-}
-
-function renderSteering(cv, theme, settings, mSport, wheelTest) {
+function renderSteering(cv, theme, settings, mSport, wheelTest, gpu) {
     const center = { align: 'center' };
-    cv.blit(wheelLayer(mSport ? 'm-sport' : 'standard'), 800 - SIZE / 2, 93);
+    const drawWheel = mSport ? mSportWheel : standardWheel;
+    drawWheel(cv, theme, gpu, 800 - SIZE / 2, 93);
     cv.text(mSport ? 'M Sport' : 'Standard', 800, 473, 24, theme.text, center);
 
-    cv.text('Heating', 1140, 159, 22, HEATING_COLOR, center);
-    renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', 1140, HEATING_COLOR);
+    renderControlPanel(cv, CONTROL_X, 304, 'Heating', HEATING_COLOR, true);
+    renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', CONTROL_X, HEATING_COLOR);
     const key = 'steeringHeating';
     const enabled = !wheelTest.isBusy();
     const action = wheelTest.isActive(key) ? 'Deactivate' : wheelTest.isPending(key) ? 'Cancel' : 'Test heating';
-    cv.roundRect(1076, 350, 128, 38, 8, '#ffffff12');
-    cv.text(action, 1140, 375, 18, enabled ? theme.text : theme.dim, center);
-    if (enabled) cv.target(1076, 350, 128, 38, wheelTest.run, key + '-test');
+    renderControlAction(cv, theme, CONTROL_X, 350, action, HEATING_COLOR, key + '-test',
+        enabled ? wheelTest.run : null);
 }
 
 module.exports = renderSteering;
