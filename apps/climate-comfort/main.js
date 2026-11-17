@@ -25,8 +25,7 @@ function equipmentTabs(equipment) {
 }
 
 const ACSM_ADDRESS = 0x01;
-const FRONT_BELT_DID = 0x4047;
-const REAR_BELT_DID = 0x4048;
+const BELT_CURRENT_DID = 0x4053;
 const ENGINE_IFACE = 'de.bmw.infotainment.vehicle.CDS';
 
 const VO_CODES = { steeringWheelHeating: '248', mSportSteeringWheel: '710' };
@@ -46,16 +45,17 @@ function beltReplyError(reply, did, minLength) {
     return null;
 }
 
-function frontBeltStatus(reply) {
-    const error = beltReplyError(reply, FRONT_BELT_DID, 12);
-    return error || 'FL ' + hex(reply[10]) + '/' + hex(reply[11]) +
-        '  FR ' + hex(reply[8]) + '/' + hex(reply[9]);
-}
+function beltCurrentStatus(reply) {
+    const error = beltReplyError(reply, BELT_CURRENT_DID, 8);
+    if (error) return '4053: ' + error;
 
-function rearBeltStatus(reply) {
-    const error = beltReplyError(reply, REAR_BELT_DID, 10);
-    // 4048 returns the second-row seat belt reminder state, in left/middle/right order.
-    return error || 'RL ' + hex(reply[7]) + '  RM ' + hex(reply[8]) + '  RR ' + hex(reply[9]);
+    // ACSM5 reports current in tenths of a milliamp; FF means the input is absent.
+    const labels = ['FL', 'FR', 'RL', 'RM', 'RR'];
+    const contacts = labels.map((label, index) => {
+        const value = reply[3 + index];
+        return label + ' ' + (value === 0xFF ? '-' : (value / 10).toFixed(1));
+    });
+    return '4053 (mA): ' + contacts.join('  ');
 }
 
 function renderEquipment(cv, theme, equipment, rows, voStatus, beltStatus) {
@@ -128,10 +128,7 @@ mgu.run({
 
             beltReadPending = true;
             try {
-                const front = frontBeltStatus(await link.read(ACSM_ADDRESS, FRONT_BELT_DID, 1500));
-                if (page !== 'My Car') return;
-                const rear = rearBeltStatus(await link.read(ACSM_ADDRESS, REAR_BELT_DID, 1500));
-                beltStatus = '4047: ' + front + '   |   4048: ' + rear;
+                beltStatus = beltCurrentStatus(await link.read(ACSM_ADDRESS, BELT_CURRENT_DID, 1500));
             } catch (error) {
                 beltStatus = 'Belts: Read failed';
                 ctx.log.warn('Climate Comfort: belt contact read failed: ' + error.message);
