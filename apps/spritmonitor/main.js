@@ -18,7 +18,10 @@ const ABOUT_TOP = 54, ABOUT_BOTTOM = 508;
 mgu.run({
     start(ctx) {
         function applyLanguage() {
-            setRuntimeTranslations(ctx.settings.get('language') === 'de' ? require('./de') : null);
+            const language = ctx.settings.get('language');
+            const words = language === 'de' ? require('./de')
+                : language === 'es' || language === 'fr' ? require('./fr-es')[language] : null;
+            setRuntimeTranslations(words);
             ctx.ui.text('BTN_FUEL', t('Add Fuel'));
             ctx.ui.text('BTN_ADBLUE', t('Add AdBlue'));
             ctx.ui.text('BTN_SETTINGS', t('Settings'));
@@ -853,6 +856,8 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.36', 'Add Spanish and French language options'],
+            ['', 'Render European accents in the original font'],
             ['0.1.35', 'Add German as an optional app language'],
             ['0.1.34', 'Open My Car first and scroll through About'],
             ['', 'Mark the reset setting as experimental'],

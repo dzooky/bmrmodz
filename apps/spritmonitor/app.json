@@ -2,7 +2,7 @@
   "id": "spritmonitor",
   "title": "Spritmonitor",
   "description": "Third-party app for Spritmonitor.de that lets you log fuel and AdBlue refills from BMW iDrive 7.",
-  "version": "0.1.35",
+  "version": "0.1.36",
   "vendor": "custom",
   "loggingId": "SPR1",
   "screens": [
@@ -33,7 +33,7 @@
       "label": "Language",
       "type": "choice",
       "default": "en",
-      "options": [["en", "English"], ["de", "Deutsch"]]
+      "options": [["en", "English"], ["de", "Deutsch"], ["es", "Español"], ["fr", "Français"]]
     },
     {
       "key": "theme",
