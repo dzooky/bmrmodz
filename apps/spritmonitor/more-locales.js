@@ -6,6 +6,7 @@ My Car|Autóm|Mój samochód|Moje auto|Moje auto|La mia auto|Мой автомо
 About|Az alkalmazásról|O aplikacji|O aplikácii|O aplikaci|Informazioni|О приложении
 Settings|Beállítások|Ustawienia|Nastavenia|Nastavení|Impostazioni|Настройки
 Language|Nyelv|Język|Jazyk|Jazyk|Lingua|Язык
+Use iDrive language|Az iDrive nyelvének használata|Użyj języka iDrive|Použiť jazyk iDrive|Použít jazyk iDrive|Usa la lingua di iDrive|Использовать язык iDrive
 Add Fuel|Tankolás rögzítése|Dodaj tankowanie|Pridať tankovanie|Přidat tankování|Aggiungi rifornimento|Добавить заправку
 Add AdBlue|AdBlue-utántöltés|Dodaj AdBlue|Pridať AdBlue|Přidat AdBlue|Aggiungi AdBlue|Добавить AdBlue
 Colour theme|Színtéma|Motyw kolorystyczny|Farebná téma|Barevný motiv|Tema colori|Цветовая тема

@@ -17,8 +17,10 @@ const ABOUT_TOP = 54, ABOUT_BOTTOM = 508;
 
 mgu.run({
     start(ctx) {
+        let idriveLanguage = 'en';
         function applyLanguage() {
-            const language = ctx.settings.get('language');
+            const preference = ctx.settings.get('language');
+            const language = preference === 'auto' ? idriveLanguage : preference;
             const words = language === 'de' ? require('./de')
                 : language === 'es' || language === 'fr' ? require('./fr-es')[language] : language === 'en' ? null : require('./more-locales')[language];
             setRuntimeTranslations(words);
@@ -28,6 +30,10 @@ mgu.run({
         }
         applyLanguage();
         ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
+        require('./idrive-language').watch(ctx, language => {
+            idriveLanguage = language;
+            if (ctx.settings.get('language') === 'auto') applyLanguage();
+        });
 
         let entry = '';
         let draft;
@@ -860,6 +866,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.38', 'Use the iDrive language by default'],
             ['0.1.37', 'Add Hungarian, Polish, Slovak, Czech, Italian and Russian'],
             ['', 'Highlight selected fuelling options in red'],
             ['0.1.36', 'Add Spanish and French language options'],

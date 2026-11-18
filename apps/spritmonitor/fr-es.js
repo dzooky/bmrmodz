@@ -6,6 +6,7 @@ const rows = [
     ['About', 'À propos', 'Acerca de'],
     ['Settings', 'Réglages', 'Ajustes'],
     ['Language', 'Langue', 'Idioma'],
+    ['Use iDrive language', 'Utiliser la langue d’iDrive', 'Usar el idioma de iDrive'],
     ['Add Fuel', 'Ajouter un plein', 'Añadir repostaje'],
     ['Add AdBlue', 'Ajouter de l’AdBlue', 'Añadir AdBlue'],
     ['Colour theme', 'Thème de couleurs', 'Tema de color'],

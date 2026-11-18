@@ -5,6 +5,7 @@ module.exports = {
     'About': 'Über die App',
     'Settings': 'Einstellungen',
     'Language': 'Sprache',
+    'Use iDrive language': 'iDrive-Sprache verwenden',
     'Add Fuel': 'Tankvorgang',
     'Add AdBlue': 'AdBlue nachfüllen',
     'Colour theme': 'Farbschema',
