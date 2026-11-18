@@ -9,12 +9,23 @@ const { toggle } = require('./kit/sheet');
 const { withAlpha } = require('./kit/canvas');
 const { decode: decodePng } = require('./png');
 
+const { t, setRuntimeTranslations } = require('./kit/i18n');
+
 const TABS = ['My Car', 'About'];
 const MY_CAR = 0, ABOUT = 1;
 const ABOUT_TOP = 54, ABOUT_BOTTOM = 508;
 
 mgu.run({
     start(ctx) {
+        function applyLanguage() {
+            setRuntimeTranslations(ctx.settings.get('language') === 'de' ? require('./de') : null);
+            ctx.ui.text('BTN_FUEL', t('Add Fuel'));
+            ctx.ui.text('BTN_ADBLUE', t('Add AdBlue'));
+            ctx.ui.text('BTN_SETTINGS', t('Settings'));
+        }
+        applyLanguage();
+        ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
+
         let entry = '';
         let draft;
         let lastStationPosition;
@@ -122,10 +133,10 @@ mgu.run({
             const pending = entries.filter(item => item.state === 'pending').length;
             const review = entries.filter(item => item.state === 'sending').length;
             const rejected = entries.filter(item => item.state === 'rejected').length;
-            return [connection, pending ? pending + ' pending' : '',
-                review ? review + ' unconfirmed in Spritmonitor' : '',
-                rejected ? rejected + ' rejected by Spritmonitor' : '',
-                offline ? '' : 'Local storage unavailable'].filter(Boolean).join('  /  ');
+            return [t(connection), pending ? pending + ' ' + t('pending') : '',
+                review ? review + ' ' + t('unconfirmed in Spritmonitor') : '',
+                rejected ? rejected + ' ' + t('rejected by Spritmonitor') : '',
+                offline ? '' : t('Local storage unavailable')].filter(Boolean).join('  /  ');
         }
 
         async function syncFuelings() {
@@ -541,8 +552,8 @@ mgu.run({
                 options.forEach(([code, name], index) => {
                     const x = 48 + index % 3 * 500;
                     const y = 105 + Math.floor(index / 3) * 54;
-                    const label = code ? code + ' / ' + name : name;
-                    G.button(cv, theme, x, y, 470, 46, label + (draft.country === code ? ' (selected)' : ''), () => {
+                    const label = code ? code + ' / ' + t(name) : t(name);
+                    G.button(cv, theme, x, y, 470, 46, label + (draft.country === code ? ' (' + t('selected') + ')' : ''), () => {
                         setStationCountry(code);
                         editField(null);
                     });
@@ -555,7 +566,7 @@ mgu.run({
                     const x = currency ? 48 + index % 2 * 500 : 48;
                     const y = 105 + (currency ? Math.floor(index / 2) : index) * 54;
                     G.button(cv, theme, x, y, currency ? 470 : 900, 46,
-                        value + (draft[key] === value ? ' (selected)' : ''), () => {
+                        t(value) + (draft[key] === value ? ' (' + t('selected') + ')' : ''), () => {
                             draft[key] = value;
                             if (key === 'type') draft.manualType = true;
                             if (key === 'currency') draft.manualCurrency = true;
@@ -564,12 +575,12 @@ mgu.run({
                 });
                 return;
             }
-            if (key === 'quantity') G.button(cv, theme, 1100, 95, 445, 44, 'Unit: ' + draft.unit, () => editField('unit'));
+            if (key === 'quantity') G.button(cv, theme, 1100, 95, 445, 44, t('Unit') + ': ' + draft.unit, () => editField('unit'));
             if (key === 'price') {
                 G.button(cv, theme, 950, 95, 290, 44, draft.currency, () => editField('currency'));
                 G.button(cv, theme, 1255, 95, 290, 44, draft.priceMode, () => editField('priceMode'));
             }
-            cv.text(draft[key].slice(-78) || '--', 48, 132, 27, theme.text);
+            cv.text(draft[key].slice(-78) || '--', 48, 132, 27, theme.text, { literal: true });
             const textField = ['note', 'company', 'location'].includes(key);
             const keys = textField
                 ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').concat(['Space', '.', ',', 'Delete', 'Clear'])
@@ -605,7 +616,7 @@ mgu.run({
                 options.forEach((option, index) => {
                     const selected = conditions[label] === option;
                     G.button(cv, theme, 420 + index * 372, y + 5, 340, 45,
-                        option + (selected ? ' (selected)' : ''), y >= 92 && y + 55 <= 446 ? () => {
+                        t(option) + (selected ? ' (' + t('selected') + ')' : ''), y >= 92 && y + 55 <= 446 ? () => {
                             draft.editedConditions.add(label);
                             conditions[label] = selected ? undefined : option;
                         } : null);
@@ -717,7 +728,7 @@ mgu.run({
                 G.button(cv, theme, 48, 452, 170, 44, 'Back', () => { savedEntryId = undefined; });
                 return;
             }
-            cv.text(vehicle ? vehicle.name + ' / ' + entry : entry, 1545, 80, 22, theme.dim, { align: 'right' });
+            cv.text(vehicle ? vehicle.name + ' / ' + t(entry) : t(entry), 1545, 80, 22, theme.dim, { align: 'right' });
             const data = liveData();
             draft.odometer = data.odometer;
             draft.trip = data.trip;
@@ -735,7 +746,7 @@ mgu.run({
                 odometer: reading(draft.odometer, 'km', 0),
                 trip: reading(draft.trip, 'km', 0),
                 quantity: (draft.quantity || '--') + ' ' + draft.unit,
-                price: (draft.price || '--') + ' ' + draft.currency + ' / ' + draft.priceMode,
+                price: (draft.price || '--') + ' ' + draft.currency + ' / ' + t(draft.priceMode),
                 note: draft.note ? draft.note.slice(0, 52) + (draft.note.length > 52 ? '...' : '') : '--'
             };
             const offset = formScroll;
@@ -842,6 +853,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.35', 'Add German as an optional app language'],
             ['0.1.34', 'Open My Car first and scroll through About'],
             ['', 'Mark the reset setting as experimental'],
             ['', 'Match the feedback QR codes to the social QR sizes'],
@@ -925,9 +937,9 @@ mgu.run({
             releases.forEach(([version, description], index) => {
                 const y = 105 + index * 20 - offset;
                 if (y < ABOUT_TOP || y > ABOUT_BOTTOM) return;
-                if (version) cv.text(version, 1120, y, 14, theme.text, { font: 'bold' });
-                const width = cv.textWidth(description, 14);
-                cv.text(description, 1186, y, width > 360 ? 14 * 360 / width : 14, theme.dim);
+                if (version) cv.text(version, 1120, y, 14, theme.text, { font: 'bold', literal: true });
+                const width = cv.textWidth(description, 14, { literal: true });
+                cv.text(description, 1186, y, width > 360 ? 14 * 360 / width : 14, theme.dim, { literal: true });
             });
             cv.noclip();
             const bar = { x: 1563, y: ABOUT_TOP, w: 6, h: ABOUT_BOTTOM - ABOUT_TOP };
@@ -949,7 +961,7 @@ mgu.run({
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
                 const capacity = fuelTankCapacity();
                 const tankLabel = capacity.litres
-                    ? 'Fuel tank: ' + capacity.litres + ' L (' + capacity.source + ')'
+                    ? t('Fuel tank') + ': ' + capacity.litres + ' L (' + t(capacity.source) + ')'
                     : 'Fuel tank capacity unavailable';
                 cv.text(tankLabel, 1525, 100, 24, theme.dim, { align: 'right' });
                 cv.text(accountStatus || syncMessage(), 65, 130, 20, theme.dim);

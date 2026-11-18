@@ -1,6 +1,7 @@
 'use strict';
 
 const gps = require('./station-gps');
+const { t } = require('./kit/i18n');
 
 const GUIDANCE = 'de.bmw.infotainment.navigation.guiding.Guidance';
 const POSITION_MAX_AGE_MS = 10000;
@@ -111,7 +112,7 @@ function watch(ctx, onAddress) {
         const address = lastReport.address;
         if (!address && lastReport.position) return 'GPS position available';
         if (!address && lastReport.hasCoordinates) return 'GPS coordinates invalid or unsupported';
-        if (!address) return 'No city or country | ' + source + ': ' + lastReport.fields;
+        if (!address) return t('No city or country') + ' | ' + source + ': ' + lastReport.fields;
         if (!address.location) return 'Navigation sent country only';
         if (!address.country) return 'Navigation sent city only';
         return 'City and country received from navigation';
