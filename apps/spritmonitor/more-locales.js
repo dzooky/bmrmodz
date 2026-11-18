@@ -22,6 +22,8 @@ Software|Szoftveres|Programowy|Softvérový|Softwarový|Software|Програм�
 Ice White|Jégfehér|Lodowa biel|Ľadová biela|Ledová bílá|Bianco ghiaccio|Ледяной белый
 Night Amber|Éjszakai borostyán|Nocny bursztyn|Nočná jantárová|Noční jantarová|Ambra notturna|Ночной янтарь
 Full tank threshold (fuel)|Teletankolási küszöb|Próg pełnego baku|Hranica plnej nádrže|Hranice plné nádrže|Soglia serbatoio pieno|Порог полного бака
+Full tank threshold override|Egyéni teletankolási küszöb|Własny próg pełnego baku|Vlastná hranica plnej nádrže|Vlastní hranice plné nádrže|Soglia personalizzata di pieno|Свой порог полного бака
+Use percentage|Százalék használata|Użyj wartości procentowej|Použiť percentá|Použít procenta|Usa percentuale|Использовать проценты
 Fuel tank capacity|Üzemanyagtartály térfogata|Pojemność baku|Objem palivovej nádrže|Objem palivové nádrže|Capacità del serbatoio|Объём бака
 Reset trip, avg. speed and consumption after fuel upload (experimental)|Út, átlagsebesség és fogyasztás nullázása feltöltés után (kísérleti)|Zeruj przebieg dzienny, średnią prędkość i spalanie po wysłaniu (eksperymentalne)|Vynulovať trasu, priemernú rýchlosť a spotrebu po odoslaní (experimentálne)|Vynulovat trasu, průměrnou rychlost a spotřebu po odeslání (experimentální)|Azzera percorso, velocità media e consumo dopo l’invio (sperimentale)|Сбрасывать пробег, среднюю скорость и расход после отправки (экспериментально)
 On|Be|Włączone|Zapnuté|Zapnuto|Attivo|Вкл.

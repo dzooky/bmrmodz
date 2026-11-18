@@ -22,6 +22,8 @@ const rows = [
     ['Ice White', 'Blanc glacé', 'Blanco hielo'],
     ['Night Amber', 'Ambre nocturne', 'Ámbar nocturno'],
     ['Full tank threshold (fuel)', 'Seuil pour un plein complet', 'Umbral para depósito lleno'],
+    ['Full tank threshold override', 'Seuil personnalisé de plein', 'Umbral personalizado de depósito lleno'],
+    ['Use percentage', 'Utiliser le pourcentage', 'Usar el porcentaje'],
     ['Fuel tank capacity', 'Capacité du réservoir', 'Capacidad del depósito'],
     ['Reset trip, avg. speed and consumption after fuel upload (experimental)',
         'Réinitialiser trajet, vitesse et consommation après envoi (expérimental)',

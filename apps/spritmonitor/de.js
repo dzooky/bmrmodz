@@ -21,6 +21,8 @@ module.exports = {
     'Ice White': 'Eisweiß',
     'Night Amber': 'Amber bei Nacht',
     'Full tank threshold (fuel)': 'Schwelle für Volltankung',
+    'Full tank threshold override': 'Eigener Volltank-Schwellenwert',
+    'Use percentage': 'Prozentwert verwenden',
     'Fuel tank capacity': 'Kraftstofftankvolumen',
     'Reset trip, avg. speed and consumption after fuel upload (experimental)':
         'Tageskilometer, Ø Tempo und Verbrauch nach dem Hochladen zurücksetzen (experimentell)',

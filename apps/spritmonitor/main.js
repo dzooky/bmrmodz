@@ -798,7 +798,9 @@ mgu.run({
 
         function fuelTankStatus(data) {
             const capacity = fuelTankCapacity().litres;
-            const limit = capacity > 0 ? capacity * Number(ctx.settings.get('fullTankThreshold')) / 100 : null;
+            const override = Number(ctx.settings.get('fullTankThresholdLitres'));
+            const limit = override > 0 ? override
+                : capacity > 0 ? capacity * Number(ctx.settings.get('fullTankThreshold')) / 100 : null;
             return { capacity, level: data.fuelLevel, limit };
         }
 
@@ -935,6 +937,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.43', 'Allow a full-tank threshold in litres'],
             ['0.1.42', 'Show the live tank level and full threshold in Type'],
             ['0.1.41', 'Clear unsynced fuelings from My Car'],
             ['', 'Remove local upload details after confirmation'],
