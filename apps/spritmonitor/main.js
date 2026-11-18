@@ -32,6 +32,14 @@ mgu.run({
         ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
         require('./idrive-language').watch(ctx, language => {
             idriveLanguage = language;
+            const options = ctx.settings.item('language').options;
+            const autoIndex = options.findIndex(([code]) => code === 'auto');
+            const detected = options.find(([code]) => code === language);
+            if (autoIndex >= 0 && detected) {
+                const label = detected[1] + ' (auto)';
+                options[autoIndex][1] = label;
+                ctx.ui.text('SET_LANGUAGE', label, autoIndex, 'ItemText');
+            }
             if (ctx.settings.get('language') === 'auto') applyLanguage();
         });
 
@@ -866,6 +874,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.39', 'Show the detected language next to the automatic option'],
             ['0.1.38', 'Use the iDrive language by default'],
             ['0.1.37', 'Add Hungarian, Polish, Slovak, Czech, Italian and Russian'],
             ['', 'Highlight selected fuelling options in red'],
