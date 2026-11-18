@@ -22,6 +22,10 @@ function open(dataDir) {
         const scope = key(account);
         if (!scope) throw new Error('Select a vehicle before saving.');
         const updated = Object.assign({}, saved, { [scope]: next });
+        persist(updated);
+    }
+
+    function persist(updated) {
         const temporary = file + '.' + crypto.randomBytes(8).toString('hex') + '.tmp';
         try {
             fs.writeFileSync(temporary, JSON.stringify(updated), { mode: 0o600, flag: 'wx' });
@@ -31,6 +35,26 @@ function open(dataDir) {
             throw error;
         }
         saved = updated;
+    }
+
+    // Earlier versions kept all details of the last successful upload in the local receipt.
+    let migrated = false;
+    for (const scope of Object.values(saved)) {
+        for (const [kind, entry] of Object.entries(scope.lastFuelling || {})) {
+            if (entry.state !== 'sent' || (!entry.fields && !entry.upload)) continue;
+            scope.lastFuelling[kind] = { id: entry.id, state: 'sent' };
+            migrated = true;
+        }
+    }
+    if (migrated) {
+        try { persist(saved); } catch (_) { /* Keep the local queue usable if migration cannot be written yet. */ }
+    }
+
+    function clearLocal(account) {
+        const current = read(account);
+        const next = Object.assign({}, current, { entries: [], lastFuelling: {} });
+        delete next.conditions;
+        write(account, next);
     }
 
     function cache(account, vehicle) {
@@ -62,7 +86,7 @@ function open(dataDir) {
         if (current.vehicle) entry.upload = uploadFields(current.vehicle, entry);
         write(account, Object.assign({}, current, {
             entries: current.entries.concat(entry),
-            lastFuelling: Object.assign({}, current.lastFuelling, { [kind]: entry }),
+            lastFuelling: Object.assign({}, current.lastFuelling, { [kind]: { id: entry.id, state: entry.state } }),
             conditions: kind === 'Fuel' ? conditions : current.conditions
         }));
         return entry.id;
@@ -74,7 +98,7 @@ function open(dataDir) {
             ? Object.assign({}, entry, { state }, details) : entry) : current.entries.filter(entry => entry.id !== id);
         const lastFuelling = Object.assign({}, current.lastFuelling);
         for (const [kind, entry] of Object.entries(lastFuelling)) {
-            if (entry.id === id) lastFuelling[kind] = Object.assign({}, entry, { state: state || 'sent' }, details);
+            if (entry.id === id) lastFuelling[kind] = { id: entry.id, state: state || 'sent' };
         }
         const confirmedIds = details && details.confirmedId
             ? (current.confirmedIds || []).concat(details.confirmedId).slice(-128)
@@ -82,7 +106,7 @@ function open(dataDir) {
         write(account, Object.assign({}, current, { entries, lastFuelling, confirmedIds }));
     }
 
-    return { read, cache, enqueue, change };
+    return { read, cache, enqueue, change, clearLocal };
 }
 
 function uploadFields(vehicle, entry) {

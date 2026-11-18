@@ -5,6 +5,11 @@ const text = `
 My Car|Autóm|Mój samochód|Moje auto|Moje auto|La mia auto|Мой автомобиль
 About|Az alkalmazásról|O aplikacji|O aplikácii|O aplikaci|Informazioni|О приложении
 Settings|Beállítások|Ustawienia|Nastavenia|Nastavení|Impostazioni|Настройки
+Clear local fuelings|Helyi tankolások törlése|Usuń lokalne wpisy|Vymazať lokálne záznamy|Smazat místní záznamy|Cancella dati locali|Удалить местные записи
+This clears unsynced fuelings for this vehicle from iDrive.|Törli a jármű nem szinkronizált tankolásait az iDrive-ból.|Usuwa z iDrive niezsynchronizowane tankowania tego pojazdu.|Z iDrive sa vymažú nesynchronizované tankovania tohto vozidla.|Z iDrive se smažou nesynchronizovaná tankování tohoto vozidla.|Rimuove da iDrive i rifornimenti non sincronizzati di questo veicolo.|Удаляет из iDrive несинхронизированные заправки этого автомобиля.
+Could not clear local fuelings.|A helyi tankolások nem törölhetők.|Nie udało się usunąć lokalnych tankowań.|Lokálne tankovania sa nepodarilo vymazať.|Místní tankování se nepodařilo smazat.|Impossibile cancellare i rifornimenti locali.|Не удалось удалить локальные заправки.
+Waiting for the current sync to finish...|Várakozás a folyamatban lévő szinkronizálásra…|Oczekiwanie na zakończenie synchronizacji…|Čakám na dokončenie synchronizácie…|Čekám na dokončení synchronizace…|Attesa del completamento della sincronizzazione…|Ожидание завершения синхронизации…
+Local fuelings cleared.|A helyi tankolások törölve.|Lokalne tankowania usunięte.|Lokálne tankovania vymazané.|Místní tankování smazána.|Rifornimenti locali cancellati.|Локальные заправки удалены.
 Language|Nyelv|Język|Jazyk|Jazyk|Lingua|Язык
 Use iDrive language|Az iDrive nyelvének használata|Użyj języka iDrive|Použiť jazyk iDrive|Použít jazyk iDrive|Usa la lingua di iDrive|Использовать язык iDrive
 Add Fuel|Tankolás rögzítése|Dodaj tankowanie|Pridať tankovanie|Přidat tankování|Aggiungi rifornimento|Добавить заправку

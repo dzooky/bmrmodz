@@ -127,6 +127,9 @@ mgu.run({
         if (offline) vehicle = offline.read(account).vehicle;
         let connection = '';
         let syncing = false;
+        let clearLocalOpen = false;
+        let clearLocalError = false;
+        let clearLocalNoticeUntil = 0;
         let nextHistoryCheck = 0;
         let loadingAccount = false;
         let vehicleOptions = null;
@@ -158,8 +161,37 @@ mgu.run({
                 offline ? '' : t('Local storage unavailable')].filter(Boolean).join('  /  ');
         }
 
+        function clearLocalFuelings() {
+            if (!clearLocalOpen || syncing || !offline || !account || !account.vehicleId) return;
+            try {
+                offline.clearLocal(account);
+                clearLocalOpen = false;
+                clearLocalNoticeUntil = Date.now() + 8000;
+            } catch (_) {
+                clearLocalError = true;
+            }
+        }
+
+        function renderClearLocal(cv, theme) {
+            cv.text('Clear local fuelings', 65, 100, 34, theme.text, { font: 'bold' });
+            cv.text('This clears unsynced fuelings for this vehicle from iDrive.', 65, 161, 25, theme.text);
+            if (clearLocalError) cv.text('Could not clear local fuelings.', 65, 208, 23, theme.dim);
+            if (syncing) cv.text('Waiting for the current sync to finish...', 65, 250, 23, theme.dim);
+            G.button(cv, theme, 65, 447, 300, 45, 'Clear local fuelings', clearLocalFuelings,
+                { primary: true, color: theme.crit, busy: syncing });
+            G.button(cv, theme, 385, 447, 210, 45, 'Cancel', () => { clearLocalOpen = false; });
+        }
+
+        function showClearLocalButton(cv, theme, x, y, width, height) {
+            if (!offline || !account || !account.vehicleId || !offline.read(account).entries.length) return;
+            G.button(cv, theme, x, y, width, height, 'Clear local fuelings', () => {
+                clearLocalOpen = true;
+                clearLocalError = false;
+            });
+        }
+
         async function syncFuelings() {
-            if (!offline || !account || !account.vehicleId || syncing || loadingAccount) return;
+            if (!offline || !account || !account.vehicleId || syncing || loadingAccount || clearLocalOpen) return;
             syncing = true;
             const owner = account;
             try {
@@ -207,7 +239,7 @@ mgu.run({
                     }
                 }
                 for (const item of pending) {
-                    if (owner !== account) return;
+                    if (owner !== account || clearLocalOpen) return;
                     const upload = item.upload || offlineFuel.uploadFields(vehicle, item);
                     if (!upload) {
                         connection = 'Waiting for Spritmonitor tank, fuel sort or units';
@@ -406,6 +438,7 @@ mgu.run({
             if (account && !vehicleOptions) {
                 if (account.vehicleId) {
                     G.button(cv, theme, 65, 420, 270, 50, 'Remove vehicle', removeVehicle);
+                    showClearLocalButton(cv, theme, 360, 420, 360, 50);
                 } else {
                     G.button(cv, theme, 65, 420, 270, 50, 'Choose vehicle', refreshVehicle);
                 }
@@ -524,6 +557,7 @@ mgu.run({
         function openFuelling(type) {
             if (!account || !account.vehicleId || (type === 'AdBlue' && !hasAdBlue())) return;
             cancelPairingGuide();
+            clearLocalOpen = false;
             formScroll = 0;
             entry = type;
             const now = new Date();
@@ -841,6 +875,7 @@ mgu.run({
             savedEntryId = undefined;
             activeField = null;
             page = index;
+            clearLocalOpen = false;
             if (page === MY_CAR && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
 
@@ -889,6 +924,8 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.41', 'Clear unsynced fuelings from My Car'],
+            ['', 'Remove local upload details after confirmation'],
             ['0.1.40', 'Verify unconfirmed uploads against Spritmonitor history'],
             ['0.1.39', 'Show the detected language next to the automatic option'],
             ['0.1.38', 'Use the iDrive language by default'],
@@ -996,7 +1033,9 @@ mgu.run({
             const cv = ctx.canvas(1600, 520).clear(theme.bg);
             G.panel(cv, theme, 24, 44, 1552, 468, null);
             const showingFuelling = Boolean(draft || savedEntryId);
-            if (showingFuelling) {
+            if (clearLocalOpen) {
+                renderClearLocal(cv, theme);
+            } else if (showingFuelling) {
                 renderFuelling(cv, theme);
             } else if (page === ABOUT) {
                 renderAbout(cv, theme);
@@ -1007,8 +1046,10 @@ mgu.run({
                     ? t('Fuel tank') + ': ' + capacity.litres + ' L (' + t(capacity.source) + ')'
                     : 'Fuel tank capacity unavailable';
                 cv.text(tankLabel, 1525, 100, 24, theme.dim, { align: 'right' });
-                cv.text(accountStatus || syncMessage(), 65, 130, 20, theme.dim);
+                const message = Date.now() < clearLocalNoticeUntil ? 'Local fuelings cleared.' : accountStatus || syncMessage();
+                cv.text(message, 65, 130, 20, theme.dim);
                 G.button(cv, theme, 1245, 447, 280, 45, 'Remove vehicle', removeVehicle);
+                showClearLocalButton(cv, theme, 963, 447, 266, 45);
                 G.button(cv, theme, 50, 447, 280, 45, 'Disconnect account', disconnectAccount);
                 const statistics = vehicle.tankStats;
                 const tank = statistics[tankPage];
@@ -1052,7 +1093,7 @@ mgu.run({
                     }
                     [['consumption', 'Consumption'], ['distance', 'Distance'], ['price', 'Unit price']]
                         .forEach(([metric, label], i) => {
-                            G.button(cv, theme, 355 + i * 222, 447, 210, 45,
+                            G.button(cv, theme, 345 + i * 204, 447, 194, 45,
                                 chartMetric === metric ? 'Back to summary' : label,
                                 () => { chartMetric = chartMetric === metric ? null : metric; });
                         });
