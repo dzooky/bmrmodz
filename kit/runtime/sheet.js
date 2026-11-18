@@ -143,7 +143,7 @@ function listSheet(settings, title, opts) {
             if (!this.open) this.focus = Math.min(this.focus, rows.length - 1);
             // the header's tab names the sheet; a value list names its setting here
             if (this.open || this.group) r.text(this.open ? this.open.label : this.group, 44, TOP + 40, 32, t.text, { font: 'bold' });
-            else if (version) r.text('Version ' + version, 44, TOP + 38, 24, t.dim);
+            else if (version) r.text(translate('Version') + ' ' + version, 44, TOP + 38, 24, t.dim);
             const targets = [];
             // Back (a value list) / Done (the settings): top right
             const bw = 150, bx = W - 40 - bw, by = TOP + 8;

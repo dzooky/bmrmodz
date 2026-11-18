@@ -105,9 +105,14 @@ class Display {
         this.ui.onVisible((name, v) => {
             if (name === 'SETTINGS') { this._syncVisible(); if (!v) this._lost(); return; }
             if (name !== this.screen.name) return;
-            if (v) this.barOff = 0;                   // the HMI builds the screen afresh
+            if (v) {
+                this.barOff = 0;
+                this.hmiBarHidden = null;       // the HMI rebuilds the native buttons on entry
+                this._hmiBar();
+            }
             if (!v) this.closeSheet();
             this._syncVisible();
+            this._grab();
         });
         if (this.ui.onFocus) this.ui.onFocus((name) => { if (name === this.screen.name) { this._syncVisible(); this._lost(); } });
         settings.onChange((k) => {
@@ -186,7 +191,7 @@ class Display {
                 this._lost();                       // (shows the HMI's bar again)
             }, 1500);
         });
-        gpu.on('ccu', (v) => { if (this.gpu !== gpu) return; if (this.onCcu && !this.own()) this.onCcu(v); else this._ccu(v); });
+        gpu.on('ccu', (v) => { if (this.gpu !== gpu) return; if (this.onCcu && !this.own() && !this.sheet) this.onCcu(v); else this._ccu(v); });
         gpu.on('touch', (phase, x, y) => { if (this.gpu === gpu) this._touch(phase, x, y); });
         // the HMI was touched outside the tabs: shown again unless that left the screen
         gpu.on('closed', () => setTimeout(() => { if (this.gpu === gpu) this._syncVisible(); }, 700));
@@ -204,7 +209,7 @@ class Display {
     _grab() {
         if (!this.gpu) return;
         const gate = !this.gpu.native || !this.gpu.info || this.gpu.info.controller;
-        this.gpu.grab(this.grabbing || (this.own() && gate && !process.env.MGU_NO_GRAB));
+        this.gpu.grab(this.grabbing || ((this.own() || this.standardSettingsTab()) && gate && !process.env.MGU_NO_GRAB));
     }
 
     /** The kit runs the screen: mgu-render/1 with touch, full-screen layout. */
@@ -214,6 +219,9 @@ class Display {
         const g = this.gpu;
         return !!(g && g.ready && g.native && g.touch && this.layout() === 'full' && g.screen.w === HMI.screen.w && g.screen.h === HMI.screen.h);
     }
+    standardSettingsTab() {
+        return !!(this.spec.settingsTabInStandard && this.active() && this.gpu.native && this.gpu.touch && !this.place.full);
+    }
     /** Settings is the header's last tab where the kit runs the screen (the app has a Settings button). */
     hasSettings() { return !!(this.screen && (this.screen.buttons || []).some((b) => b[0] === 'BTN_SETTINGS')); }
     /** The header's tabs: the app's, then Settings. { tabs, sel, badges, settings: index or -1 } */
@@ -221,7 +229,7 @@ class Display {
         const base = this.tabInfo || { tabs: [], sel: -1, badges: [] };
         const tabs = (base.tabs || []).slice();
         let settings = -1;
-        if (this.own() && this.hasSettings()) {
+        if ((this.own() || this.standardSettingsTab()) && this.hasSettings()) {
             if (this.spec.settingsBeforeLast && tabs.length) {
                 settings = tabs.length - 1;
                 tabs.splice(settings, 0, 'Settings');
@@ -281,14 +289,15 @@ class Display {
         Promise.resolve(this.ui.close(this.screen.name)).catch((e) => this.log.warn('back: ' + e));
     }
     /** A sheet can be shown now (else the app falls back to the HMI's own screens). */
-    canSheet() { return this.own() && this.active(); }
+    canSheet(sheet) { return (this.own() && this.active()) || !!(sheet && sheet.settings && this.standardSettingsTab()); }
 
     /** Draw sheet over the page until it closes (sheet.js). false: not possible now. */
     openSheet(sheet) {
-        if (!this.canSheet()) return false;
+        if (!this.canSheet(sheet)) return false;
         if (!this.sheet) this.saved = this.app;          // the app's last frame, back when the sheet closes
         this.sheetHead = false;
         this.sheet = sheet; this.sheetDown = -1;
+        this._grab();
         if (!this.sheetTimer) this.sheetTimer = setInterval(() => this._paintSheet(), 33);   // scrolling glides
         this._paintSheet();
         return true;
@@ -297,6 +306,7 @@ class Display {
         if (!this.sheet) return;
         const sh = this.sheet;
         this.sheet = null; this.sheetTargets = null; this.sheetHead = false;
+        this._grab();
         if (this.sheetTimer) { clearInterval(this.sheetTimer); this.sheetTimer = null; }
         if (this.saved) { this.app = this.saved; this.saved = null; }
         this.lastWords = null;
@@ -318,7 +328,7 @@ class Display {
     }
     _paintSheet() {
         if (!this.sheet) return;
-        if (!this.active() || !this.place.full) return;
+        if (!this.canSheet(this.sheet)) return;
         const L = this.last, sc = this.place.scale;
         if (!L) return;
         const r = this.sheetRec && this.sheetRec.textScale === sc ? this.sheetRec : (this.sheetRec = new Recorder(PAGE.w, PAGE.h, { textScale: sc }));
@@ -327,6 +337,14 @@ class Display {
         let targets = [];
         try { targets = this.sheet.draw(r, this.theme()) || []; } catch (e) { this.log.error('sheet draw', e); }
         this.sheetTargets = targets;
+        if (!this.place.full) {
+            const header = this._tabList();
+            G.frame(r, this.theme(), header.tabs, header.sel, header.badges);
+            this._drawStandardFocus(r);
+            this._send(L.name, r, L.softImage, false);
+            this._claimTabs(r.tabRects, r);
+            return;
+        }
         // the header keeps the app's tabs (Settings lit for the settings): a tab leaves the sheet for that page
         this.app = {
             name: L.name, softImage: L.softImage, w: r.w, h: r.h, textScale: sc, words: new Uint32Array(r.words()),
@@ -335,6 +353,14 @@ class Display {
         };
         this._send(L.name, this._compose(), L.softImage, false);
         this._claimTabs(this.chromeRec.tabRects, null);
+    }
+
+    _drawStandardFocus(r) {
+        const tab = (r.tabRects || []).find(q => q.i === this.focusTab);
+        if (tab && (!this.sheet || this.sheetHead)) {
+            const theme = this.theme();
+            r.strokeRoundRect(tab.x + 3, tab.y + 3, tab.w - 6, tab.h - 6, 7, 2, theme.sel || theme.accent);
+        }
     }
 
     /** Press bar button id, as the HMI does for a tap or the controller's press. */
@@ -471,9 +497,10 @@ class Display {
      */
     _touch(phase, x, y) {
         const inside = (r) => x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
-        if (this.own()) {
+        const own = this.own();
+        if (own || this.sheet || this.standardSettingsTab()) {
             const pl = this.place, sx = x * pl.scale + pl.ox, sy = y * pl.scale + pl.oy;
-            const bar = sy >= pl.h - this.barH() ? this.buttons().find((b) => sx >= b.x - this.barOff - pl.x && sx < b.x - this.barOff - pl.x + b.w) : null;
+            const bar = own && sy >= pl.h - this.barH() ? this.buttons().find((b) => sx >= b.x - this.barOff - pl.x && sx < b.x - this.barOff - pl.x + b.w) : null;
             // the header's tabs (Settings among them) work over a sheet too
             const tab = !bar && (this.tabs || []).find(inside);
             const tgt = !bar && !tab && !this.sheet ? (this.pageTargets || []).find(inside) : null;
@@ -689,6 +716,7 @@ class Display {
         r.place = this.active() ? this.place : null;
         // the kit runs the screen: buttons drawn on the page (G.button) take the place of the bar's
         r.own = this.own() && this.active();
+        r.standardSettingsTab = this.standardSettingsTab();
         r.extra = r.own && this.place.extra ? this.place.extra : 0;
         return r;
     }
@@ -703,7 +731,7 @@ class Display {
         else if (r.tabInfo) this.tabInfo = r.tabInfo;
         if (!this.sheet) { this.pageTargets = r.targets || []; this.pageScroll = r.scroll && typeof r.scroll === 'object' ? r.scroll : !!r.scroll; }
         // a sheet is over the page: the app's frames wait (the last one comes back when it closes)
-        if (this.sheet && this.active() && this.place.full) {
+        if (this.sheet && this.canSheet(this.sheet)) {
             if (r.chrome) this.saved = Object.assign({}, this.saved || {}, {
                 name, softImage, w: r.w, h: r.h, textScale: r.textScale, words: new Uint32Array(r.words()),
                 atlases: new Set(r.atlases), ramps: new Set(r.ramps), layersUsed: new Set(r.layersUsed || []), images: new Set(r.images || []), tabs: r.chrome.tabs,
@@ -730,7 +758,11 @@ class Display {
                     reaches: r.extraUsed,
                 };
                 out = this._compose();
-            } else { this.app = null; this._reach(r.extraUsed); }
+            } else {
+                this.app = null;
+                this._reach(r.extraUsed);
+                if (r.standardSettingsTab) this._drawStandardFocus(r);
+            }
             this._send(name, out, softImage, false);
             if (this.place.full && r.chrome) this._claimTabs(this.chromeRec.tabRects, null);
             else if (this.own()) this._claimTabs(null, null);
