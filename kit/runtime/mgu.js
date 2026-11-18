@@ -22,6 +22,7 @@ const fs = require('fs');
 const path = require('path');
 const { OnlineApp, logging } = require('oap-sdk');
 const themes = require('./themes');
+const { t: translate } = require('./i18n');
 const notifications = require('./notifications');
 const { Display } = require('./display');
 const { HmiText } = require('./hmi-text');
@@ -490,10 +491,10 @@ function wireSettings(ctx) {
         if (!ui.comp(comp)) return null;
         // one another setting offers it ("when"): shown or not as that one is
         if (s.when) ui.visible(comp, settings.shown(s));
-        if (s.type === 'bool') return Promise.all([ui.text(comp, s.label), ui.checked(comp, !!settings.get(s.key))]);
+        if (s.type === 'bool') return Promise.all([ui.text(comp, translate(s.label)), ui.checked(comp, !!settings.get(s.key))]);
         if (values(s)) return ui.selected(comp, Math.max(0, values(s).indexOf(settings.get(s.key))));
         // other types: two-row buttons in the wide settings state, label above, value below
-        return ui.cells(comp, 0, { Text1stRow: s.label, Text2ndRow: settings.display(s.key) });
+        return ui.cells(comp, 0, { Text1stRow: translate(s.label), Text2ndRow: translate(settings.display(s.key)) });
     }));
     schema.forEach((s) => {
         const comp = 'SET_' + s.key.toUpperCase();
