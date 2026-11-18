@@ -20,7 +20,7 @@ mgu.run({
         function applyLanguage() {
             const language = ctx.settings.get('language');
             const words = language === 'de' ? require('./de')
-                : language === 'es' || language === 'fr' ? require('./fr-es')[language] : null;
+                : language === 'es' || language === 'fr' ? require('./fr-es')[language] : language === 'en' ? null : require('./more-locales')[language];
             setRuntimeTranslations(words);
             ctx.ui.text('BTN_FUEL', t('Add Fuel'));
             ctx.ui.text('BTN_ADBLUE', t('Add AdBlue'));
@@ -545,6 +545,10 @@ mgu.run({
             formStatus = '';
         }
 
+        function selectedStyle(theme, selected) {
+            return selected ? { primary: true, color: theme.crit } : undefined;
+        }
+
         function renderEditor(cv, theme) {
             const key = activeField;
             const label = labels[key] || basicFields.concat(stationFields).find(field => field[0] === key)[1];
@@ -556,10 +560,10 @@ mgu.run({
                     const x = 48 + index % 3 * 500;
                     const y = 105 + Math.floor(index / 3) * 54;
                     const label = code ? code + ' / ' + t(name) : t(name);
-                    G.button(cv, theme, x, y, 470, 46, label + (draft.country === code ? ' (' + t('selected') + ')' : ''), () => {
+                    G.button(cv, theme, x, y, 470, 46, label, () => {
                         setStationCountry(code);
                         editField(null);
-                    });
+                    }, selectedStyle(theme, draft.country === code));
                 });
                 return;
             }
@@ -569,12 +573,12 @@ mgu.run({
                     const x = currency ? 48 + index % 2 * 500 : 48;
                     const y = 105 + (currency ? Math.floor(index / 2) : index) * 54;
                     G.button(cv, theme, x, y, currency ? 470 : 900, 46,
-                        t(value) + (draft[key] === value ? ' (' + t('selected') + ')' : ''), () => {
+                        t(value), () => {
                             draft[key] = value;
                             if (key === 'type') draft.manualType = true;
                             if (key === 'currency') draft.manualCurrency = true;
                             editField(null);
-                        });
+                        }, selectedStyle(theme, draft[key] === value));
                 });
                 return;
             }
@@ -619,10 +623,10 @@ mgu.run({
                 options.forEach((option, index) => {
                     const selected = conditions[label] === option;
                     G.button(cv, theme, 420 + index * 372, y + 5, 340, 45,
-                        t(option) + (selected ? ' (' + t('selected') + ')' : ''), y >= 92 && y + 55 <= 446 ? () => {
+                        t(option), y >= 92 && y + 55 <= 446 ? () => {
                             draft.editedConditions.add(label);
                             conditions[label] = selected ? undefined : option;
-                        } : null);
+                        } : null, selectedStyle(theme, selected));
                 });
             });
 
@@ -856,6 +860,8 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.37', 'Add Hungarian, Polish, Slovak, Czech, Italian and Russian'],
+            ['', 'Highlight selected fuelling options in red'],
             ['0.1.36', 'Add Spanish and French language options'],
             ['', 'Render European accents in the original font'],
             ['0.1.35', 'Add German as an optional app language'],

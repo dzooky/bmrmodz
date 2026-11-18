@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Append European Latin glyphs to the runtime Ubuntu Sans atlases.
+"""Extend the runtime Ubuntu Sans atlases for translated app text.
 
 Run with Pillow and the variable Ubuntu Sans font from
 https://github.com/google/fonts/tree/main/ufl/ubuntusans.
@@ -24,13 +24,13 @@ FAMILIES = {
 }
 
 
-def append_glyphs(size, font):
+def append_glyphs(size, font, characters=CHARACTERS):
     font_data = size['glyphs']
     width = size['atlasW']
     old_height = size['atlasH']
     extra = Image.new('L', (width, old_height), 0)
     x = y = row_height = 0
-    for ch in CHARACTERS:
+    for ch in characters:
         code = str(ord(ch))
         if code in font_data:
             continue
@@ -68,6 +68,16 @@ def main():
             append_glyphs(size, font)
         atlas['cacheKey'] = 'latin-ext1'
         target.write_text(json.dumps(atlas, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
+
+    target = FONTS.parent.parent / 'localization' / 'fonts' / 'cyrillic-ru.json'
+    atlas = json.loads(target.read_text(encoding='utf-8'))
+    russian = 'Ёё' + ''.join(chr(cp) for cp in range(0x410, 0x450))
+    for size in atlas['sizes']:
+        font = ImageFont.truetype(str(args.font), size['size'])
+        font.set_variation_by_axes([85, 500])
+        append_glyphs(size, font, russian)
+    atlas['cacheKey'] = 'cyrillic-ru-full1'
+    target.write_text(json.dumps(atlas, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':
