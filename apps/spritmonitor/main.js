@@ -631,6 +631,13 @@ mgu.run({
                 return;
             }
             if (choices[key]) {
+                if (key === 'type' && entry === 'Fuel') {
+                    const { capacity, level, limit } = fuelTankStatus(liveData());
+                    const measured = t(reading(level, 'L', 1));
+                    const tank = capacity > 0 ? measured + ' / ' + reading(capacity, 'L', 1) : measured;
+                    cv.text(t('Tank level from iDrive') + ': ' + tank, 1000, 133, 19, theme.dim);
+                    if (limit !== null) cv.text(t('Full from') + ': ' + reading(limit, 'L', 1), 1000, 184, 19, theme.dim);
+                }
                 choices[key].forEach((value, index) => {
                     const currency = key === 'currency';
                     const x = currency ? 48 + index % 2 * 500 : 48;
@@ -789,6 +796,12 @@ mgu.run({
             return { litres: null };
         }
 
+        function fuelTankStatus(data) {
+            const capacity = fuelTankCapacity().litres;
+            const limit = capacity > 0 ? capacity * Number(ctx.settings.get('fullTankThreshold')) / 100 : null;
+            return { capacity, level: data.fuelLevel, limit };
+        }
+
         function renderFuelling(cv, theme) {
             if (draft && activeField) return renderEditor(cv, theme);
             cv.text(draft ? 'Basic data' : 'Fuelling', 48, 80, 32, theme.text, { font: 'bold' });
@@ -803,10 +816,8 @@ mgu.run({
             draft.odometer = data.odometer;
             draft.trip = data.trip;
             if (entry === 'Fuel' && !draft.manualType) {
-                const capacity = fuelTankCapacity().litres;
-                const threshold = Number(ctx.settings.get('fullTankThreshold'));
-                draft.type = capacity > 0 && data.fuelLevel !== null
-                    ? (data.fuelLevel / capacity * 100 >= threshold ? 'Full' : 'Partial') : '';
+                const { level, limit } = fuelTankStatus(data);
+                draft.type = limit !== null && level !== null ? (level >= limit ? 'Full' : 'Partial') : '';
             }
             const tanks = vehicle ? vehicle.tankDetails : [];
             const matchingTanks = tanks.filter(tank => (Number(tank.type) === 6) === (entry === 'AdBlue'));
@@ -924,6 +935,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.42', 'Show the live tank level and full threshold in Type'],
             ['0.1.41', 'Clear unsynced fuelings from My Car'],
             ['', 'Remove local upload details after confirmation'],
             ['0.1.40', 'Verify unconfirmed uploads against Spritmonitor history'],

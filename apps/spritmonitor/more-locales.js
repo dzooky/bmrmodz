@@ -109,6 +109,8 @@ Consumption|Fogyasztás|Spalanie|Spotreba|Spotřeba|Consumo|Расход
 Quantity|Mennyiség|Ilość|Množstvo|Množství|Quantità|Объём
 Avg. speed|Átlagsebesség|Średnia prędkość|Priemerná rýchlosť|Průměrná rychlost|Velocità media|Средняя скорость
 Unavailable|Nem elérhető|Niedostępne|Nedostupné|Nedostupné|Non disponibile|Недоступно
+Tank level from iDrive|Tankszint az iDrive-ból|Poziom paliwa z iDrive|Hladina z iDrive|Hladina z iDrive|Livello da iDrive|Уровень топлива из iDrive
+Full from|Tele ettől|Pełny od|Plná od|Plná od|Pieno da|Полный бак от
 Fuel tank|Üzemanyagtartály|Bak paliwa|Palivová nádrž|Palivová nádrž|Serbatoio carburante|Топливный бак
 Fuel tank capacity unavailable|A tartály térfogata nem elérhető|Pojemność baku jest niedostępna|Objem nádrže je nedostupný|Objem nádrže je nedostupný|Capacità del serbatoio non disponibile|Объём бака недоступен
 No tanks found|Nem található tartály|Nie znaleziono zbiorników|Nenašli sa žiadne nádrže|Nebyly nalezeny žádné nádrže|Nessun serbatoio trovato|Баки не найдены

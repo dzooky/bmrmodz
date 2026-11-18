@@ -111,6 +111,8 @@ module.exports = {
     'Quantity': 'Menge',
     'Avg. speed': 'Ø Geschwindigkeit',
     'Unavailable': 'Nicht verfügbar',
+    'Tank level from iDrive': 'Tankstand aus iDrive',
+    'Full from': 'Voll ab',
     'Fuel tank': 'Kraftstofftank',
     'Fuel tank capacity unavailable': 'Tankvolumen nicht verfügbar',
     'No tanks found': 'Keine Tanks gefunden',

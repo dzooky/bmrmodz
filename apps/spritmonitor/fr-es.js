@@ -89,6 +89,8 @@ const rows = [
     ['Board Computer (BC1)', 'Ordinateur de bord (BC1)', 'Ordenador de a bordo (BC1)'],
     ['Consumption', 'Consommation', 'Consumo'], ['Quantity', 'Quantité', 'Cantidad'],
     ['Avg. speed', 'Vitesse moyenne', 'Velocidad media'], ['Unavailable', 'Indisponible', 'No disponible'],
+    ['Tank level from iDrive', 'Niveau du réservoir iDrive', 'Nivel del depósito en iDrive'],
+    ['Full from', 'Plein à partir de', 'Lleno a partir de'],
     ['Fuel tank', 'Réservoir', 'Depósito de combustible'],
     ['Fuel tank capacity unavailable', 'Capacité du réservoir indisponible', 'Capacidad del depósito no disponible'],
     ['No tanks found', 'Aucun réservoir trouvé', 'No se encontraron depósitos'],
