@@ -120,12 +120,14 @@ mgu.run({
         const api = require('./sp-api');
         const accountFile = path.join(ctx.dataDir, 'sp-account.json');
         const uplinkDir = isEmulator ? undefined : ctx.dataDir;
+        const offlineFuel = require('./offline-fuellings');
         let offline;
-        try { offline = require('./offline-fuellings').open(ctx.dataDir); }
+        try { offline = offlineFuel.open(ctx.dataDir); }
         catch (_) { accountStatus = 'Could not open local fuelling storage.'; }
         if (offline) vehicle = offline.read(account).vehicle;
         let connection = '';
         let syncing = false;
+        let nextHistoryCheck = 0;
         let loadingAccount = false;
         let vehicleOptions = null;
         let phonePairing;
@@ -195,20 +197,33 @@ mgu.run({
                     }
                 }
                 let sent = false;
+                if (Date.now() >= nextHistoryCheck) {
+                    nextHistoryCheck = Date.now() + 120000;
+                    try {
+                        sent = await offlineFuel.verifyUnconfirmed(offline, owner, vehicle,
+                            tank => api.recentTankFuelings(owner, tank, uplinkDir), () => owner === account);
+                    } catch (error) {
+                        ctx.log.warn('Could not verify unconfirmed fuelings: ' + error.message);
+                    }
+                }
                 for (const item of pending) {
                     if (owner !== account) return;
-                    const upload = item.upload || require('./offline-fuellings').uploadFields(vehicle, item);
+                    const upload = item.upload || offlineFuel.uploadFields(vehicle, item);
                     if (!upload) {
                         connection = 'Waiting for Spritmonitor tank, fuel sort or units';
                         continue;
                     }
-                    offline.change(owner, item.id, 'sending');
+                    offline.change(owner, item.id, 'sending', { upload });
                     let accepted;
                     try {
                         accepted = await api.addFuelling(owner, upload.tankId, upload.fields, uplinkDir);
                     } catch (error) {
                         if (error.beforeSend || [401, 403, 429].includes(error.status)) {
                             offline.change(owner, item.id, 'pending');
+                        } else {
+                            nextHistoryCheck = 0;
+                            ctx.log.warn('Fuelling confirmation unavailable: ' + error.message);
+                            continue;
                         }
                         throw error;
                     }
@@ -874,6 +889,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.40', 'Verify unconfirmed uploads against Spritmonitor history'],
             ['0.1.39', 'Show the detected language next to the automatic option'],
             ['0.1.38', 'Use the iDrive language by default'],
             ['0.1.37', 'Add Hungarian, Polish, Slovak, Czech, Italian and Russian'],

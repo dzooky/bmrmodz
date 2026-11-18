@@ -68,15 +68,18 @@ function open(dataDir) {
         return entry.id;
     }
 
-    function change(account, id, state) {
+    function change(account, id, state, details) {
         const current = read(account);
         const entries = state ? current.entries.map(entry => entry.id === id
-            ? Object.assign({}, entry, { state }) : entry) : current.entries.filter(entry => entry.id !== id);
+            ? Object.assign({}, entry, { state }, details) : entry) : current.entries.filter(entry => entry.id !== id);
         const lastFuelling = Object.assign({}, current.lastFuelling);
         for (const [kind, entry] of Object.entries(lastFuelling)) {
-            if (entry.id === id) lastFuelling[kind] = Object.assign({}, entry, { state: state || 'sent' });
+            if (entry.id === id) lastFuelling[kind] = Object.assign({}, entry, { state: state || 'sent' }, details);
         }
-        write(account, Object.assign({}, current, { entries, lastFuelling }));
+        const confirmedIds = details && details.confirmedId
+            ? (current.confirmedIds || []).concat(details.confirmedId).slice(-128)
+            : current.confirmedIds;
+        write(account, Object.assign({}, current, { entries, lastFuelling, confirmedIds }));
     }
 
     return { read, cache, enqueue, change };
@@ -112,4 +115,48 @@ function uploadFields(vehicle, entry) {
     return { tankId: tank.id, fields };
 }
 
-module.exports = { open, uploadFields };
+function matchesUpload(remote, fields) {
+    const equalNumber = (actual, expected) => actual != null && actual !== '' && expected != null && expected !== '' &&
+        Math.abs(Number(actual) - Number(expected)) < 0.0001;
+    if (remote.date !== fields.date || remote.type !== fields.type) return false;
+    for (const key of ['odometer', 'quantity', 'quantityunitid', 'fuelsortid', 'currencyid']) {
+        if (!equalNumber(remote[key], fields[key])) return false;
+    }
+    const cost = fields.pricetype === 1 ? fields.price * fields.quantity : fields.price;
+    if (!equalNumber(remote.cost, Math.round(cost * 100) / 100)) return false;
+    return String(remote.note || '').trim() === String(fields.note || '').trim();
+}
+
+async function verifyUnconfirmed(store, account, vehicle, loadTankHistory, stillSelected) {
+    const state = store.read(account);
+    const confirmed = new Set(state.confirmedIds || []);
+    const byTank = new Map();
+    for (const entry of state.entries) {
+        if (entry.state !== 'sending') continue;
+        const upload = entry.upload || uploadFields(vehicle, entry);
+        if (!upload) continue;
+        const tank = String(upload.tankId);
+        if (!byTank.has(tank)) byTank.set(tank, []);
+        byTank.get(tank).push({ entry, fields: upload.fields });
+    }
+    let verified = false;
+    for (const [tank, entries] of byTank) {
+        if (!stillSelected()) return verified;
+        const history = await loadTankHistory(tank);
+        if (!stillSelected()) return verified;
+        const candidates = history.filter(row => row && row.id != null && !confirmed.has(String(row.id)));
+        for (const { entry, fields } of entries) {
+            const matches = candidates.filter(row => matchesUpload(row, fields));
+            if (matches.length !== 1) continue;
+            const remote = matches[0];
+            if (entries.some(other => other.entry.id !== entry.id && matchesUpload(remote, other.fields))) continue;
+            const confirmedId = String(remote.id);
+            store.change(account, entry.id, null, { confirmedId });
+            confirmed.add(confirmedId);
+            verified = true;
+        }
+    }
+    return verified;
+}
+
+module.exports = { open, uploadFields, verifyUnconfirmed };
