@@ -34,6 +34,7 @@ function equipmentFromCodes(codes) {
     return {
         steeringWheelHeating: codes.has('248'),
         mSportSteeringWheel: codes.has('710'),
+        fourZoneClimate: codes.has('4NB'),
         frontSeatVentilation: codes.has('453') || undefined,
         rearSeatVentilation: codes.has('454') || undefined,
         frontSeatHeating: (heatBothRows || codes.has('494')) || undefined,
@@ -85,7 +86,7 @@ function renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagno
     if (equipment.rearSeatHeating !== true) temperatureRow.rearSeatVentilation = 'rear';
 
     rows.forEach(({ key, label }, index) => {
-        const y = 140 + index * 62;
+        const y = 140 + index * 52;
         cv.fillRect(55, y - 25, 1490, 1, theme.dim);
         cv.text(label, 66, y + 13, 24, theme.text);
         const row = temperatureRow[key];
