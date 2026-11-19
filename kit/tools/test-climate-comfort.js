@@ -514,71 +514,6 @@ function bmwServicesTests() {
     assert.equal(maxScroll({ ...report, matches: Array(40).fill(rules) }) > 0, true);
 }
 
-
-async function bmwRuleProbeTests() {
-    const callbacks = [];
-    let value = { enabled: false }, reads = 0, shutdowns = 0, cleared = 0, interval;
-    const ctx = { spec: { config: { nativeRuleProbe: [
-        { interface: 'de.bmw.infotainment.climate.Climate', instance: '1', field: 'operationAutomaticSwitchDriverSeat' },
-    ] } }, log: { warn() {} }, signals: {
-        async watch(iface, instance, handlers) {
-            assert.equal(instance, '1');
-            callbacks.push(handlers.operationAutomaticSwitchDriverSeat);
-            return { available: true, proxy: { async getValue(field, timeout) {
-                assert.equal(field, 'operationAutomaticSwitchDriverSeat');
-                assert.equal(timeout, 3000); reads++; return value;
-            } }, async shutdown() { shutdowns++; } };
-        },
-        set() { throw new Error('Unexpected write'); },
-        call() { throw new Error('Unexpected method'); },
-    } };
-    const factory = require(path.join(app, 'bmw-rule-probe'));
-    const probe = factory(ctx, {
-        now: () => 1000,
-        setInterval(fn, ms) { assert.equal(ms, 5000); interval = fn; return 42; },
-        clearInterval(id) { assert.equal(id, 42); cleared++; },
-    });
-    await probe.start();
-    assert.equal(reads, 1);
-    assert.equal(probe.snapshot().rows[0].raw, '{"enabled":false}');
-    value = { enabled: true };
-    await probe.poll();
-    let row = probe.snapshot().rows[0];
-    assert.equal(row.previous, '{"enabled":false}');
-    assert.equal(row.raw, '{"enabled":true}');
-    assert.equal(row.changes, 1);
-    await probe.poll();
-    assert.equal(probe.snapshot().rows[0].changes, 1);
-    await probe.stop();
-    assert.equal(cleared, 1); assert.equal(shutdowns, 1);
-    const before = reads;
-    interval(); callbacks[0]({ enabled: 'late' });
-    await probe.poll();
-    assert.equal(reads, before);
-    assert.equal(probe.snapshot().rows[0].raw, '{"enabled":true}');
-    await probe.start();
-    assert.equal(probe.snapshot().rows[0].changes, 0);
-    callbacks[0]({ enabled: 'stale previous session' });
-    assert.equal(probe.snapshot().rows[0].raw, '{"enabled":true}');
-    await probe.stop();
-    const empty = factory({ ...ctx, spec: { config: {} } });
-    await empty.start();
-    assert.equal(empty.snapshot().configured, 0);
-    await empty.stop();
-
-    let resolveWatch, lateShutdown = 0;
-    const late = factory({ ...ctx, signals: { watch() {
-        return new Promise(resolve => { resolveWatch = resolve; });
-    } } });
-    const starting = late.start();
-    await Promise.resolve(); await Promise.resolve();
-    await late.stop();
-    resolveWatch({ available: true, async shutdown() { lateShutdown++; } });
-    await starting;
-    assert.equal(lateShutdown, 1);
-    assert.equal(late.isActive(), false);
-}
-
 async function commandTests() {
     const h = diagnosticHarness();
     const seats = h.load('ihka-test')(h.ctx, () => true, operation => operation());
@@ -629,6 +564,5 @@ async function commandTests() {
     await rearCommandsTest();
     await masterSwitchTests();
     bmwServicesTests();
-    await bmwRuleProbeTests();
     console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, independent Front/Rear Start/Stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

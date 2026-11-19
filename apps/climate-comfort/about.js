@@ -9,8 +9,8 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
-    ['0.1.59', 'Read the two discovered automatic-climate fields for rule comparison.'],
-    ['', 'Keep previous values and show changes without writing to the car.'],
+    ['0.1.60', 'Suspend experimental BMW rule reads while investigating a Store crash.'],
+    ['', 'Restore the SOME/IP registrations used by version 0.1.58.'],
     ['0.1.58', 'Gray out and lock climate controls while the app is disabled.'],
     ['', 'Show a compact BMW rule interface list with focused details.'],
     ['', 'Prepare the BMW rules control pending verification of vehicle support.'],
