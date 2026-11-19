@@ -109,7 +109,7 @@ function render(cv, theme, report, scroll, selected = null, select = () => {}) {
         });
     }
     cv.noclip();
-    cv.text('Open a candidate to inspect rule fields. Actual rule state is not yet verified.', 66, 497, 17, theme.dim);
+    cv.text('Read-only discovery; actual rule state is not yet verified.', 66, 497, 17, theme.dim);
     const max = maxScroll(report, selected);
     if (max > 0) {
         const bar = { x: 1555, y: TOP, w: 6, h: BOTTOM - TOP };

@@ -463,6 +463,37 @@ def discover_spritmonitor_location(spec):
         spec.setdefault('config', {})['stationPositioning'] = {'interface': name, 'instance': instance}
 
 
+
+def discover_climate_rule_probe(spec):
+    """Add only getters confirmed in this unit's catalog; never add setters."""
+    targets = [
+        ('de.bmw.infotainment.climate.Climate', 'operationAutomaticSwitchDriverSeat'),
+        ('de.bmw.infotainment.climate.climatemaster.ClimateMaster', 'statusClimateUpdateAutomatic'),
+    ]
+    configured = spec.setdefault('config', {})['nativeRuleProbe'] = []
+    try:
+        with open(os.environ.get('MGU_SOMEIP_CATALOG', '/etc/oap/someip/someip-interfaces.json'), encoding='utf-8') as file:
+            catalog = json.load(file)
+        interfaces = catalog['interfaces']
+        instances = catalog['instanceIDs']
+    except (OSError, ValueError, KeyError, TypeError):
+        return
+    for name, field_name in targets:
+        definition = interfaces.get(name, {}) if isinstance(interfaces, dict) else {}
+        fields = definition.get('fields', {}) if isinstance(definition, dict) else {}
+        field = fields.get(field_name, {}) if isinstance(fields, dict) else {}
+        known = instances.get(name, {}) if isinstance(instances, dict) else {}
+        if not isinstance(field, dict) or field.get('getter') is None or not isinstance(known, dict):
+            continue
+        instance = '1' if '1' in known else next(iter(known)) if len(known) == 1 else None
+        if instance is None:
+            continue
+        access = 'rs' if field.get('notifier') is not None else 'r'
+        signal = spec.setdefault('signals', {}).setdefault(name, {})
+        signal.update({'_instances': instance, '_optional': 'Read-only BMW climate rule investigation', field_name: access})
+        configured.append({'interface': name, 'instance': instance, 'field': field_name})
+
+
 def build(app_id, language='en', preview_only=False):
     language = normalize_language(language)
     # mgu-store supplies the BMW SDK donor and links it into the app on the head unit.
@@ -476,6 +507,8 @@ def build(app_id, language='en', preview_only=False):
     spec.setdefault('id', app_id)
     if spec['id'] == 'spritmonitor':
         discover_spritmonitor_location(spec)
+    if spec['id'] == 'climate-comfort':
+        discover_climate_rule_probe(spec)
     ver = spec['version']
     stage = os.path.join(DIST, app_id)
     # The source folder may use display casing; keep the installed identity stable.

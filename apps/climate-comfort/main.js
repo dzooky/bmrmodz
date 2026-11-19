@@ -20,6 +20,7 @@ const getActivationState = require('./activation-state');
 const applyTestThresholds = require('./test-thresholds');
 const createDiagnosticQueue = require('./diagnostic-queue');
 const bmwServices = require('./bmw-services');
+const createBmwRuleProbe = require('./bmw-rule-probe');
 
 const NOTICE = [
     'This application is still in development phase and not ready for public use.',
@@ -107,6 +108,7 @@ mgu.run({
         ctx.hideButton('BTN_SETTINGS');
         applyTestThresholds(ctx.settings, ctx.spec.config.garageThresholdTest === true);
         const settingsPage = createSettingsPage(ctx.settings);
+        const bmwRuleProbe = createBmwRuleProbe(ctx);
         const rows = ctx.spec.config.previewEquipment;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
         const cacheFile = link && path.join(ctx.dataDir, 'vehicle-order.json');
@@ -227,7 +229,19 @@ mgu.run({
             page = 'BMW services';
         }
 
+        function readBmwRuleValues() {
+            servicesScroll = 0;
+            page = 'BMW values';
+            return bmwRuleProbe.start();
+        }
+
         ctx.onScroll(delta => {
+            if (page === 'BMW values') {
+                const next = Math.max(0, Math.min(bmwRuleProbe.maxScroll(), servicesScroll + delta));
+                if (next === servicesScroll) return false;
+                servicesScroll = next;
+                return true;
+            }
             if (page === 'BMW services' && servicesReport) {
                 const next = Math.max(0, Math.min(bmwServices.maxScroll(servicesReport, servicesSelection), servicesScroll + delta));
                 if (next === servicesScroll) return false;
@@ -259,7 +273,7 @@ mgu.run({
             }
             if (link) automation.tick(equipment);
             tabs = equipmentTabs(equipment);
-            if (!tabs.includes(page) && page !== 'BMW services') page = 'My Car';
+            if (!tabs.includes(page) && page !== 'BMW services' && page !== 'BMW values') page = 'My Car';
             const theme = ctx.theme();
             const cv = ctx.canvas(1600, 520).clear(theme.bg);
             G.panel(cv, theme, 24, 44, 1552, 468, null);
@@ -273,11 +287,25 @@ mgu.run({
                 renderSeats(cv, theme, ctx.settings, equipment, page, gpu, temperatureFor);
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, gpu, temperatureFor);
+            } else if (page === 'BMW values') {
+                bmwRuleProbe.render(cv, theme, servicesScroll);
+                for (const [x, label, run, key] of [
+                    [1020, bmwRuleProbe.isActive() ? 'Stop reading' : 'Read again',
+                        () => bmwRuleProbe.isActive() ? bmwRuleProbe.stop() : readBmwRuleValues(), 'bmw-values-toggle'],
+                    [1245, 'Back', () => { page = 'BMW services'; servicesScroll = 0; }, 'bmw-values-back'],
+                ]) {
+                    cv.roundRect(x, 471, 200, 40, 10, '#ffffff19');
+                    cv.text(label, x + 100, 497, 19, theme.text, { align: 'center' });
+                    cv.target(x, 471, 200, 40, run, key, 10);
+                }
             } else if (page === 'BMW services') {
                 bmwServices.render(cv, theme, servicesReport, servicesScroll, servicesSelection, index => {
                     servicesSelection = index;
                     servicesScroll = 0;
                 });
+                cv.roundRect(1020, 471, 180, 40, 10, '#ffffff19');
+                cv.text('Read values', 1110, 497, 19, theme.text, { align: 'center' });
+                cv.target(1020, 471, 180, 40, readBmwRuleValues, 'bmw-read-values', 10);
                 for (const [x, label, run, key] of [
                     [1225, servicesSelection === null ? 'Back' : 'List', () => {
                         if (servicesSelection === null) page = 'My Car';
@@ -306,7 +334,7 @@ mgu.run({
                 renderAbout(cv, theme, aboutScroll);
             }
 
-            G.frame(cv, theme, tabs, tabs.indexOf(page === 'BMW services' ? 'My Car' : page), []);
+            G.frame(cv, theme, tabs, tabs.indexOf(page === 'BMW services' || page === 'BMW values' ? 'My Car' : page), []);
             return ctx.ui.image('MAIN_GFX', cv);
         });
     },
