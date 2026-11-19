@@ -9,6 +9,7 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.56', 'Add independent Rear Start/Stop tests using each rear seat belt.'],
     ['0.1.55', 'Share belt reads per seat and pace diagnostics to reduce TASU busy errors.'],
     ['0.1.54', 'Show each front test stage and cancel belt waits when stopped.'],
     ['', 'Keep older tasks from marking a restarted test as completed.'],
@@ -120,7 +121,7 @@ function renderAbout(cv, theme, offset) {
     text('CLIMATE COMFORT', 640, 218, 30, theme.text,
         { align: 'center', font: 'bold', spacing: 2.5 });
     text('Temperature rules for seat heating, ventilation and steering wheel heating.', 640, 252, 19, theme.dim, center);
-    text('Use Start on Front to simulate a journey; temperature rules and seat belts still apply.',
+    text('Use Start on Front or Rear to simulate a journey; temperature rules and seat belts still apply.',
         640, 280, 19, theme.dim, center);
     text('Version ' + version, 640, 309, 18, theme.dim, center);
     text('Developed by dzooky@bmrmodz', 640, 349, 18, theme.text, center);

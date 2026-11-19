@@ -113,7 +113,7 @@ function createIhkaTest(ctx, activationReady, enqueue) {
         const [button, offset] = control;
         const requiresActivation = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
         const automaticReady = options && options.ready;
-        const ready = () => (!requiresActivation || activationReady()) && (!automaticReady || automaticReady());
+        const ready = () => automaticReady ? automaticReady() : (!requiresActivation || activationReady());
         try {
             if (!diag) {
                 await pause(REQUEST_GAP_MS);

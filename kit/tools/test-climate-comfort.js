@@ -408,6 +408,45 @@ async function diagnosticPacingTests() {
     assert(starts[3] - starts[2] >= 350);
 }
 
+async function rearCommandsTest() {
+    const h = diagnosticHarness();
+    h.belt([1]);
+    let tail = Promise.resolve();
+    const enqueue = fn => {
+        const promise = tail.then(fn); tail = promise.catch(() => {}); return promise;
+    };
+    const seats = h.load('ihka-test')(h.ctx, () => false, enqueue);
+    const values = {};
+    for (const position of ['rearLeft', 'rearRight']) {
+        values[position + 'HeatingTemperature'] = 20;
+        values[position + 'VentilationTemperature'] = 10;
+        values[position + 'HeatingLevel'] = 1;
+        values[position + 'VentilationLevel'] = 1;
+    }
+    const rear = createAutomation({ get: key => values[key] },
+        position => ({ value: 17, source: 'inside', sensor: position }), () => false,
+        seats, {}, h.ctx.log, () => 1000,
+        { manual: true, positions: ['rearLeft', 'rearRight'], includeSteering: false });
+    const equipment = { rearSeatHeating: true, rearSeatVentilation: true, frontSeatHeating: true, steeringWheelHeating: true };
+    async function settle() { for (let i = 0; i < 500; i++) await flush(); }
+    rear.tick(equipment); await settle(); assert.equal(h.commands.length, 0);
+    rear.start(); rear.tick(equipment); await settle();
+    for (const offset of [23, 24, 25, 26]) assert.equal(h.levels.get(offset), 1);
+    assert(!h.commands.some(c => c.address === 1 && c.service === 0x31));
+    assert(h.commands.some(c => c.address === 1 && c.service === 0x22 && c.data.join(',') === '64,83'));
+    assert(!h.commands.some(c => c.address === 0x78 && c.service === 0x31 && [27, 28, 29, 30].includes(c.data[3])));
+    rear.stop();
+    for (const offset of [23, 24, 25, 26]) h.levels.set(offset, 0);
+    rear.start(); rear.tick(equipment); await settle();
+    for (const offset of [23, 24, 25, 26]) assert.equal(h.levels.get(offset), 1);
+    rear.stop();
+
+    const base = require(path.join(app, 'belt-test'));
+    const openRear = async () => [0x62, 0x40, 0x53, 0, 0, 30, 0, 30];
+    assert.equal(await base.readBelt(openRear, 'rearLeft'), 0);
+    assert.equal(await base.readBelt(openRear, 'rearRight'), 0);
+}
+
 async function commandTests() {
     const h = diagnosticHarness();
     const seats = h.load('ihka-test')(h.ctx, () => true, operation => operation());
@@ -455,5 +494,6 @@ async function commandTests() {
     await combinedFrontCommandsTest();
     await cancellationAndRestartTests();
     await diagnosticPacingTests();
-    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, unlimited Front Start/Stop.');
+    await rearCommandsTest();
+    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, independent Front/Rear Start/Stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

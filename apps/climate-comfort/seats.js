@@ -66,7 +66,7 @@ function renderControls(cv, theme, settings, position, x, title, color, test, fr
     }
 }
 
-function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperatureFor, frontTest) {
+function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperatureFor, rowTest) {
     const prefix = row.toLowerCase();
     SEAT_X.forEach((center, index) => {
         ART[row][index](cv, theme, gpu, center - WIDTH / 2, 93);
@@ -74,13 +74,13 @@ function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperature
         const key = prefix + side;
         if (equipment[prefix + 'SeatVentilation'] === true) {
             renderControls(cv, theme, settings, key,
-                center - CONTROL_OFFSET, 'Ventilation', '#5bc9ef', test, row === 'Front', gpu, row === 'Front' && !!frontTest,
-                row === 'Front' && frontTest ? frontTest.status(key + 'Ventilation') : null);
+                center - CONTROL_OFFSET, 'Ventilation', '#5bc9ef', test, row === 'Front', gpu, !!rowTest,
+                rowTest ? rowTest.status(key + 'Ventilation') : null);
         }
         if (equipment[prefix + 'SeatHeating'] === true) {
             renderControls(cv, theme, settings, key,
-                center + CONTROL_OFFSET, 'Heating', '#ff945e', test, row === 'Front', gpu, row === 'Front' && !!frontTest,
-                row === 'Front' && frontTest ? frontTest.status(key + 'Heating') : null);
+                center + CONTROL_OFFSET, 'Heating', '#ff945e', test, row === 'Front', gpu, !!rowTest,
+                rowTest ? rowTest.status(key + 'Heating') : null);
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
         if (equipment[prefix + 'SeatHeating'] === true || equipment[prefix + 'SeatVentilation'] === true) {
@@ -89,12 +89,12 @@ function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperature
             cv.text(label, center, 501, 18, theme.dim, { align: 'center' });
         }
     });
+    if (rowTest) {
+        const active = rowTest.isRunning();
+        renderControlAction(cv, theme, row === 'Front' ? 590 : 800, 492, active ? 'Stop' : 'Start',
+            active ? '#ef2b2d' : theme.text, prefix + '-start-stop', rowTest.toggle, 26, gpu);
+    }
     if (row === 'Front') {
-        if (frontTest) {
-            const active = frontTest.isRunning();
-            renderControlAction(cv, theme, 590, 492, active ? 'Stop' : 'Start',
-                active ? '#ef2b2d' : theme.text, 'front-start-stop', frontTest.toggle, 26, gpu);
-        }
         renderControlAction(cv, theme, 730, 492, 'Sync front', theme.text, 'sync-front',
             () => syncSeats(settings, equipment, false), 26, gpu);
         renderControlAction(cv, theme, 870, 492, 'Sync all', theme.text, 'sync-all',
