@@ -1,0 +1,101 @@
+[
+  [
+    "soot",
+    "Soot mass",
+    0,
+    100,
+    0.1,
+    "g",
+    25.4
+  ],
+  [
+    "ash",
+    "Ash mass",
+    0,
+    100,
+    0.1,
+    "g",
+    30
+  ],
+  [
+    "since",
+    "Since last regeneration",
+    0,
+    1500,
+    1,
+    "km",
+    335
+  ],
+  [
+    "average",
+    "Average regeneration interval",
+    0,
+    1500,
+    1,
+    "km",
+    400
+  ],
+  [
+    "regen",
+    "Regeneration (0 idle, 1 requested, 2 active)",
+    0,
+    2,
+    1,
+    "",
+    0
+  ],
+  [
+    "pressure",
+    "Pressure before DPF",
+    500,
+    2999,
+    1,
+    "hPa",
+    1010
+  ],
+  [
+    "temperature",
+    "Temperature before DPF",
+    -50,
+    1000,
+    1,
+    "°C",
+    320
+  ],
+  [
+    "runtime",
+    "Engine time since regeneration",
+    0,
+    86400,
+    60,
+    "s",
+    21600
+  ],
+  [
+    "blocked",
+    "Regeneration blocked (0 no, 1 yes)",
+    0,
+    1,
+    1,
+    "",
+    0
+  ],
+  [
+    "averageTemperature",
+    "Average regeneration temperature",
+    0,
+    1000,
+    1,
+    "°C",
+    523
+  ],
+  [
+    "remaining",
+    "Estimated filter distance left",
+    0,
+    655350,
+    10,
+    "km",
+    203260
+  ]
+]
