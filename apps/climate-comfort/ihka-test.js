@@ -101,7 +101,7 @@ function createIhkaTest(ctx, activationReady, enqueue) {
                 return false;
             }
             return await waitForBelt(readBeltRequest, position, ctx.log, ready, enqueue,
-                () => activate(button, offset, target, ready), automaticReady || (() => true));
+                () => activate(button, offset, target, ready), automaticReady || (() => true), options && options.waitMs);
         } catch (error) {
             ctx.log.warn('Climate Comfort ' + key + ': ' + error.message);
             return false;

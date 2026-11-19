@@ -3,14 +3,17 @@
 const WINDOW_MS = 60000;
 const POSITIONS = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'];
 
-module.exports = function createAutomation(settings, temperatureFor, activationState, seats, wheel, log, clock) {
+module.exports = function createAutomation(settings, temperatureFor, activationState, seats, wheel, log, clock, options) {
     const now = clock || Date.now;
+    const manual = !!(options && options.manual);
+    const positions = options && options.positions || POSITIONS;
+    let manualEnabled = false;
     let running = false, generation = 0, deadline = 0, currentEquipment = {};
     const completed = new Set(), pending = new Set(), nextAttempt = new Map(), initial = new Map();
 
     function jobs(equipment) {
         const result = [];
-        POSITIONS.forEach(position => {
+        positions.forEach(position => {
             const row = position.indexOf('front') === 0 ? 'front' : 'rear';
             ['Heating', 'Ventilation'].forEach(mode => {
                 if (equipment[row + 'Seat' + mode] !== true) return;
@@ -20,7 +23,7 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
                 result.push({ key, position, mode, level, thresholdKey: key + 'Temperature' });
             });
         });
-        if (equipment.steeringWheelHeating === true) {
+        if (equipment.steeringWheelHeating === true && !(options && options.includeSteering === false)) {
             result.push({ key: 'steeringHeating', position: 'steering', mode: 'Heating',
                 level: 1, thresholdKey: 'steeringHeatingTemperature' });
         }
@@ -43,7 +46,7 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
 
     function tick(equipment) {
         currentEquipment = equipment;
-        const enabled = activationState();
+        const enabled = manual ? manualEnabled : activationState();
         // An unavailable activation state must not rearm the session.
         if (enabled === false) {
             if (running) { running = false; generation++; }
@@ -53,7 +56,7 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
         if (!running) {
             running = true;
             generation++;
-            deadline = now() + WINDOW_MS;
+            deadline = manual ? Infinity : now() + WINDOW_MS;
             completed.clear();
             nextAttempt.clear();
             initial.clear();
@@ -71,7 +74,7 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
             if (!condition) return;
             const session = generation;
             const ready = () => {
-                if (generation !== session || activationState() !== true || now() >= deadline) return false;
+                if (generation !== session || (manual ? !manualEnabled : activationState() !== true) || now() >= deadline) return false;
                 const currentJob = jobs(currentEquipment).find(candidate => candidate.key === job.key);
                 if (!currentJob || currentJob.level !== job.level ||
                     settings.get(job.thresholdKey) !== condition.threshold) return false;
@@ -83,7 +86,7 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
                 if (!ready()) return false;
                 return job.position === 'steering'
                     ? wheel.activateAutomatically(ready)
-                    : seats.run(job.position, job.mode, job.level, { ready });
+                    : seats.run(job.position, job.mode, job.level, { ready, waitMs: manual ? Infinity : undefined });
             }).then(success => {
                 if (success && generation === session) completed.add(job.key);
             }).catch(error => {
@@ -95,5 +98,20 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
         });
     }
 
-    return { tick };
+    return {
+        tick,
+        start() {
+            if (!manual || manualEnabled) return;
+            manualEnabled = true;
+            running = false;
+            generation++;
+        },
+        stop() {
+            if (!manual) return;
+            manualEnabled = false;
+            running = false;
+            generation++;
+        },
+        isRunning: () => manual && manualEnabled,
+    };
 };

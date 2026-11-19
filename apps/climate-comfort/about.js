@@ -9,6 +9,8 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.53', 'Start and stop front-seat automatic tests without a time limit.'],
+    ['', 'Replace individual front Test buttons with one shared Start/Stop control.'],
     ['0.1.52', 'Use garage test thresholds: heating at or below 20 C, ventilation at or above 10 C.'],
     ['0.1.51', 'Remove the extra vehicle-state interface required by engine-off testing.'],
     ['0.1.50', 'Allow automatic activation with ignition on for engine-off vehicle testing.'],
@@ -115,7 +117,7 @@ function renderAbout(cv, theme, offset) {
     text('CLIMATE COMFORT', 640, 218, 30, theme.text,
         { align: 'center', font: 'bold', spacing: 2.5 });
     text('Temperature rules for seat heating, ventilation and steering wheel heating.', 640, 252, 19, theme.dim, center);
-    text('This test version requires the car to be switched on and the relevant seat belt to be fastened.',
+    text('Use Start on Front to simulate a journey; temperature rules and seat belts still apply.',
         640, 280, 19, theme.dim, center);
     text('Version ' + version, 640, 309, 18, theme.dim, center);
     text('Developed by dzooky@bmrmodz', 640, 349, 18, theme.text, center);

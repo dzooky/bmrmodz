@@ -19,8 +19,8 @@ async function readBelt(request, position) {
     return null;
 }
 
-async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true) {
-    const deadline = Date.now() + BELT_WAIT_MS;
+async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true, waitMs = BELT_WAIT_MS) {
+    const deadline = Date.now() + waitMs;
     while (Date.now() < deadline && keepWaiting()) {
         const state = await enqueue(async () => {
             if (Date.now() >= deadline || !keepWaiting()) return null;

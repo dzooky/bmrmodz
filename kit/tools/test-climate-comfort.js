@@ -199,6 +199,47 @@ async function automationTests() {
     assert.equal(calls.length, 4);
 }
 
+async function manualFrontTest() {
+    let time = 1000;
+    const values = {
+        frontLeftHeatingLevel: 2, frontRightHeatingLevel: 1,
+        rearLeftHeatingLevel: 3, rearRightHeatingLevel: 3,
+        frontLeftHeatingTemperature: 20, frontRightHeatingTemperature: 20,
+        rearLeftHeatingTemperature: 20, rearRightHeatingTemperature: 20,
+        steeringHeatingTemperature: 20,
+    };
+    const calls = [], releases = [];
+    const seats = { isActive: () => false, run(position, mode, level, options) {
+        calls.push({ position, mode, level, options });
+        return new Promise(resolve => releases.push(resolve));
+    } };
+    const wheel = { isActive: () => false, activateAutomatically() { throw Error('Wheel must not start'); } };
+    const automation = createAutomation({ get: key => values[key] },
+        () => ({ value: 17, source: 'inside', sensor: 'frontLeft' }), () => false,
+        seats, wheel, { warn() {} }, () => time,
+        { manual: true, positions: ['frontLeft', 'frontRight'], includeSteering: false });
+    const equipment = { frontSeatHeating: true, rearSeatHeating: true, steeringWheelHeating: true };
+    automation.tick(equipment); await flush(); assert.equal(calls.length, 0);
+    automation.start(); automation.tick(equipment); await flush();
+    assert.equal(automation.isRunning(), true);
+    assert.deepEqual(calls.map(call => call.position), ['frontLeft', 'frontRight']);
+    time += 180000;
+    automation.tick(equipment); await flush();
+    assert(calls.every(call => call.options.ready()));
+    assert(calls.every(call => call.options.waitMs === Infinity));
+    automation.stop();
+    assert.equal(automation.isRunning(), false);
+    assert(calls.every(call => !call.options.ready()));
+    releases.splice(0).forEach(resolve => resolve(false));
+    await flush(); automation.tick(equipment); await flush();
+    assert.equal(calls.length, 2);
+    automation.start(); automation.tick(equipment); await flush();
+    assert.equal(calls.length, 4); // a fresh simulated journey rearms both front seats
+    automation.stop();
+    releases.splice(0).forEach(resolve => resolve(false));
+    await flush();
+}
+
 function diagnosticHarness() {
     let time = 1000, belt = 0, wheelOn = false, ready = true;
     const commands = [], delays = [], levels = new Map();
@@ -273,6 +314,13 @@ async function commandTests() {
     assert.equal(await seats.run('frontRight', 'Heating', 3, { ready: h.ready }), false);
     assert.equal(h.commands.length, count);
 
+    const unlimited = diagnosticHarness();
+    unlimited.belt([...Array(14).fill(0), 1]);
+    const unlimitedSeats = unlimited.load('ihka-test')(unlimited.ctx, () => true, operation => operation());
+    assert.equal(await unlimitedSeats.run('frontLeft', 'Heating', 3,
+        { ready: unlimited.ready, waitMs: Infinity }), true);
+    assert(unlimited.delays.filter(delay => delay === 5000).length >= 14);
+
     const w = diagnosticHarness();
     const wheel = w.load('wheel-test')(w.ctx, operation => operation());
     assert.equal(await wheel.activateAutomatically(w.ready), true);
@@ -291,5 +339,6 @@ async function commandTests() {
     await temperatureAvailabilityTests();
     await automationTests();
     await commandTests();
-    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop.');
+    await manualFrontTest();
+    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, unlimited Front Start/Stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

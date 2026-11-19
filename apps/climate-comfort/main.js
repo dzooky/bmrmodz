@@ -158,7 +158,20 @@ mgu.run({
                 footwellAvailable && Date.now() - footwellReadAt <= 15000) : null;
         const activationReady = () => activationState() === true;
         const ihkaTest = createIhkaTest(ctx, activationReady, enqueueDiagnostic);
-        const automation = createAutomation(ctx.settings, temperatureFor, activationState, ihkaTest, wheelTest, ctx.log);
+        const frontTestMode = ctx.spec.config.frontStartStopTest === true;
+        const automation = createAutomation(ctx.settings, temperatureFor, activationState, ihkaTest, wheelTest, ctx.log,
+            undefined, frontTestMode ? { manual: true, positions: ['frontLeft', 'frontRight'], includeSteering: false } : undefined);
+        const frontTest = frontTestMode ? {
+            isRunning: automation.isRunning,
+            toggle() {
+                if (automation.isRunning()) automation.stop();
+                else {
+                    nextTemperatureRead = 0;
+                    if (link) link.wake(0x78);
+                    automation.start();
+                }
+            },
+        } : null;
         let tabs = [];
         let page = 'Info';
         let aboutScroll = 0;
@@ -240,7 +253,7 @@ mgu.run({
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }
-            if (link) automation.tick(equipment);
+            if (link || frontTestMode) automation.tick(equipment);
             tabs = equipmentTabs(equipment);
             if (!tabs.includes(page)) page = 'My Car';
             const theme = ctx.theme();
@@ -253,7 +266,7 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu, temperatureFor);
+                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu, temperatureFor, frontTest);
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu, temperatureFor);
             } else if (page === 'My Car') {

@@ -2,7 +2,7 @@
   "id": "climate-comfort",
   "title": "Climate Comfort",
   "description": "Development preview of seat heating, seat ventilation and steering wheel heating rules for BMW iDrive 7.",
-  "version": "0.1.52",
+  "version": "0.1.53",
   "vendor": "custom",
   "loggingId": "CLCM",
   "settings": [
@@ -288,7 +288,8 @@
     ],
     "customSettings": true,
     "allowEngineOffTest": true,
-    "garageThresholdTest": true
+    "garageThresholdTest": true,
+    "frontStartStopTest": true
   },
   "signals": {
     "de.bmw.infotainment.vehicle.CDS": {
