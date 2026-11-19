@@ -14,6 +14,18 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
     let running = false, generation = 0, deadline = 0, currentEquipment = {};
     const completed = new Set(), pending = new Map(), nextAttempt = new Map(), initial = new Map(), statuses = new Map();
 
+    function resetSession() {
+        cancellation.cancel();
+        cancellation = createCancellation();
+        pending.clear();
+        completed.clear();
+        nextAttempt.clear();
+        initial.clear();
+        statuses.clear();
+        running = false;
+        generation++;
+    }
+
     function jobs(equipment) {
         const result = [];
         positions.forEach(position => {
@@ -50,10 +62,10 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
 
     function tick(equipment) {
         currentEquipment = equipment;
-        const enabled = manual ? manualEnabled : activationState();
+        const enabled = settings.get('appEnabled') === false ? false : manual ? manualEnabled : activationState();
         // An unavailable activation state must not rearm the session.
         if (enabled === false) {
-            if (running) { running = false; generation++; }
+            if (running || pending.size) resetSession();
             return;
         }
         if (enabled !== true) return;
@@ -79,7 +91,7 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
             if (!condition) return;
             const session = generation;
             const ready = () => {
-                if (generation !== session || (manual ? !manualEnabled : activationState() !== true) || now() >= deadline) return false;
+                if (settings.get('appEnabled') === false || generation !== session || (manual ? !manualEnabled : activationState() !== true) || now() >= deadline) return false;
                 const currentJob = jobs(currentEquipment).find(candidate => candidate.key === job.key);
                 if (!currentJob || currentJob.level !== job.level ||
                     settings.get(job.thresholdKey) !== condition.threshold) return false;
@@ -117,23 +129,14 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
         tick,
         start() {
             if (!manual || manualEnabled) return;
-            cancellation.cancel();
-            cancellation = createCancellation();
-            pending.clear();
-            statuses.clear();
+            resetSession();
             manualEnabled = true;
-            running = false;
-            generation++;
         },
         stop() {
-            if (!manual) return;
-            cancellation.cancel();
-            pending.clear();
             manualEnabled = false;
-            running = false;
-            generation++;
+            resetSession();
         },
-        isRunning: () => manual && manualEnabled,
+        isRunning: () => manual ? manualEnabled : running,
         status(key) {
             if (!manualEnabled) return 'Stopped';
             if (statuses.has(key)) return statuses.get(key);

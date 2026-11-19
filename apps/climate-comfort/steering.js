@@ -1,7 +1,7 @@
 'use strict';
 
 const artwork = require('./artwork');
-const { renderTemperature, renderControlPanel, renderControlAction } = require('./controls');
+const { renderTemperature, renderControlPanel } = require('./controls');
 
 const SIZE = 344;
 const HEATING_COLOR = '#ff945e';
@@ -9,7 +9,7 @@ const CONTROL_X = 1140;
 const standardWheel = artwork('steering-standard.png', SIZE, SIZE, 0x434305);
 const mSportWheel = artwork('steering-m-sport.png', SIZE, SIZE, 0x434306);
 
-function renderSteering(cv, theme, settings, mSport, wheelTest, gpu, temperatureFor) {
+function renderSteering(cv, theme, settings, mSport, gpu, temperatureFor) {
     const center = { align: 'center' };
     const drawWheel = mSport ? mSportWheel : standardWheel;
     drawWheel(cv, theme, gpu, 800 - SIZE / 2, 93);
@@ -18,13 +18,9 @@ function renderSteering(cv, theme, settings, mSport, wheelTest, gpu, temperature
     cv.text(reading.label + ' ' + (Number.isFinite(reading.value) ? reading.value + ' °C' : '– °C'),
         800, 501, 18, theme.dim, center);
 
-    renderControlPanel(cv, CONTROL_X, 304, 'Heating', HEATING_COLOR, true, theme, gpu);
+    renderControlPanel(cv, CONTROL_X, 240, 'Heating', HEATING_COLOR, true, theme, gpu);
     renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', CONTROL_X, HEATING_COLOR);
-    const key = 'steeringHeating';
-    const enabled = !wheelTest.isBusy();
-    const action = wheelTest.isActive(key) ? 'Deactivate' : wheelTest.isPending(key) ? 'Cancel' : 'Test heating';
-    renderControlAction(cv, theme, CONTROL_X, 350, action, HEATING_COLOR, key + '-test',
-        enabled ? wheelTest.run : null, 32, gpu);
+
 }
 
 module.exports = renderSteering;

@@ -19,6 +19,7 @@ const createAutomation = require('./automation');
 const getActivationState = require('./activation-state');
 const applyTestThresholds = require('./test-thresholds');
 const createDiagnosticQueue = require('./diagnostic-queue');
+const bmwServices = require('./bmw-services');
 
 const NOTICE = [
     'This application is still in development phase and not ready for public use.',
@@ -99,10 +100,6 @@ function renderEquipment(cv, theme, equipment, rows, voStatus) {
         }
     });
 
-    if (rows.some(({ key }) => equipment[key] === undefined)) {
-        drawUnconfirmed(cv, 77, 488);
-        cv.text('Unconfirmed equipment', 100, 494, 17, theme.dim);
-    }
 }
 
 mgu.run({
@@ -149,46 +146,23 @@ mgu.run({
         let nextTemperatureRead = 0;
         const car = link ? new Car(ctx, ['rpm']) : null;
         const allowEngineOffTest = ctx.spec.config.allowEngineOffTest === true;
-        const activationState = () => car
+        const activationState = () => ctx.settings.get('appEnabled') !== true ? false : car
             ? getActivationState(car.data(), allowEngineOffTest, car.lastCar, Date.now(),
                 footwellAvailable && Date.now() - footwellReadAt <= 15000) : null;
         const activationReady = () => activationState() === true;
         const ihkaTest = createIhkaTest(ctx, activationReady, enqueueDiagnostic);
-        const frontTestMode = ctx.spec.config.frontStartStopTest === true;
-        const automation = createAutomation(ctx.settings, temperatureFor, activationState, ihkaTest, wheelTest, ctx.log,
-            undefined, frontTestMode ? { manual: true, positions: ['frontLeft', 'frontRight'], includeSteering: false } : undefined);
-        const frontTest = frontTestMode ? {
-            isRunning: automation.isRunning,
-            status: automation.status,
-            toggle() {
-                if (automation.isRunning()) automation.stop();
-                else {
-                    nextTemperatureRead = 0;
-                    if (link) link.wake(0x78);
-                    ihkaTest.resetBeltChecks();
-                    automation.start();
-                }
-            },
-        } : null;
-        const rearTestMode = ctx.spec.config.rearStartStopTest === true;
-        const rearAutomation = rearTestMode ? createAutomation(ctx.settings, temperatureFor, activationState,
-            ihkaTest, wheelTest, ctx.log, undefined,
-            { manual: true, positions: ['rearLeft', 'rearRight'], includeSteering: false }) : null;
-        const rearTest = rearAutomation ? {
-            isRunning: rearAutomation.isRunning,
-            status: rearAutomation.status,
-            toggle() {
-                if (rearAutomation.isRunning()) rearAutomation.stop();
-                else {
-                    nextTemperatureRead = 0;
-                    if (link) link.wake(0x78);
-                    ihkaTest.resetBeltChecks();
-                    rearAutomation.start();
-                }
-            },
-        } : null;
+        const automation = createAutomation(ctx.settings, temperatureFor, activationState, ihkaTest, wheelTest, ctx.log);
+        ctx.settings.onChange(key => {
+            if (key !== 'appEnabled') return;
+            automation.stop();
+            ihkaTest.resetBeltChecks();
+            nextTemperatureRead = 0;
+            if (ctx.settings.get('appEnabled') === true && link) link.wake(0x78);
+        });
         let tabs = [];
         let page = 'Info';
+        let servicesReport = null;
+        let servicesScroll = 0;
         let aboutScroll = 0;
         let voStatus = savedCodes ? 'Saved vehicle order' : null;
         let readRequested = !savedCodes;
@@ -220,10 +194,11 @@ mgu.run({
         }
 
         async function refreshSeatTemperatures() {
-            if (!readFootwellTemperatures || temperatureReading || Date.now() < nextTemperatureRead) return;
+            if (ctx.settings.get('appEnabled') !== true || !readFootwellTemperatures || temperatureReading || Date.now() < nextTemperatureRead) return;
             temperatureReading = true;
             try {
                 await enqueueDiagnostic(async () => {
+                    if (ctx.settings.get('appEnabled') !== true) return;
                     const temperatures = await readFootwellTemperatures();
                     Object.assign(seatTemperatures, temperatures);
                     footwellReadAt = Date.now();
@@ -231,8 +206,7 @@ mgu.run({
                 });
             } finally {
                 temperatureReading = false;
-                nextTemperatureRead = Date.now() + ((frontTest && frontTest.isRunning()) ||
-                    (rearTest && rearTest.isRunning()) ? 10000 : 5000);
+                nextTemperatureRead = Date.now() + 5000;
             }
         }
 
@@ -245,7 +219,19 @@ mgu.run({
             return detectEquipment();
         }
 
+        function scanBmwServices() {
+            servicesReport = bmwServices.scan();
+            servicesScroll = 0;
+            page = 'BMW services';
+        }
+
         ctx.onScroll(delta => {
+            if (page === 'BMW services' && servicesReport) {
+                const next = Math.max(0, Math.min(bmwServices.maxScroll(servicesReport), servicesScroll + delta));
+                if (next === servicesScroll) return false;
+                servicesScroll = next;
+                return true;
+            }
             if (page !== 'About') return false;
             const next = Math.max(0, Math.min(maxAboutScroll, aboutScroll + delta));
             if (next === aboutScroll) return false;
@@ -269,10 +255,9 @@ mgu.run({
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }
-            if (link || frontTestMode) automation.tick(equipment);
-            if (rearAutomation) rearAutomation.tick(equipment);
+            if (link) automation.tick(equipment);
             tabs = equipmentTabs(equipment);
-            if (!tabs.includes(page)) page = 'My Car';
+            if (!tabs.includes(page) && page !== 'BMW services') page = 'My Car';
             const theme = ctx.theme();
             const cv = ctx.canvas(1600, 520).clear(theme.bg);
             G.panel(cv, theme, 24, 44, 1552, 468, null);
@@ -283,16 +268,29 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu, temperatureFor, page === 'Front' ? frontTest : rearTest);
+                renderSeats(cv, theme, ctx.settings, equipment, page, gpu, temperatureFor);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu, temperatureFor);
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, gpu, temperatureFor);
+            } else if (page === 'BMW services') {
+                bmwServices.render(cv, theme, servicesReport, servicesScroll);
+                for (const [x, label, run, key] of [
+                    [1225, 'Back', () => { page = 'My Car'; }, 'bmw-services-back'],
+                    [1375, 'Rescan', scanBmwServices, 'bmw-services-rescan'],
+                ]) {
+                    cv.roundRect(x, 471, 125, 40, 10, '#ffffff19');
+                    cv.text(label, x + 62, 497, 19, theme.text, { align: 'center' });
+                    cv.target(x, 471, 125, 40, run, key, 10);
+                }
             } else if (page === 'My Car') {
                 renderEquipment(cv, theme, equipment, rows, voStatus);
+                cv.roundRect(940, 471, 280, 40, 10, '#ffffff19');
+                cv.text('BMW services test', 1080, 497, 19, theme.text, { align: 'center' });
+                cv.target(940, 471, 280, 40, scanBmwServices, 'bmw-services-test', 10);
                 if (link) {
                     const busy = voStatus === 'Reading vehicle order...';
-                    cv.roundRect(1245, 465, 245, 40, 10, '#ffffff19');
-                    cv.text('Reload equipment', 1367, 491, 19, busy ? theme.dim : theme.text, { align: 'center' });
-                    if (!busy) cv.target(1245, 465, 245, 40, reloadEquipment, 'reload-equipment');
+                    cv.roundRect(1245, 471, 245, 40, 10, '#ffffff19');
+                    cv.text('Reload equipment', 1367, 497, 19, busy ? theme.dim : theme.text, { align: 'center' });
+                    if (!busy) cv.target(1245, 471, 245, 40, reloadEquipment, 'reload-equipment');
                 }
             } else if (page === 'Settings') {
                 settingsPage.render(cv, theme, equipment);
@@ -300,7 +298,7 @@ mgu.run({
                 renderAbout(cv, theme, aboutScroll);
             }
 
-            G.frame(cv, theme, tabs, tabs.indexOf(page), []);
+            G.frame(cv, theme, tabs, tabs.indexOf(page === 'BMW services' ? 'My Car' : page), []);
             return ctx.ui.image('MAIN_GFX', cv);
         });
     },

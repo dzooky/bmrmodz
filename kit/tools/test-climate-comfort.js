@@ -14,7 +14,7 @@ const applyTestThresholds = require(path.join(app, 'test-thresholds'));
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
 function sourceTests() {
-    const values = { temperatureSource: 'inside', rearTemperatureSource: 'inside', steeringTemperatureSource: 'inside' };
+    const values = { appEnabled: true, temperatureSource: 'inside', rearTemperatureSource: 'inside', steeringTemperatureSource: 'inside' };
     const settings = { get: key => values[key], set: (key, value) => { values[key] = value; } };
     const readings = { outside: -5.5, frontLeft: 12, frontRight: 18, rearLeft: 20, rearRight: 23 };
     const equipment = { fourZoneClimate: true, rearSeatHeating: true, steeringWheelHeating: true };
@@ -40,7 +40,7 @@ function sourceTests() {
 
     const page = createSettingsPage(settings);
     let targets = {}, texts = [], bounds = [];
-    const cv = { roundRect() {}, polyline() {}, text(t) { texts.push(t); },
+    const cv = { roundRect() {}, circle() {}, polyline() {}, text(t) { texts.push(t); },
         target(x, y, w, h, fn, key) { targets[key] = fn; bounds.push(y + h); } };
     function render() {
         targets = {}; texts = []; bounds = [];
@@ -48,6 +48,14 @@ function sourceTests() {
         assert(bounds.every(bottom => bottom <= 512));
         assert(!texts.includes('Inside temperature') && !texts.includes('Outside temperature'));
     }
+    values.appEnabled = false;
+    render();
+    assert.deepEqual(Object.keys(targets), ['app-enabled']);
+    assert(!texts.includes('Front seat temperature source'));
+    targets['app-enabled']();
+    assert.equal(values.appEnabled, true);
+    render();
+    assert(targets['temperature-source'] && targets['rear-temperature-source'] && targets['steering-temperature-source']);
     for (const key of ['temperature-source', 'rear-temperature-source', 'steering-temperature-source']) {
         page.close(); render(); targets[key](); render();
         targets[key + '-inside'](); render();
@@ -447,6 +455,61 @@ async function rearCommandsTest() {
     assert.equal(await base.readBelt(openRear, 'rearRight'), 0);
 }
 
+async function masterSwitchTests() {
+    const values = { appEnabled: false, frontLeftHeatingLevel: 1, frontLeftHeatingTemperature: 20 };
+    const calls = [], releases = [];
+    const seats = {
+        isActive: () => false,
+        run(position, mode, level, options) {
+            calls.push(options);
+            return new Promise(resolve => releases.push(resolve));
+        },
+    };
+    const controller = createAutomation({ get: key => values[key] },
+        () => ({ value: 17, source: 'inside', sensor: 'frontLeft' }), () => true,
+        seats, {}, { warn() {} }, () => 1000);
+    const equipment = { frontSeatHeating: true };
+    controller.tick(equipment); await flush(); assert.equal(calls.length, 0);
+    values.appEnabled = true;
+    controller.tick(equipment); await flush(); assert.equal(calls.length, 1);
+    assert.equal(calls[0].ready(), true);
+    values.appEnabled = false;
+    assert.equal(calls[0].ready(), false);
+    controller.stop();
+    assert.equal(calls[0].signal.cancelled, true);
+    releases.shift()(false); await flush();
+    controller.tick(equipment); await flush(); assert.equal(calls.length, 1);
+    values.appEnabled = true;
+    controller.tick(equipment); await flush(); assert.equal(calls.length, 2);
+    controller.stop(); releases.shift()(false); await flush();
+}
+
+function bmwServicesTests() {
+    const { inspectCatalog, maxScroll } = require(path.join(app, 'bmw-services'));
+    const report = inspectCatalog({
+        interfaces: {
+            'de.bmw.ClimateControlRules': { fields: { ruleEnabled: { getter: 1, notifier: 2 } }, methods: { setRule: {} } },
+            'de.bmw.ConnectedDrive.Entitlements': { fields: { status: { getter: 5 } } },
+            'de.bmw.CDS': { fields: { rpm: { getter: 1 } } },
+        },
+        instanceIDs: { 'de.bmw.ClimateControlRules': { Main_Instance: 1 } },
+    });
+    assert.equal(report.interfaceCount, 3);
+    assert.equal(report.matchCount, 2);
+    assert.equal(report.subscription, 'Unknown');
+    assert.equal(report.climateRules, 'Unknown');
+    const rules = report.matches.find(match => match.name === 'de.bmw.ClimateControlRules');
+    assert.deepEqual(rules.instances, ['Main_Instance']);
+    assert.equal(rules.fields[0].readable, true);
+    assert.equal(rules.fields[0].notified, true);
+    assert.deepEqual(rules.methods, ['setRule']); // listed only, never invoked
+    assert.throws(() => inspectCatalog({}), /Invalid catalog/);
+    const empty = inspectCatalog({ interfaces: {}, instanceIDs: {} });
+    assert.equal(empty.matchCount, 0);
+    assert.equal(empty.subscription, 'Unknown');
+    assert.equal(maxScroll({ ...report, matches: Array(20).fill(rules) }) > 0, true);
+}
+
 async function commandTests() {
     const h = diagnosticHarness();
     const seats = h.load('ihka-test')(h.ctx, () => true, operation => operation());
@@ -495,5 +558,7 @@ async function commandTests() {
     await cancellationAndRestartTests();
     await diagnosticPacingTests();
     await rearCommandsTest();
+    await masterSwitchTests();
+    bmwServicesTests();
     console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, independent Front/Rear Start/Stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
