@@ -27,10 +27,20 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let idriveLanguage = 'en';
+        function updateAutomaticLanguage() {
+            const options = ctx.settings.item('language').options;
+            const index = options.findIndex(([code]) => code === 'auto');
+            const detected = options.find(([code]) => code === idriveLanguage);
+            if (index < 0 || !detected) return;
+            const label = detected[1] + ' (auto)';
+            options[index][1] = label;
+            ui.text('SET_LANGUAGE', label, index, 'ItemText');
+        }
         function applyLanguage() {
             const selected = ctx.settings.get('language');
             const language = selected === 'auto' ? idriveLanguage : selected;
             setRuntimeTranslations(locales[language] || null);
+            updateAutomaticLanguage();
             ui.text('BTN_SETTINGS', translate('Settings'));
             const component = ui.comp('SET_LANGUAGE');
             if (component && typeof component.getStringBundle === 'function') {
@@ -43,6 +53,7 @@ mgu.run({
         ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
         require('./idrive-language').watch(ctx, language => {
             idriveLanguage = language;
+            updateAutomaticLanguage();
             if (ctx.settings.get('language') === 'auto') applyLanguage();
         });
 
