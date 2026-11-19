@@ -296,6 +296,87 @@ function diagnosticHarness() {
         belt: sequence => { beltReplies = sequence; }, wheelOn: () => wheelOn };
 }
 
+async function combinedFrontCommandsTest() {
+    const h = diagnosticHarness();
+    h.belt([1]);
+    let tail = Promise.resolve();
+    const enqueue = fn => {
+        const promise = tail.then(fn);
+        tail = promise.catch(() => {});
+        return promise;
+    };
+    const seats = h.load('ihka-test')(h.ctx, () => false, enqueue);
+    const values = {};
+    for (const position of ['frontLeft', 'frontRight']) {
+        values[position + 'HeatingTemperature'] = 20;
+        values[position + 'VentilationTemperature'] = 10;
+        values[position + 'HeatingLevel'] = 1;
+        values[position + 'VentilationLevel'] = 1;
+    }
+    const automatic = createAutomation({ get: key => values[key] },
+        position => ({ value: 17, source: 'inside', sensor: position }), () => false,
+        seats, { isActive: () => false }, h.ctx.log, () => 1000,
+        { manual: true, positions: ['frontLeft', 'frontRight'], includeSteering: false });
+    const equipment = { frontSeatHeating: true, frontSeatVentilation: true };
+    async function settle() { for (let i = 0; i < 400; i++) await flush(); }
+    automatic.start(); automatic.tick(equipment); await settle();
+    for (const offset of [19, 20, 21, 22]) assert.equal(h.levels.get(offset), 1);
+    automatic.stop();
+    for (const offset of [19, 20, 21, 22]) h.levels.set(offset, 0); // physical panel off
+    automatic.start(); automatic.tick(equipment); await settle();
+    for (const offset of [19, 20, 21, 22]) assert.equal(h.levels.get(offset), 1);
+    automatic.stop();
+}
+
+async function cancellationAndRestartTests() {
+    const { createCancellation, waitForBelt } = require(path.join(app, 'belt-test'));
+    const signal = createCancellation();
+    let valid = true, reads = 0;
+    const statuses = [];
+    const waiting = waitForBelt(async () => {
+        reads++;
+        return [0x71, 1, 0xa0, 0xd2, 0];
+    }, 'frontLeft', { warn() {} }, () => valid, fn => fn(),
+    () => { throw Error('An open belt must not activate'); }, () => valid, Infinity, signal,
+    message => statuses.push(message));
+    await flush();
+    assert(statuses.includes('Waiting for belt'));
+    const stoppedAt = Date.now();
+    valid = false; signal.cancel();
+    assert.equal(await waiting, false);
+    assert(Date.now() - stoppedAt < 500); // interrupt the five-second wait
+    assert.equal(reads, 1);
+
+    const values = { frontLeftVentilationLevel: 1, frontLeftVentilationTemperature: 10 };
+    let busy = true;
+    const calls = [], releases = [];
+    const seats = {
+        isActive: () => busy,
+        run(position, mode, level, options) {
+            calls.push(options);
+            return new Promise(resolve => releases.push(resolve));
+        },
+    };
+    const test = createAutomation({ get: key => values[key] },
+        () => ({ value: 17, source: 'inside', sensor: 'frontLeft' }), () => false,
+        seats, {}, { warn() {} }, () => 1000,
+        { manual: true, positions: ['frontLeft'], includeSteering: false });
+    const equipment = { frontSeatVentilation: true };
+    test.start(); test.tick(equipment); await flush();
+    assert.equal(test.status('frontLeftVentilation'), 'Previous task finishing');
+    busy = false; test.tick(equipment); await flush();
+    assert.equal(calls.length, 1); // a busy old task must not mark this test completed
+    test.stop(); assert.equal(calls[0].signal.cancelled, true);
+    test.start(); test.tick(equipment); await flush();
+    assert.equal(calls.length, 2);
+    releases.shift()(false); await flush();
+    test.tick(equipment); await flush();
+    assert.equal(calls.length, 2); // an old finally must not remove the new pending task
+    assert.equal(calls[1].ready(), true);
+    test.stop();
+    releases.shift()(false); await flush();
+}
+
 async function commandTests() {
     const h = diagnosticHarness();
     const seats = h.load('ihka-test')(h.ctx, () => true, operation => operation());
@@ -340,5 +421,7 @@ async function commandTests() {
     await automationTests();
     await commandTests();
     await manualFrontTest();
+    await combinedFrontCommandsTest();
+    await cancellationAndRestartTests();
     console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, unlimited Front Start/Stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

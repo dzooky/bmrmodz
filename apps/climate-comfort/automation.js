@@ -1,5 +1,7 @@
 'use strict';
 
+const { createCancellation } = require('./belt-test');
+
 const WINDOW_MS = 60000;
 const POSITIONS = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'];
 
@@ -8,8 +10,9 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
     const manual = !!(options && options.manual);
     const positions = options && options.positions || POSITIONS;
     let manualEnabled = false;
+    let cancellation = createCancellation();
     let running = false, generation = 0, deadline = 0, currentEquipment = {};
-    const completed = new Set(), pending = new Set(), nextAttempt = new Map(), initial = new Map();
+    const completed = new Set(), pending = new Map(), nextAttempt = new Map(), initial = new Map(), statuses = new Map();
 
     function jobs(equipment) {
         const result = [];
@@ -39,8 +42,9 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
         // the startup decision while a passenger is still fastening a belt.
         if (!initial.has(identity) && Number.isFinite(reading.value)) initial.set(identity, reading.value);
         const value = initial.get(identity);
-        if (!Number.isFinite(value)) return null;
+        if (!Number.isFinite(value)) { statuses.set(job.key, 'No temperature'); return null; }
         const matches = job.mode === 'Heating' ? value <= threshold : value >= threshold;
+        if (!matches) statuses.set(job.key, 'Temperature outside rule');
         return matches ? { identity, threshold } : null;
     }
 
@@ -67,7 +71,8 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
             const control = job.position === 'steering' ? wheel : seats;
             // A manual test already owns this function for this journey.
             if (control.isActive(job.key) || (control.isPending && control.isPending(job.key))) {
-                completed.add(job.key);
+                if (!manual) completed.add(job.key);
+                else statuses.set(job.key, 'Previous task finishing');
                 return;
             }
             const condition = eligible(job);
@@ -81,18 +86,28 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
                 const reading = temperatureFor(job.position);
                 return reading.source + '/' + reading.sensor === condition.identity;
             };
-            pending.add(job.key);
+            const token = {};
+            const signal = cancellation;
+            const report = message => {
+                if (generation === session && (!manual || manualEnabled)) statuses.set(job.key, message);
+            };
+            pending.set(job.key, token);
+            report('Waiting for belt');
             Promise.resolve().then(() => {
                 if (!ready()) return false;
                 return job.position === 'steering'
                     ? wheel.activateAutomatically(ready)
-                    : seats.run(job.position, job.mode, job.level, { ready, waitMs: manual ? Infinity : undefined });
+                    : seats.run(job.position, job.mode, job.level, { ready, waitMs: manual ? Infinity : undefined, signal, report });
             }).then(success => {
-                if (success && generation === session) completed.add(job.key);
+                if (success && generation === session) {
+                    completed.add(job.key);
+                    report('Activated level ' + job.level);
+                }
             }).catch(error => {
                 log.warn('Climate Comfort automatic ' + job.key + ': ' + error.message);
+                report('Activation failed');
             }).finally(() => {
-                pending.delete(job.key);
+                if (pending.get(job.key) === token) pending.delete(job.key);
                 if (generation === session) nextAttempt.set(job.key, now() + 5000);
             });
         });
@@ -102,16 +117,27 @@ module.exports = function createAutomation(settings, temperatureFor, activationS
         tick,
         start() {
             if (!manual || manualEnabled) return;
+            cancellation.cancel();
+            cancellation = createCancellation();
+            pending.clear();
+            statuses.clear();
             manualEnabled = true;
             running = false;
             generation++;
         },
         stop() {
             if (!manual) return;
+            cancellation.cancel();
+            pending.clear();
             manualEnabled = false;
             running = false;
             generation++;
         },
         isRunning: () => manual && manualEnabled,
+        status(key) {
+            if (!manualEnabled) return 'Stopped';
+            if (statuses.has(key)) return statuses.get(key);
+            return settings.get(key + 'Level') > 0 ? 'Waiting...' : 'Level off';
+        },
     };
 };

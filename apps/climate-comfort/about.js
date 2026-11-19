@@ -9,6 +9,8 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.54', 'Show each front test stage and cancel belt waits when stopped.'],
+    ['', 'Keep older tasks from marking a restarted test as completed.'],
     ['0.1.53', 'Start and stop front-seat automatic tests without a time limit.'],
     ['', 'Replace individual front Test buttons with one shared Start/Stop control.'],
     ['0.1.52', 'Use garage test thresholds: heating at or below 20 C, ventilation at or above 10 C.'],

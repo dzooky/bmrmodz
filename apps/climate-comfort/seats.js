@@ -43,7 +43,7 @@ function syncSeats(settings, equipment, allSeats) {
     }
 }
 
-function renderControls(cv, theme, settings, position, x, title, color, test, front, gpu, hideTest) {
+function renderControls(cv, theme, settings, position, x, title, color, test, front, gpu, hideTest, status) {
     const key = position + title;
     const temperatureKey = key + 'Temperature';
     const levelKey = key + 'Level';
@@ -55,6 +55,10 @@ function renderControls(cv, theme, settings, position, x, title, color, test, fr
     renderLevelButton(cv, settings, levelKey, x - 46, 397, -1, color);
     cv.text(level === 0 ? '-' : String(level), x, 405, 24, theme.text, center);
     renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color);
+    if (hideTest && status) {
+        const width = cv.textWidth(status, 14);
+        cv.text(status, x, 452, Math.min(14, 152 * 14 / Math.max(1, width)), theme.dim, center);
+    }
     if (!hideTest) {
         const active = test.isActive(key);
         const run = level > 0 && !active ? () => test.run(position, title, level) : null;
@@ -70,11 +74,13 @@ function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperature
         const key = prefix + side;
         if (equipment[prefix + 'SeatVentilation'] === true) {
             renderControls(cv, theme, settings, key,
-                center - CONTROL_OFFSET, 'Ventilation', '#5bc9ef', test, row === 'Front', gpu, row === 'Front' && !!frontTest);
+                center - CONTROL_OFFSET, 'Ventilation', '#5bc9ef', test, row === 'Front', gpu, row === 'Front' && !!frontTest,
+                row === 'Front' && frontTest ? frontTest.status(key + 'Ventilation') : null);
         }
         if (equipment[prefix + 'SeatHeating'] === true) {
             renderControls(cv, theme, settings, key,
-                center + CONTROL_OFFSET, 'Heating', '#ff945e', test, row === 'Front', gpu, row === 'Front' && !!frontTest);
+                center + CONTROL_OFFSET, 'Heating', '#ff945e', test, row === 'Front', gpu, row === 'Front' && !!frontTest,
+                row === 'Front' && frontTest ? frontTest.status(key + 'Heating') : null);
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
         if (equipment[prefix + 'SeatHeating'] === true || equipment[prefix + 'SeatVentilation'] === true) {

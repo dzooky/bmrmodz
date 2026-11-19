@@ -163,6 +163,7 @@ mgu.run({
             undefined, frontTestMode ? { manual: true, positions: ['frontLeft', 'frontRight'], includeSteering: false } : undefined);
         const frontTest = frontTestMode ? {
             isRunning: automation.isRunning,
+            status: automation.status,
             toggle() {
                 if (automation.isRunning()) automation.stop();
                 else {

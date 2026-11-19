@@ -52,18 +52,21 @@ function createIhkaTest(ctx, activationReady, enqueue) {
         throw new Error('IHKA level did not change');
     }
 
-    async function activate(button, offset, target, ready) {
+    async function activate(button, offset, target, ready, report) {
         let attempted = false;
         try {
             if (!ready()) return false;
             await pause(REQUEST_GAP_MS);
+            report('Reading level');
             let level = await readLevel(offset);
             const visited = new Set();
             while (level !== target && !visited.has(level)) {
                 if (!ready()) return false;
                 visited.add(level);
                 attempted = true;
+                report('Setting level ' + target);
                 await pressButton(button);
+                report('Verifying level');
                 level = await waitForLevelChange(offset, level);
             }
             if (level !== target) throw new Error('IHKA did not reach level ' + target);
@@ -88,8 +91,10 @@ function createIhkaTest(ctx, activationReady, enqueue) {
 
     async function run(position, mode, target, options) {
         const key = position + mode;
+        const report = options && options.report || (() => {});
         const control = SEATS[position] && SEATS[position][mode];
-        if (!control || !Number.isInteger(target) || target < 1 || target > 3 || active.has(key)) return;
+        if (!control || !Number.isInteger(target) || target < 1 || target > 3) return false;
+        if (active.has(key)) { report('Previous task finishing'); return false; }
         active.add(key);
         const [button, offset] = control;
         const requiresActivation = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
@@ -101,9 +106,14 @@ function createIhkaTest(ctx, activationReady, enqueue) {
                 return false;
             }
             return await waitForBelt(readBeltRequest, position, ctx.log, ready, enqueue,
-                () => activate(button, offset, target, ready), automaticReady || (() => true), options && options.waitMs);
+                () => activate(button, offset, target, ready, report), automaticReady || (() => true), options && options.waitMs, options && options.signal, report);
         } catch (error) {
             ctx.log.warn('Climate Comfort ' + key + ': ' + error.message);
+            const message = error.message;
+            report(/busy|TEMPORARILY_NOT_ACCEPTED/i.test(message) ? 'TASU busy' :
+                /No response/i.test(message) ? 'No response' :
+                /NRC/i.test(message) ? 'ECU refused' :
+                /level did not change/i.test(message) ? 'Level did not change' : 'Activation failed');
             return false;
         } finally {
             active.delete(key);

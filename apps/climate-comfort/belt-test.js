@@ -3,7 +3,39 @@
 const ACSM = 0x01;
 const BELT_WAIT_MS = 60000;
 const beltCheckDelay = state => state === 0 ? 5000 : 500;
-const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function createCancellation() {
+    let cancelled = false;
+    const listeners = new Set();
+    return {
+        get cancelled() { return cancelled; },
+        onCancel(fn) {
+            if (cancelled) { fn(); return () => {}; }
+            listeners.add(fn);
+            return () => listeners.delete(fn);
+        },
+        cancel() {
+            if (cancelled) return;
+            cancelled = true;
+            listeners.forEach(fn => fn());
+            listeners.clear();
+        },
+    };
+}
+
+const pause = (ms, signal) => new Promise(resolve => {
+    if (!signal) { setTimeout(resolve, ms); return; }
+    if (signal.cancelled) { resolve(false); return; }
+    let timer, unsubscribe = () => {}, finished = false;
+    const finish = value => {
+        if (finished) return;
+        finished = true;
+        if (timer !== undefined) clearTimeout(timer);
+        unsubscribe();
+        resolve(value);
+    };
+    timer = setTimeout(() => finish(true), ms);
+    if (!finished) unsubscribe = signal.onCancel(() => finish(false));
+});
 
 async function readBelt(request, position) {
     const frontContact = { frontLeft: 1, frontRight: 2 }[position];
@@ -19,17 +51,19 @@ async function readBelt(request, position) {
     return null;
 }
 
-async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true, waitMs = BELT_WAIT_MS) {
+async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true, waitMs = BELT_WAIT_MS, signal, report = () => {}) {
     const deadline = Date.now() + waitMs;
     while (Date.now() < deadline && keepWaiting()) {
         const state = await enqueue(async () => {
             if (Date.now() >= deadline || !keepWaiting()) return null;
-            let belt = null;
+            let belt = null, beltError = null;
             try {
                 belt = await readBelt(request, position);
             } catch (error) {
                 log.warn('Climate Comfort belt check: ' + error.message);
+                beltError = /busy|TEMPORARILY_NOT_ACCEPTED/i.test(error.message) ? 'Belt: TASU busy' : 'Belt unavailable';
             }
+            report(beltError || (belt === 1 ? 'Belt latched' : belt === 0 ? 'Waiting for belt' : 'Belt unavailable'));
             if (belt === 1 && ready() && Date.now() < deadline) {
                 return await onLatched() === false ? null : 1;
             }
@@ -37,9 +71,9 @@ async function waitForBelt(request, position, log, ready, enqueue, onLatched, ke
         });
         if (state === 1) return true;
         const remaining = deadline - Date.now();
-        if (remaining > 0) await pause(Math.min(beltCheckDelay(state), remaining));
+        if (remaining > 0) await pause(Math.min(beltCheckDelay(state), remaining), signal);
     }
     return false;
 }
 
-module.exports = { pause, readBelt, beltCheckDelay, waitForBelt, BELT_WAIT_MS };
+module.exports = { createCancellation, pause, readBelt, beltCheckDelay, waitForBelt, BELT_WAIT_MS };
