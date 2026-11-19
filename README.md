@@ -10,7 +10,7 @@
   <a href="https://www.facebook.com/profile.php?id=61590181470490">Facebook</a>
 </p>
 
-Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications. I test these apps in an emulator and on my own BMW G31 LCI.
+Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications. I test these apps in an emulator and on my own BMW G31 LCI. The apps are developed for European-specification BMW vehicles and include AI-generated translations into 20 languages.
 
 ## Applications
 
