@@ -66,11 +66,11 @@ function renderControlPanel(cv, x, height, title, color, steering = false) {
     cv.text(title, x, 159, 18, color, { align: 'center' });
 }
 
-function renderControlAction(cv, theme, x, y, label, color, key, run) {
-    cv.roundRect(x - 61, y, 122, 32, 8, '#ffffff12');
-    if (run) cv.strokeRoundRect(x - 61, y, 122, 32, 8, 1, color);
-    cv.text(label, x, y + 22, 17, run ? theme.text : theme.dim, { align: 'center' });
-    if (run) cv.target(x - 61, y, 122, 32, run, key);
+function renderControlAction(cv, theme, x, y, label, color, key, run, height = 32) {
+    cv.roundRect(x - 61, y, 122, height, 8, '#ffffff12');
+    if (run) cv.strokeRoundRect(x - 61, y, 122, height, 8, 1, color);
+    cv.text(label, x, y + height / 2 + 6, 17, run ? theme.text : theme.dim, { align: 'center' });
+    if (run) cv.target(x - 61, y, 122, height, run, key);
 }
 
 module.exports = { renderTemperature, adjustSetting, settingValue, renderControlPanel, renderControlAction };

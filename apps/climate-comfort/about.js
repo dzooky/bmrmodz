@@ -9,6 +9,9 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.41', 'Sync front or all seat settings from the driver seat.'],
+    ['0.1.40', 'Correct the left and right seat artwork orientation.'],
+    ['0.1.39', 'Show measured seat cushion temperatures when available.'],
     ['0.1.38', 'Clarify the conditions for automatic activation.'],
     ['0.1.37', 'Scroll through About and the full release history.'],
     ['0.1.36', 'Update the steering wheel heating pictogram.'],

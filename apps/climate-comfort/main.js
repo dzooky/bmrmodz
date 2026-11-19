@@ -7,6 +7,7 @@ const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const { readVehicleOrder } = require('./vehicle-order');
+const createSeatTemperatureReader = require('./seat-temperature');
 const { renderAbout, maxScroll: maxAboutScroll } = require('./about');
 const renderSeats = require('./seats');
 const createIhkaTest = require('./ihka-test');
@@ -111,6 +112,10 @@ mgu.run({
             return result;
         }
         const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
+        const readSeatTemperature = link ? createSeatTemperatureReader(link) : null;
+        const seatTemperatures = {};
+        let temperatureReading = false;
+        let nextTemperatureRead = 0;
         const car = link ? new Car(ctx, ['rpm']) : null;
         const engineRunning = () => {
             if (!car) return false;
@@ -150,6 +155,32 @@ mgu.run({
             }
         }
 
+        async function refreshSeatTemperatures(row) {
+            const prefix = row.toLowerCase();
+            if (!readSeatTemperature || temperatureReading || Date.now() < nextTemperatureRead ||
+                equipment[prefix + 'SeatHeating'] !== true) return;
+            temperatureReading = true;
+            try {
+                for (const side of ['Left', 'Right']) {
+                    const key = prefix + side;
+                    if (page !== row) break;
+                    try {
+                        const result = await enqueueDiagnostic(() => (
+                            page === row && equipment[prefix + 'SeatHeating'] === true
+                                ? readSeatTemperature(key) : null
+                        ));
+                        if (page === row) seatTemperatures[key] = result;
+                    } catch (error) {
+                        if (page === row) seatTemperatures[key] = null;
+                        ctx.log.warn('Climate Comfort ' + key + ' temperature: ' + error.message);
+                    }
+                }
+            } finally {
+                temperatureReading = false;
+                nextTemperatureRead = Date.now() + 5000;
+            }
+        }
+
         function reloadEquipment() {
             if (!link || voStatus === 'Reading vehicle order...') return;
             link.wake();
@@ -168,7 +199,11 @@ mgu.run({
         });
 
         ctx.onTab(index => {
-            if (tabs[index]) page = tabs[index];
+            if (tabs[index] && page !== tabs[index]) {
+                page = tabs[index];
+                nextTemperatureRead = 0;
+                if (link && (page === 'Front' || page === 'Rear')) link.wake(0x40);
+            }
         });
 
         ctx.loop('MAIN', 4, () => {
@@ -189,7 +224,8 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu);
+                refreshSeatTemperatures(page);
+                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu, seatTemperatures);
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu);
             } else if (page === 'My Car') {

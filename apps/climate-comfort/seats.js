@@ -9,12 +9,12 @@ const SEAT_X = [424, 1176];
 const CONTROL_OFFSET = 253;
 const ART = {
     Front: [
-        artwork('front-seat-quilted.png', WIDTH, HEIGHT, 0x434301, true),
-        artwork('front-seat-quilted.png', WIDTH, HEIGHT, 0x434302),
+        artwork('front-seat-quilted.png', WIDTH, HEIGHT, 0x434301),
+        artwork('front-seat-quilted.png', WIDTH, HEIGHT, 0x434302, true),
     ],
     Rear: [
-        artwork('rear-seat-isofix.png', WIDTH, HEIGHT, 0x434303),
-        artwork('rear-seat-isofix.png', WIDTH, HEIGHT, 0x434304, true),
+        artwork('rear-seat-isofix.png', WIDTH, HEIGHT, 0x434303, true),
+        artwork('rear-seat-isofix.png', WIDTH, HEIGHT, 0x434304),
     ],
 };
 
@@ -26,12 +26,29 @@ function renderLevelButton(cv, settings, key, x, y, direction, color) {
         key + (direction > 0 ? '-right' : '-left'));
 }
 
-function renderControls(cv, theme, settings, position, x, title, color, test) {
+function syncSeats(settings, equipment, allSeats) {
+    const destinations = allSeats ? ['frontRight', 'rearLeft', 'rearRight'] : ['frontRight'];
+    for (const mode of ['Heating', 'Ventilation']) {
+        if (equipment['frontSeat' + mode] !== true) continue;
+        for (const parameter of ['Temperature', 'Level']) {
+            const source = settings.item('frontLeft' + mode + parameter);
+            const value = settingValue(settings, source);
+            for (const position of destinations) {
+                const row = position.startsWith('front') ? 'front' : 'rear';
+                if (equipment[row + 'Seat' + mode] !== true) continue;
+                const target = settings.item(position + mode + parameter);
+                settings.set(target.key, Math.max(target.min, Math.min(target.max, value)));
+            }
+        }
+    }
+}
+
+function renderControls(cv, theme, settings, position, x, title, color, test, front) {
     const key = position + title;
     const temperatureKey = key + 'Temperature';
     const levelKey = key + 'Level';
     const center = { align: 'center' };
-    renderControlPanel(cv, x, 395, title, color);
+    renderControlPanel(cv, x, front ? 383 : 395, title, color);
     renderTemperature(cv, theme, settings, temperatureKey, x, color);
     cv.text('Level', x, 361, 16, theme.dim, center);
     const level = settingValue(settings, settings.item(levelKey));
@@ -40,10 +57,10 @@ function renderControls(cv, theme, settings, position, x, title, color, test) {
     renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color);
     const active = test.isActive(key);
     const run = level > 0 && !active ? () => test.run(position, title, level) : null;
-    renderControlAction(cv, theme, x, 442, active ? 'Testing...' : 'Test level', color, key + '-test', run);
+    renderControlAction(cv, theme, x, front ? 430 : 442, active ? 'Testing...' : 'Test', color, key + '-test', run);
 }
 
-function renderSeats(cv, theme, settings, equipment, row, test, gpu) {
+function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperatures) {
     const prefix = row.toLowerCase();
     SEAT_X.forEach((center, index) => {
         ART[row][index](cv, theme, gpu, center - WIDTH / 2, 93);
@@ -51,14 +68,25 @@ function renderSeats(cv, theme, settings, equipment, row, test, gpu) {
         const key = prefix + side;
         if (equipment[prefix + 'SeatVentilation'] === true) {
             renderControls(cv, theme, settings, key,
-                center - CONTROL_OFFSET, 'Ventilation', '#5bc9ef', test);
+                center - CONTROL_OFFSET, 'Ventilation', '#5bc9ef', test, row === 'Front');
         }
         if (equipment[prefix + 'SeatHeating'] === true) {
             renderControls(cv, theme, settings, key,
-                center + CONTROL_OFFSET, 'Heating', '#ff945e', test);
+                center + CONTROL_OFFSET, 'Heating', '#ff945e', test, row === 'Front');
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
+        if (equipment[prefix + 'SeatHeating'] === true) {
+            const temperature = temperatures[key];
+            const label = Number.isFinite(temperature) ? temperature + ' °C' : '– °C';
+            cv.text(label, center, 501, 18, theme.dim, { align: 'center' });
+        }
     });
+    if (row === 'Front') {
+        renderControlAction(cv, theme, 730, 492, 'Sync front', theme.text, 'sync-front',
+            () => syncSeats(settings, equipment, false), 26);
+        renderControlAction(cv, theme, 870, 492, 'Sync all', theme.text, 'sync-all',
+            () => syncSeats(settings, equipment, true), 26);
+    }
 }
 
 module.exports = renderSeats;
