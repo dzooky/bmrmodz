@@ -2,6 +2,7 @@
 
 const HMI_CONTEXT = 'de.bmw.infotainment.hmi.hmicontext.HMIContext';
 const supported = {
+    ENGLISCH: 'en',
     DEUTSCH: 'de',
     SPANISCH: 'es',
     SPANISCH__US: 'es',
@@ -12,7 +13,21 @@ const supported = {
     SLOWAKISCH: 'sk',
     TSCHECHISCH: 'cs',
     ITALIENISCH: 'it',
-    RUSSISCH: 'ru'
+    RUSSISCH: 'ru',
+    DAENISCH: 'da',
+    GRIECHISCH: 'el',
+    CHINESISCH_SIMPLE: 'zh-CN',
+    KANTONESISCH_SIMPLE: 'zh-CN',
+    NIEDERLAENDISCH: 'nl',
+    FLAEMISCH: 'nl',
+    NORWEGISCH: 'nb',
+    PORTUGIESISCH: 'pt',
+    RUMAENISCH: 'ro',
+    SLOWENISCH: 'sl',
+    FINNISCH: 'fi',
+    SCHWEDISCH: 'sv',
+    TUERKISCH: 'tr',
+    UKRAINISCH: 'uk'
 };
 
 function watch(ctx, onLanguage) {

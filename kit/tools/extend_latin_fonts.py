@@ -15,7 +15,9 @@ from PIL import Image, ImageDraw, ImageFont
 
 
 FONTS = Path(__file__).resolve().parents[1] / 'runtime' / 'fonts'
-CHARACTERS = ''.join(chr(cp) for cp in range(0xA1, 0x180) if cp != 0xAD) + 'ẞ’'
+CHARACTERS = ''.join(chr(cp) for cp in range(0xA1, 0x180) if cp != 0xAD) + 'ẞ’ȘșȚț'
+CHARACTERS += ''.join(chr(cp) for cp in (*range(0x386, 0x3A2), *range(0x3A3, 0x3CF))
+                      if cp not in (0x387, 0x38B, 0x38D))
 FAMILIES = {
     'label': (85, 400),
     'bold': (85, 700),
@@ -56,6 +58,8 @@ def append_glyphs(size, font, characters=CHARACTERS):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('font', type=Path)
+    parser.add_argument('--spritmonitor-cjk-font', type=Path,
+                        help='Noto Sans SC used to fill missing Spritmonitor Chinese glyphs')
     args = parser.parse_args()
     for family, axes in FAMILIES.items():
         target = FONTS / (family + '.json')
@@ -66,18 +70,32 @@ def main():
             font = ImageFont.truetype(str(args.font), size['size'])
             font.set_variation_by_axes(list(axes))
             append_glyphs(size, font)
-        atlas['cacheKey'] = 'latin-ext1'
+        atlas['cacheKey'] = 'latin-greek-ext2'
         target.write_text(json.dumps(atlas, ensure_ascii=False, separators=(',', ':')), encoding='utf-8')
 
     target = FONTS.parent.parent / 'localization' / 'fonts' / 'cyrillic-ru.json'
     atlas = json.loads(target.read_text(encoding='utf-8'))
-    russian = 'Ёё' + ''.join(chr(cp) for cp in range(0x410, 0x450))
+    cyrillic = 'Ёё' + ''.join(chr(cp) for cp in range(0x410, 0x450))
+    cyrillic += 'ҐґЄєІіЇї’'
     for size in atlas['sizes']:
         font = ImageFont.truetype(str(args.font), size['size'])
         font.set_variation_by_axes([85, 500])
-        append_glyphs(size, font, russian)
-    atlas['cacheKey'] = 'cyrillic-ru-full1'
+        append_glyphs(size, font, cyrillic)
+    atlas['cacheKey'] = 'cyrillic-ru-uk'
     target.write_text(json.dumps(atlas, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
+
+    if args.spritmonitor_cjk_font:
+        root = FONTS.parents[2]
+        catalog = root / 'apps' / 'spritmonitor' / 'additional-locales.js'
+        rows = catalog.read_text(encoding='utf-8').split('`')[1].strip().splitlines()
+        chinese = ''.join(row.split('|')[3] for row in rows) + '简体中文'
+        atlas = json.loads((FONTS / 'cjk.json').read_text(encoding='utf-8'))
+        for size in atlas['sizes']:
+            font = ImageFont.truetype(str(args.spritmonitor_cjk_font), size['size'])
+            append_glyphs(size, font, sorted(set(chinese)))
+        atlas['cacheKey'] = 'spritmonitor-cjk'
+        target = root / 'kit' / 'localization' / 'fonts' / 'spritmonitor-cjk.json'
+        target.write_text(json.dumps(atlas, ensure_ascii=False, separators=(',', ':')) + '\n', encoding='utf-8')
 
 
 if __name__ == '__main__':

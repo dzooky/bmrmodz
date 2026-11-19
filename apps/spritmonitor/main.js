@@ -21,25 +21,32 @@ mgu.run({
         function applyLanguage() {
             const preference = ctx.settings.get('language');
             const language = preference === 'auto' ? idriveLanguage : preference;
-            const words = language === 'de' ? require('./de')
-                : language === 'es' || language === 'fr' ? require('./fr-es')[language] : language === 'en' ? null : require('./more-locales')[language];
+            let words;
+            if (language === 'de') words = require('./de');
+            else if (language === 'es' || language === 'fr') words = require('./fr-es')[language];
+            else if (language !== 'en') {
+                words = require('./more-locales')[language] || require('./additional-locales')[language];
+            }
             setRuntimeTranslations(words);
             ctx.ui.text('BTN_FUEL', t('Add Fuel'));
             ctx.ui.text('BTN_ADBLUE', t('Add AdBlue'));
             ctx.ui.text('BTN_SETTINGS', t('Settings'));
         }
+        function updateAutoLanguageLabel() {
+            const options = ctx.settings.item('language').options;
+            const autoIndex = options.findIndex(([code]) => code === 'auto');
+            const detected = options.find(([code]) => code === idriveLanguage);
+            if (autoIndex < 0 || !detected) return;
+            const label = detected[1].replace(/\s*\(auto\)$/, '') + ' (auto)';
+            options[autoIndex][1] = label;
+            ctx.ui.text('SET_LANGUAGE', label, autoIndex, 'ItemText');
+        }
+        updateAutoLanguageLabel();
         applyLanguage();
         ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
         require('./idrive-language').watch(ctx, language => {
             idriveLanguage = language;
-            const options = ctx.settings.item('language').options;
-            const autoIndex = options.findIndex(([code]) => code === 'auto');
-            const detected = options.find(([code]) => code === language);
-            if (autoIndex >= 0 && detected) {
-                const label = detected[1] + ' (auto)';
-                options[autoIndex][1] = label;
-                ctx.ui.text('SET_LANGUAGE', label, autoIndex, 'ItemText');
-            }
+            updateAutoLanguageLabel();
             if (ctx.settings.get('language') === 'auto') applyLanguage();
         });
 
@@ -937,6 +944,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.44', 'Add 12 languages and label the detected iDrive language (auto)'],
             ['0.1.43', 'Allow a full-tank threshold in litres'],
             ['0.1.42', 'Show the live tank level and full threshold in Type'],
             ['0.1.41', 'Clear unsynced fuelings from My Car'],

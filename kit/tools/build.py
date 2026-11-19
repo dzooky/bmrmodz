@@ -557,6 +557,11 @@ def build(app_id, language='en', preview_only=False):
     if language == 'ru' or app_id in ('osa', 'spritmonitor', 'dpf'):
         shutil.copy(os.path.join(KIT, 'localization', 'fonts', 'cyrillic-ru.json'),
                     os.path.join(src, 'javascript', 'kit', 'fonts', 'cyrillic.json'))
+    if app_id == 'spritmonitor':
+        fonts_dir = os.path.join(KIT, 'localization', 'fonts')
+        package_fonts = os.path.join(src, 'javascript', 'kit', 'fonts')
+        shutil.copy(os.path.join(fonts_dir, 'spritmonitor-cjk.json'), os.path.join(package_fonts, 'cjk.json'))
+        shutil.copy(os.path.join(fonts_dir, 'OFL-NotoSansSC.txt'), package_fonts)
     if app_id == 'dpf':
         shutil.copy(os.path.join(KIT, 'localization', 'fonts', 'dpf-cjk.json'),
                     os.path.join(src, 'javascript', 'kit', 'fonts', 'cjk.json'))
