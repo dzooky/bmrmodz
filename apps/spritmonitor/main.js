@@ -32,14 +32,18 @@ mgu.run({
             ctx.ui.text('BTN_ADBLUE', t('Add AdBlue'));
             ctx.ui.text('BTN_SETTINGS', t('Settings'));
         }
+        const languageOptions = ctx.settings.item('language').options.map(option => option.slice());
         function updateAutoLanguageLabel() {
-            const options = ctx.settings.item('language').options;
-            const autoIndex = options.findIndex(([code]) => code === 'auto');
-            const detected = options.find(([code]) => code === idriveLanguage);
-            if (autoIndex < 0 || !detected) return;
-            const label = detected[1].replace(/\s*\(auto\)$/, '') + ' (auto)';
-            options[autoIndex][1] = label;
-            ctx.ui.text('SET_LANGUAGE', label, autoIndex, 'ItemText');
+            const setting = ctx.settings.item('language');
+            setting.options = languageOptions.map(([code, label]) =>
+                code === idriveLanguage ? ['auto', label + ' (auto)'] : [code, label]);
+            setting.options.forEach((option, index) => {
+                ctx.ui.text('SET_LANGUAGE', option[1], index, 'ItemText');
+            });
+            // A previously saved manual choice of the system language becomes automatic.
+            if (ctx.settings.get('language') === idriveLanguage) ctx.settings.set('language', 'auto');
+            const selected = setting.options.findIndex(option => option[0] === ctx.settings.get('language'));
+            ctx.ui.selected('SET_LANGUAGE', Math.max(0, selected));
         }
         updateAutoLanguageLabel();
         applyLanguage();
@@ -944,6 +948,7 @@ mgu.run({
         };
 
         const releases = [
+            ['0.1.45', 'List each language once and mark the iDrive language (auto)'],
             ['0.1.44', 'Add 12 languages and label the detected iDrive language (auto)'],
             ['0.1.43', 'Allow a full-tank threshold in litres'],
             ['0.1.42', 'Show the live tank level and full threshold in Type'],
