@@ -2,7 +2,7 @@
 
 const { Diag, replyTo, hex } = require('./kit/diag');
 
-const { pause, readBelt, beltCheckDelay, BELT_WAIT_MS } = require('./belt-test');
+const { pause, readBelt, beltCheckDelay, waitForBelt, BELT_WAIT_MS } = require('./belt-test');
 const BDC = 0x40;
 const WHEEL_HEATING = [0xD0, 0x74];
 const WHEEL_TEST_SECONDS = 30;
@@ -32,9 +32,11 @@ function createWheelTest(ctx, enqueue) {
         return { on: reply[3] === 1, fitted: reply[7] === 1 };
     }
 
-    async function testWheel(level) {
+    async function testWheel(level, ready) {
         const on = level > 0;
         const current = await readWheel();
+        if (ready && !ready()) return false;
+        if (ready && on && current.on) return true;
         if (on && !current.fitted) throw new Error('BDC did not confirm wheel heating');
         if (!on && !current.on) return;
 
@@ -44,7 +46,7 @@ function createWheelTest(ctx, enqueue) {
         await request(BDC, 0x2E, WHEEL_HEATING.concat(seconds));
         for (const delay of [300, 500, 800, 1000]) {
             await pause(delay);
-            if ((await readWheel()).on === on) return;
+            if ((await readWheel()).on === on) return true;
         }
         throw new Error('BDC did not confirm wheel heating ' + (on ? 'on' : 'off'));
     }
@@ -125,7 +127,34 @@ function createWheelTest(ctx, enqueue) {
         return perform(true);
     }
 
+
+    async function activateAutomatically(ready) {
+        if (!diag || busy || active.has(WHEEL_KEY) || pending.has(WHEEL_KEY) ||
+            attempted.has(WHEEL_KEY) || !ready()) return false;
+        busy = true;
+        try {
+            return await waitForBelt(async (address, service, data) => {
+                if (!diag.p) await diag.init();
+                if (!diag.p) throw new Error('Diagnostics unavailable');
+                return request(address, service, data);
+            }, 'frontLeft', ctx.log, ready, enqueue, async () => {
+                if (!ready()) return false;
+                const success = await testWheel(1, ready);
+                if (!success) return false;
+                attempted.delete(WHEEL_KEY);
+                active.add(WHEEL_KEY);
+                return true;
+            }, ready);
+        } catch (error) {
+            ctx.log.warn('Climate Comfort automatic steering: ' + error.message);
+            return false;
+        } finally {
+            busy = false;
+        }
+    }
+
     return {
+        activateAutomatically,
         run,
         tick,
         isPending: key => pending.has(key),

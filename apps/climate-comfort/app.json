@@ -2,7 +2,7 @@
   "id": "climate-comfort",
   "title": "Climate Comfort",
   "description": "Development preview of seat heating, seat ventilation and steering wheel heating rules for BMW iDrive 7.",
-  "version": "0.1.45",
+  "version": "0.1.48",
   "vendor": "custom",
   "loggingId": "CLCM",
   "settings": [
@@ -175,6 +175,57 @@
       "step": 1,
       "default": 0,
       "hidden": true
+    },
+    {
+      "key": "temperatureSource",
+      "label": "Front seat temperature source",
+      "type": "choice",
+      "options": [
+        [
+          "outside",
+          "Outside"
+        ],
+        [
+          "inside",
+          "Inside"
+        ]
+      ],
+      "default": "inside",
+      "hidden": true
+    },
+    {
+      "key": "steeringTemperatureSource",
+      "label": "Steering wheel temperature source",
+      "type": "choice",
+      "options": [
+        [
+          "outside",
+          "Outside"
+        ],
+        [
+          "inside",
+          "Inside"
+        ]
+      ],
+      "default": "inside",
+      "hidden": true
+    },
+    {
+      "key": "rearTemperatureSource",
+      "label": "Rear seat temperature source",
+      "type": "choice",
+      "options": [
+        [
+          "outside",
+          "Outside"
+        ],
+        [
+          "inside",
+          "Inside"
+        ]
+      ],
+      "default": "inside",
+      "hidden": true
     }
   ],
   "screens": [
@@ -211,6 +262,12 @@
         "default": true
       },
       {
+        "key": "fourZoneClimate",
+        "label": "Four-zone climate control",
+        "type": "bool",
+        "default": true
+      },
+      {
         "key": "steeringWheelHeating",
         "label": "Heated steering wheel",
         "type": "bool",
@@ -223,12 +280,13 @@
         "default": false
       },
       {
-        "key": "fourZoneClimate",
-        "label": "Four-zone climate control (4NB)",
+        "key": "auxiliaryHeating",
+        "label": "Auxiliary heating",
         "type": "bool",
-        "default": true
+        "default": false
       }
-    ]
+    ],
+    "customSettings": true
   },
   "signals": {
     "de.bmw.infotainment.vehicle.CDS": {
@@ -243,6 +301,9 @@
         "sendTasuResponse"
       ],
       "_optional": "Automatic Vehicle Order detection"
+    },
+    "de.bmw.infrastructure.EnvironmentalInformation": {
+      "ExteriorTemperature": "s"
     }
   }
 }

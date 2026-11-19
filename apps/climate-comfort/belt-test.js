@@ -19,11 +19,11 @@ async function readBelt(request, position) {
     return null;
 }
 
-async function waitForBelt(request, position, log, ready, enqueue, onLatched) {
+async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true) {
     const deadline = Date.now() + BELT_WAIT_MS;
-    while (Date.now() < deadline) {
+    while (Date.now() < deadline && keepWaiting()) {
         const state = await enqueue(async () => {
-            if (Date.now() >= deadline) return null;
+            if (Date.now() >= deadline || !keepWaiting()) return null;
             let belt = null;
             try {
                 belt = await readBelt(request, position);
@@ -31,15 +31,15 @@ async function waitForBelt(request, position, log, ready, enqueue, onLatched) {
                 log.warn('Climate Comfort belt check: ' + error.message);
             }
             if (belt === 1 && ready() && Date.now() < deadline) {
-                await onLatched();
-                return 1;
+                return await onLatched() === false ? null : 1;
             }
             return belt === 1 ? 0 : belt;
         });
-        if (state === 1) return;
+        if (state === 1) return true;
         const remaining = deadline - Date.now();
         if (remaining > 0) await pause(Math.min(beltCheckDelay(state), remaining));
     }
+    return false;
 }
 
 module.exports = { pause, readBelt, beltCheckDelay, waitForBelt, BELT_WAIT_MS };

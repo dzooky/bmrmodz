@@ -223,7 +223,7 @@ class Display {
         return !!(this.spec.settingsTabInStandard && this.active() && this.gpu.native && this.gpu.touch && !this.place.full);
     }
     /** Settings is the header's last tab where the kit runs the screen (the app has a Settings button). */
-    hasSettings() { return !!(this.screen && (this.screen.buttons || []).some((b) => b[0] === 'BTN_SETTINGS')); }
+    hasSettings() { return !(this.spec.config && this.spec.config.customSettings) && !!(this.screen && (this.screen.buttons || []).some((b) => b[0] === 'BTN_SETTINGS')); }
     /** The header's tabs: the app's, then Settings. { tabs, sel, badges, settings: index or -1 } */
     _tabList() {
         const base = this.tabInfo || { tabs: [], sel: -1, badges: [] };
@@ -249,7 +249,7 @@ class Display {
         // Settings slot. The visual header can insert Settings before the last
         // app tab; positional arithmetic is fragile when the header is rebuilt
         // while a Settings sheet is open. About must still resolve to app tab 3.
-        if (selected === 'Settings') {
+        if (selected === 'Settings' && !(this.spec.config && this.spec.config.customSettings)) {
             if (!(this.sheet && this.sheet.settings)) this._click('BTN_SETTINGS');
             return;
         }

@@ -9,6 +9,13 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.48', 'Use selected temperature sources for automatic activation.'],
+    ['', 'Show selected readings below seats and the steering wheel.'],
+    ['', 'Use the driver sensor for inside steering wheel temperature.'],
+    ['0.1.47', 'Add separate temperature source choices in Settings.'],
+    ['', 'Use same-side front sensors for rear seats without four-zone climate.'],
+    ['0.1.46', 'Detect auxiliary heating from VO option 536.'],
+    ['', 'Simplify the My Car equipment display.'],
     ['0.1.45', 'Detect four-zone climate control from VO option 4NB.'],
     ['0.1.44', 'Show the footwell temperature for each seat from IHKA.'],
     ['0.1.43', 'Retry alternate seat temperature reads and show replies in My Car.'],

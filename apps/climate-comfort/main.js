@@ -13,6 +13,9 @@ const renderSeats = require('./seats');
 const createIhkaTest = require('./ihka-test');
 const createWheelTest = require('./wheel-test');
 const renderSteering = require('./steering');
+const createSettingsPage = require('./settings');
+const selectTemperature = require('./temperature-source');
+const createAutomation = require('./automation');
 
 const NOTICE = [
     'This application is still in development phase and not ready for public use.',
@@ -25,7 +28,7 @@ function equipmentTabs(equipment) {
     if (equipment.frontSeatHeating === true || equipment.frontSeatVentilation === true) tabs.push('Front');
     if (equipment.rearSeatHeating === true || equipment.rearSeatVentilation === true) tabs.push('Rear');
     if (equipment.steeringWheelHeating === true) tabs.push('Steering');
-    tabs.push('My Car', 'About');
+    tabs.push('My Car', 'Settings', 'About');
     return tabs;
 }
 
@@ -35,6 +38,7 @@ function equipmentFromCodes(codes) {
         steeringWheelHeating: codes.has('248'),
         mSportSteeringWheel: codes.has('710'),
         fourZoneClimate: codes.has('4NB'),
+        auxiliaryHeating: codes.has('536'),
         frontSeatVentilation: codes.has('453') || undefined,
         rearSeatVentilation: codes.has('454') || undefined,
         frontSeatHeating: (heatBothRows || codes.has('494')) || undefined,
@@ -74,30 +78,15 @@ function drawUnconfirmed(cv, x, y) {
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
 }
 
-function renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagnostics) {
+function renderEquipment(cv, theme, equipment, rows, voStatus) {
     const center = { align: 'center' };
     cv.text('Equipment', 66, 96, 19, theme.dim);
     cv.text('Installed', 1450, 96, 19, theme.dim, center);
     if (voStatus) cv.text(voStatus, 800, 70, 17, theme.dim, center);
-    cv.text('Footwell temperature read', 1000, 96, 17, theme.dim, center);
-
-    const temperatureRow = { frontSeatHeating: 'front', rearSeatHeating: 'rear' };
-    if (equipment.frontSeatHeating !== true) temperatureRow.frontSeatVentilation = 'front';
-    if (equipment.rearSeatHeating !== true) temperatureRow.rearSeatVentilation = 'rear';
-
     rows.forEach(({ key, label }, index) => {
-        const y = 140 + index * 52;
+        const y = 140 + index * 44;
         cv.fillRect(55, y - 25, 1490, 1, theme.dim);
         cv.text(label, 66, y + 13, 24, theme.text);
-        const row = temperatureRow[key];
-        if (row && equipment[key] === true) {
-            for (const [offset, side] of [[0, 'Left'], [1, 'Right']]) {
-                const result = temperatureDiagnostics[row + side] || 'Open ' + (row === 'front' ? 'Front' : 'Rear') + ' to read';
-                const line = side + '  ' + result;
-                const width = cv.textWidth(line, 14);
-                cv.text(line, 730, y + offset * 21, Math.min(14, 630 * 14 / Math.max(1, width)), theme.dim);
-            }
-        }
         if (equipment[key] === true) {
             cv.polyline([[1438, y - 1], [1446, y + 7], [1462, y - 9]], 4, '#55d884');
         } else if (equipment[key] === false) {
@@ -115,6 +104,8 @@ function renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagno
 
 mgu.run({
     start(ctx) {
+        ctx.hideButton('BTN_SETTINGS');
+        const settingsPage = createSettingsPage(ctx.settings);
         const rows = ctx.spec.config.previewEquipment;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
         const cacheFile = link && path.join(ctx.dataDir, 'vehicle-order.json');
@@ -127,18 +118,45 @@ mgu.run({
             return result;
         }
         const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
-        const temperatureDiagnostics = {};
-        const readFootwellTemperatures = link ? createSeatTemperatureReader(link, temperatureDiagnostics) : null;
+        const readFootwellTemperatures = link ? createSeatTemperatureReader(link, ctx.log) : null;
         const seatTemperatures = {};
+        let footwellReadAt = 0;
+        const temperatureFor = position => {
+            const readings = Object.assign({}, seatTemperatures);
+            if (Date.now() - footwellReadAt > 15000) {
+                for (const key of ['frontLeft', 'frontRight', 'rearLeft', 'rearRight']) readings[key] = null;
+            }
+            return selectTemperature(ctx.settings, equipment, readings, position);
+        };
+        if (link) {
+            ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
+                ExteriorTemperature: value => {
+                    const raw = value && value.temperatureExterior;
+                    seatTemperatures.outside = Number.isInteger(raw) && raw >= 0 && raw < 255
+                        ? raw * 0.5 - 40 : null;
+                },
+            }, ctx.log).then(sub => {
+                if (sub.error) {
+                    seatTemperatures.outside = null;
+                    ctx.log.warn('Climate Comfort outside temperature: ' + sub.error);
+                }
+            }).catch(error => {
+                seatTemperatures.outside = null;
+                ctx.log.warn('Climate Comfort outside temperature: ' + error.message);
+            });
+        }
         let temperatureReading = false;
         let nextTemperatureRead = 0;
         const car = link ? new Car(ctx, ['rpm']) : null;
-        const engineRunning = () => {
-            if (!car) return false;
+        const engineState = () => {
+            if (!car) return null;
             const { rpm, demo } = car.data();
-            return !demo && Date.now() - car.lastCar <= 5000 && Number.isFinite(rpm) && rpm >= 300;
+            if (demo || Date.now() - car.lastCar > 5000 || !Number.isFinite(rpm)) return null;
+            return rpm >= 300;
         };
+        const engineRunning = () => engineState() === true;
         const ihkaTest = createIhkaTest(ctx, engineRunning, enqueueDiagnostic);
+        const automation = createAutomation(ctx.settings, temperatureFor, engineState, ihkaTest, wheelTest, ctx.log);
         let tabs = [];
         let page = 'Info';
         let aboutScroll = 0;
@@ -171,16 +189,14 @@ mgu.run({
             }
         }
 
-        async function refreshSeatTemperatures(row) {
-            const prefix = row.toLowerCase();
-            if (!readFootwellTemperatures || temperatureReading || Date.now() < nextTemperatureRead ||
-                (equipment[prefix + 'SeatHeating'] !== true && equipment[prefix + 'SeatVentilation'] !== true)) return;
+        async function refreshSeatTemperatures() {
+            if (!readFootwellTemperatures || temperatureReading || Date.now() < nextTemperatureRead) return;
             temperatureReading = true;
             try {
                 await enqueueDiagnostic(async () => {
-                    if (page !== row) return;
                     const temperatures = await readFootwellTemperatures();
                     Object.assign(seatTemperatures, temperatures);
+                    footwellReadAt = Date.now();
                 });
             } finally {
                 temperatureReading = false;
@@ -207,6 +223,7 @@ mgu.run({
 
         ctx.onTab(index => {
             if (tabs[index] && page !== tabs[index]) {
+                settingsPage.close();
                 page = tabs[index];
                 nextTemperatureRead = 0;
                 if (link && (page === 'Front' || page === 'Rear')) link.wake(0x78);
@@ -216,9 +233,11 @@ mgu.run({
         ctx.loop('MAIN', 4, () => {
             wheelTest.tick();
             detectEquipment();
+            refreshSeatTemperatures();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
             }
+            if (link) automation.tick(equipment);
             tabs = equipmentTabs(equipment);
             if (!tabs.includes(page)) page = 'My Car';
             const theme = ctx.theme();
@@ -231,18 +250,19 @@ mgu.run({
                     cv.text(line, 800, 218 + index * 42, 30, theme.text, { align: 'center' });
                 });
             } else if (page === 'Front' || page === 'Rear') {
-                refreshSeatTemperatures(page);
-                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu, seatTemperatures);
+                renderSeats(cv, theme, ctx.settings, equipment, page, ihkaTest, gpu, temperatureFor);
             } else if (page === 'Steering') {
-                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu);
+                renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu, temperatureFor);
             } else if (page === 'My Car') {
-                renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagnostics);
+                renderEquipment(cv, theme, equipment, rows, voStatus);
                 if (link) {
                     const busy = voStatus === 'Reading vehicle order...';
                     cv.roundRect(1245, 465, 245, 40, 10, '#ffffff19');
                     cv.text('Reload equipment', 1367, 491, 19, busy ? theme.dim : theme.text, { align: 'center' });
                     if (!busy) cv.target(1245, 465, 245, 40, reloadEquipment, 'reload-equipment');
                 }
+            } else if (page === 'Settings') {
+                settingsPage.render(cv, theme, equipment);
             } else if (page === 'About') {
                 renderAbout(cv, theme, aboutScroll);
             }

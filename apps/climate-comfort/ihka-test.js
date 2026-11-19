@@ -55,18 +55,19 @@ function createIhkaTest(ctx, engineRunning, enqueue) {
     async function activate(button, offset, target, ready) {
         let attempted = false;
         try {
-            if (!ready()) return;
+            if (!ready()) return false;
             await pause(REQUEST_GAP_MS);
             let level = await readLevel(offset);
             const visited = new Set();
             while (level !== target && !visited.has(level)) {
-                if (!ready()) return;
+                if (!ready()) return false;
                 visited.add(level);
                 attempted = true;
                 await pressButton(button);
                 level = await waitForLevelChange(offset, level);
             }
             if (level !== target) throw new Error('IHKA did not reach level ' + target);
+            return true;
         } finally {
             if (attempted) {
                 try {
@@ -85,23 +86,25 @@ function createIhkaTest(ctx, engineRunning, enqueue) {
         return request(address, service, data, 0);
     }
 
-    async function run(position, mode, target) {
+    async function run(position, mode, target, options) {
         const key = position + mode;
         const control = SEATS[position] && SEATS[position][mode];
         if (!control || !Number.isInteger(target) || target < 1 || target > 3 || active.has(key)) return;
         active.add(key);
         const [button, offset] = control;
         const requiresEngine = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
-        const ready = () => !requiresEngine || engineRunning();
+        const automaticReady = options && options.ready;
+        const ready = () => (!requiresEngine || engineRunning()) && (!automaticReady || automaticReady());
         try {
             if (!diag) {
                 await pause(REQUEST_GAP_MS);
-                return;
+                return false;
             }
-            await waitForBelt(readBeltRequest, position, ctx.log, ready, enqueue,
-                () => activate(button, offset, target, ready));
+            return await waitForBelt(readBeltRequest, position, ctx.log, ready, enqueue,
+                () => activate(button, offset, target, ready), automaticReady || (() => true));
         } catch (error) {
             ctx.log.warn('Climate Comfort ' + key + ': ' + error.message);
+            return false;
         } finally {
             active.delete(key);
         }

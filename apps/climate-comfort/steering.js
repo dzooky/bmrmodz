@@ -9,11 +9,14 @@ const CONTROL_X = 1140;
 const standardWheel = artwork('steering-standard.png', SIZE, SIZE, 0x434305);
 const mSportWheel = artwork('steering-m-sport.png', SIZE, SIZE, 0x434306);
 
-function renderSteering(cv, theme, settings, mSport, wheelTest, gpu) {
+function renderSteering(cv, theme, settings, mSport, wheelTest, gpu, temperatureFor) {
     const center = { align: 'center' };
     const drawWheel = mSport ? mSportWheel : standardWheel;
     drawWheel(cv, theme, gpu, 800 - SIZE / 2, 93);
     cv.text(mSport ? 'M Sport' : 'Standard', 800, 473, 24, theme.text, center);
+    const reading = temperatureFor('steering');
+    cv.text(reading.label + ' ' + (Number.isFinite(reading.value) ? reading.value + ' °C' : '– °C'),
+        800, 501, 18, theme.dim, center);
 
     renderControlPanel(cv, CONTROL_X, 304, 'Heating', HEATING_COLOR, true, theme, gpu);
     renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', CONTROL_X, HEATING_COLOR);

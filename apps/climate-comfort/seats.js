@@ -60,7 +60,7 @@ function renderControls(cv, theme, settings, position, x, title, color, test, fr
     renderControlAction(cv, theme, x, front ? 430 : 442, active ? 'Testing...' : 'Test', color, key + '-test', run, 32, gpu);
 }
 
-function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperatures) {
+function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperatureFor) {
     const prefix = row.toLowerCase();
     SEAT_X.forEach((center, index) => {
         ART[row][index](cv, theme, gpu, center - WIDTH / 2, 93);
@@ -76,8 +76,8 @@ function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperature
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
         if (equipment[prefix + 'SeatHeating'] === true || equipment[prefix + 'SeatVentilation'] === true) {
-            const temperature = temperatures[key];
-            const label = 'Footwell ' + (Number.isFinite(temperature) ? temperature + ' °C' : '– °C');
+            const reading = temperatureFor(key);
+            const label = reading.label + ' ' + (Number.isFinite(reading.value) ? reading.value + ' °C' : '– °C');
             cv.text(label, center, 501, 18, theme.dim, { align: 'center' });
         }
     });
