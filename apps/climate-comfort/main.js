@@ -122,6 +122,7 @@ mgu.run({
         const readFootwellTemperatures = link ? createSeatTemperatureReader(link, ctx.log) : null;
         const seatTemperatures = {};
         let footwellReadAt = 0;
+        let footwellAvailable = false;
         const temperatureFor = position => {
             const readings = Object.assign({}, seatTemperatures);
             if (Date.now() - footwellReadAt > 15000) {
@@ -148,10 +149,11 @@ mgu.run({
         }
         let temperatureReading = false;
         let nextTemperatureRead = 0;
-        const car = link ? new Car(ctx, ['rpm', 'condition']) : null;
+        const car = link ? new Car(ctx, ['rpm']) : null;
         const allowEngineOffTest = ctx.spec.config.allowEngineOffTest === true;
         const activationState = () => car
-            ? getActivationState(car.data(), allowEngineOffTest, car.lastCar) : null;
+            ? getActivationState(car.data(), allowEngineOffTest, car.lastCar, Date.now(),
+                footwellAvailable && Date.now() - footwellReadAt <= 15000) : null;
         const activationReady = () => activationState() === true;
         const ihkaTest = createIhkaTest(ctx, activationReady, enqueueDiagnostic);
         const automation = createAutomation(ctx.settings, temperatureFor, activationState, ihkaTest, wheelTest, ctx.log);
@@ -195,6 +197,7 @@ mgu.run({
                     const temperatures = await readFootwellTemperatures();
                     Object.assign(seatTemperatures, temperatures);
                     footwellReadAt = Date.now();
+                    footwellAvailable = temperatures.available === true;
                 });
             } finally {
                 temperatureReading = false;

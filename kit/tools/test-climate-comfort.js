@@ -84,15 +84,28 @@ function sourceTests() {
 }
 
 function activationStateTests() {
-    const data = { demo: false, rpm: 0, condition: 7 };
-    assert.equal(getActivationState(data, true, 0, 10000), true);
-    for (const condition of [8, 10]) assert.equal(getActivationState({ ...data, condition }, true, 0, 10000), true);
-    for (const condition of [1, 2, 3, 5, 12]) assert.equal(getActivationState({ ...data, condition }, true, 0, 10000), false);
-    for (const condition of [undefined, 15]) assert.equal(getActivationState({ ...data, condition }, true, 0, 10000), null);
-    assert.equal(getActivationState({ ...data, demo: true }, true, 0, 10000), null);
+    const data = { demo: false, rpm: 0 };
+    assert.equal(getActivationState(data, true, 0, 10000, true), true);
+    assert.equal(getActivationState(data, true, 0, 10000, false), null);
+    // Test mode is gated by real diagnostic replies, not an RPM or demo signal.
+    assert.equal(getActivationState({ demo: true }, true, 0, 10000, true), true);
     assert.equal(getActivationState(data, false, 10000, 10000), false);
     assert.equal(getActivationState({ ...data, rpm: 700 }, false, 10000, 10000), true);
     assert.equal(getActivationState({ ...data, rpm: 700 }, false, 0, 10000), null);
+    assert.equal(getActivationState({ ...data, demo: true }, false, 10000, 10000), null);
+}
+
+async function temperatureAvailabilityTests() {
+    const createReader = require(path.join(app, 'seat-temperature'));
+    let reply = [0x62, 0xd8, 0xd7, ...Array(16).fill(20)];
+    const reader = createReader({ ready: true, wake() {}, read: async () => reply }, { warn() {} });
+    let result = await reader();
+    assert.equal(result.available, true); assert.equal(result.frontLeft, 20);
+    reply = [0x7f, 0x22, 0x22];
+    result = await reader();
+    assert.equal(result.available, false); assert.equal(result.frontLeft, null);
+    reply = null;
+    assert.equal((await reader()).available, false);
 }
 
 async function automationTests() {
@@ -247,7 +260,8 @@ async function commandTests() {
 (async () => {
     sourceTests();
     activationStateTests();
+    await temperatureAvailabilityTests();
     await automationTests();
     await commandTests();
-    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, ignition/engine gating, session decisions, belt retries and complete press/release/stop.');
+    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
