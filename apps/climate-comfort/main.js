@@ -73,16 +73,26 @@ function drawUnconfirmed(cv, x, y) {
     cv.polyline([[x - 7, y - 7], [x + 7, y + 7]], 3, color);
 }
 
-function renderEquipment(cv, theme, equipment, rows, voStatus) {
+function renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagnostics) {
     const center = { align: 'center' };
     cv.text('Equipment', 66, 96, 19, theme.dim);
     cv.text('Installed', 1450, 96, 19, theme.dim, center);
-    if (voStatus) cv.text(voStatus, 800, 96, 19, theme.dim, center);
+    if (voStatus) cv.text(voStatus, 800, 70, 17, theme.dim, center);
+    cv.text('Seat temperature reads', 1000, 96, 17, theme.dim, center);
 
     rows.forEach(({ key, label }, index) => {
         const y = 140 + index * 62;
         cv.fillRect(55, y - 25, 1490, 1, theme.dim);
         cv.text(label, 66, y + 13, 24, theme.text);
+        const row = key === 'frontSeatHeating' ? 'front' : key === 'rearSeatHeating' ? 'rear' : null;
+        if (row && equipment[key] === true) {
+            for (const [offset, side] of [[0, 'Left'], [1, 'Right']]) {
+                const result = temperatureDiagnostics[row + side] || 'Open ' + (row === 'front' ? 'Front' : 'Rear') + ' to read';
+                const line = side + '  ' + result;
+                const width = cv.textWidth(line, 14);
+                cv.text(line, 730, y + offset * 21, Math.min(14, 630 * 14 / Math.max(1, width)), theme.dim);
+            }
+        }
         if (equipment[key] === true) {
             cv.polyline([[1438, y - 1], [1446, y + 7], [1462, y - 9]], 4, '#55d884');
         } else if (equipment[key] === false) {
@@ -112,7 +122,8 @@ mgu.run({
             return result;
         }
         const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
-        const readSeatTemperature = link ? createSeatTemperatureReader(link) : null;
+        const temperatureDiagnostics = {};
+        const readSeatTemperature = link ? createSeatTemperatureReader(link, temperatureDiagnostics) : null;
         const seatTemperatures = {};
         let temperatureReading = false;
         let nextTemperatureRead = 0;
@@ -229,7 +240,7 @@ mgu.run({
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, wheelTest, gpu);
             } else if (page === 'My Car') {
-                renderEquipment(cv, theme, equipment, rows, voStatus);
+                renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagnostics);
                 if (link) {
                     const busy = voStatus === 'Reading vehicle order...';
                     cv.roundRect(1245, 465, 245, 40, 10, '#ffffff19');
