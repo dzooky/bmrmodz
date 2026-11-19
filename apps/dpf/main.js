@@ -27,16 +27,21 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         let idriveLanguage = 'en';
+        const languageOptions = ctx.settings.item('language').options.map(([code, label]) =>
+            [code === 'auto' ? 'en' : code, label.replace(/ \(auto\)$/, '')]);
         function updateAutomaticLanguage() {
-            const options = ctx.settings.item('language').options;
-            const index = options.findIndex(([code]) => code === 'auto');
-            const detected = options.find(([code]) => code === idriveLanguage);
-            if (index < 0 || !detected) return;
-            const label = detected[1] + ' (auto)';
-            options[index][1] = label;
-            ui.text('SET_LANGUAGE', label, index, 'ItemText');
+            const setting = ctx.settings.item('language');
+            const options = languageOptions.map(([code, label]) =>
+                code === idriveLanguage ? ['auto', label + ' (auto)'] : [code, label]);
+            setting.options.splice(0, setting.options.length, ...options);
+            options.forEach(([, label], index) => ui.text('SET_LANGUAGE', label, index, 'ItemText'));
+            const selected = ctx.settings.get('language');
+            ui.selected('SET_LANGUAGE', Math.max(0, options.findIndex(([code]) => code === selected)));
         }
         function applyLanguage() {
+            if (ctx.settings.get('language') === idriveLanguage) {
+                ctx.settings.set('language', 'auto');
+            }
             const selected = ctx.settings.get('language');
             const language = selected === 'auto' ? idriveLanguage : selected;
             setRuntimeTranslations(locales[language] || null);
@@ -53,8 +58,7 @@ mgu.run({
         ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
         require('./idrive-language').watch(ctx, language => {
             idriveLanguage = language;
-            updateAutomaticLanguage();
-            if (ctx.settings.get('language') === 'auto') applyLanguage();
+            applyLanguage();
         });
 
         const link = new ReadOnlyDiag(ctx.signals, log, {

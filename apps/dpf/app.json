@@ -2,7 +2,7 @@
   "id": "dpf",
   "title": "DPF Status",
   "description": "Read-only diesel particulate filter status monitoring",
-  "version": "0.1.32",
+  "version": "0.1.33",
   "vendor": "custom",
   "loggingId": "DPF1",
   "iconGlyph": "temp",
@@ -45,11 +45,7 @@
       "options": [
         [
           "auto",
-          "Use iDrive language"
-        ],
-        [
-          "en",
-          "English"
+          "English (auto)"
         ],
         [
           "de",
