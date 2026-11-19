@@ -488,7 +488,7 @@ function bmwServicesTests() {
     const { inspectCatalog, maxScroll } = require(path.join(app, 'bmw-services'));
     const report = inspectCatalog({
         interfaces: {
-            'de.bmw.ClimateControlRules': { fields: { ruleEnabled: { getter: 1, notifier: 2 } }, methods: { setRule: {} } },
+            'de.bmw.ClimateControlRules': { fields: { ruleEnabled: { getter: 1, notifier: 2, setter: 3 } }, methods: { setRule: {} } },
             'de.bmw.ConnectedDrive.Entitlements': { fields: { status: { getter: 5 } } },
             'de.bmw.CDS': { fields: { rpm: { getter: 1 } } },
         },
@@ -502,12 +502,16 @@ function bmwServicesTests() {
     assert.deepEqual(rules.instances, ['Main_Instance']);
     assert.equal(rules.fields[0].readable, true);
     assert.equal(rules.fields[0].notified, true);
-    assert.deepEqual(rules.methods, ['setRule']); // listed only, never invoked
+    assert.equal(rules.fields[0].writable, true);
+    assert.deepEqual(rules.methods, ['setRule']);
+    const ruleDetails = require(path.join(app, 'bmw-services')).detailLines(report, report.matches.indexOf(rules));
+    assert(ruleDetails.some(line => line.includes('ruleEnabled')));
+    assert.equal(maxScroll({ ...report, matches: Array(17).fill(rules) }), 0); // listed only, never invoked
     assert.throws(() => inspectCatalog({}), /Invalid catalog/);
     const empty = inspectCatalog({ interfaces: {}, instanceIDs: {} });
     assert.equal(empty.matchCount, 0);
     assert.equal(empty.subscription, 'Unknown');
-    assert.equal(maxScroll({ ...report, matches: Array(20).fill(rules) }) > 0, true);
+    assert.equal(maxScroll({ ...report, matches: Array(40).fill(rules) }) > 0, true);
 }
 
 async function commandTests() {

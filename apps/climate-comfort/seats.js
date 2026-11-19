@@ -18,15 +18,16 @@ const ART = {
     ],
 };
 
-function renderLevelButton(cv, settings, key, x, y, direction, color) {
-    cv.roundRect(x - 20, y - 23, 40, 46, 10, '#ffffff12');
+function renderLevelButton(cv, settings, key, x, y, direction, color, enabled) {
+    cv.roundRect(x - 20, y - 23, 40, 46, 10, enabled ? '#ffffff12' : '#ffffff08');
     cv.polyline([[x - direction * 4, y - 10], [x + direction * 6, y],
         [x - direction * 4, y + 10]], 3, color);
-    cv.target(x - 20, y - 23, 40, 46, () => adjustSetting(settings, key, direction),
+    if (enabled) cv.target(x - 20, y - 23, 40, 46, () => adjustSetting(settings, key, direction),
         key + (direction > 0 ? '-right' : '-left'), 10, color);
 }
 
 function syncSeats(settings, equipment, allSeats) {
+    if (settings.get('appEnabled') !== true) return;
     const destinations = allSeats ? ['frontRight', 'rearLeft', 'rearRight'] : ['frontRight'];
     for (const mode of ['Heating', 'Ventilation']) {
         if (equipment['frontSeat' + mode] !== true) continue;
@@ -44,17 +45,19 @@ function syncSeats(settings, equipment, allSeats) {
 }
 
 function renderControls(cv, theme, settings, position, x, title, color, gpu) {
+    const enabled = settings.get('appEnabled') === true;
+    if (!enabled) color = theme.dim;
     const key = position + title;
     const temperatureKey = key + 'Temperature';
     const levelKey = key + 'Level';
     const center = { align: 'center' };
     renderControlPanel(cv, x, 338, title, color, false, theme, gpu);
-    renderTemperature(cv, theme, settings, temperatureKey, x, color);
+    renderTemperature(cv, theme, settings, temperatureKey, x, color, enabled);
     cv.text('Level', x, 361, 16, theme.dim, center);
     const level = settingValue(settings, settings.item(levelKey));
-    renderLevelButton(cv, settings, levelKey, x - 46, 397, -1, color);
-    cv.text(level === 0 ? '-' : String(level), x, 405, 24, theme.text, center);
-    renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color);
+    renderLevelButton(cv, settings, levelKey, x - 46, 397, -1, color, enabled);
+    cv.text(level === 0 ? '-' : String(level), x, 405, 24, enabled ? theme.text : theme.dim, center);
+    renderLevelButton(cv, settings, levelKey, x + 46, 397, 1, color, enabled);
 
 }
 
@@ -80,10 +83,11 @@ function renderSeats(cv, theme, settings, equipment, row, gpu, temperatureFor) {
         }
     });
     if (row === 'Front') {
+        const enabled = settings.get('appEnabled') === true;
         renderControlAction(cv, theme, 730, 492, 'Sync front', theme.text, 'sync-front',
-            () => syncSeats(settings, equipment, false), 26, gpu);
+            enabled ? () => syncSeats(settings, equipment, false) : null, 26, gpu);
         renderControlAction(cv, theme, 870, 492, 'Sync all', theme.text, 'sync-all',
-            () => syncSeats(settings, equipment, true), 26, gpu);
+            enabled ? () => syncSeats(settings, equipment, true) : null, 26, gpu);
     }
 }
 

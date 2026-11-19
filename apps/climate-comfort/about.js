@@ -9,6 +9,9 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.58', 'Gray out and lock climate controls while the app is disabled.'],
+    ['', 'Show a compact BMW rule interface list with focused details.'],
+    ['', 'Prepare the BMW rules control pending verification of vehicle support.'],
     ['0.1.57', 'Add a master switch and reveal temperature settings only when enabled.'],
     ['', 'Remove seat and steering wheel test controls and status text.'],
     ['', 'Simplify My Car and lower the equipment reload button.'],

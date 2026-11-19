@@ -59,6 +59,14 @@ module.exports = function createSettingsPage(settings) {
                     y += 62;
                 });
             });
+            if (!expanded) {
+                cv.text('Original BMW climate rules', 80, y + 28, 24, theme.text);
+                cv.text('Not verified', 1488, y + 28, 20, theme.dim, { align: 'right' });
+                cv.roundRect(80, y + 42, 280, 40, 10, '#ffffff08');
+                cv.text('Disable BMW rules', 220, y + 68, 20, theme.dim, { align: 'center' });
+                cv.text('Control must be verified first.', 390, y + 68, 18, theme.dim);
+                // No target: no rule state or setter has been verified on the vehicle yet.
+            }
             const usesInside = rows.some(row => settings.get(row.key) !== 'outside');
             if (equipment && equipment.auxiliaryHeating === true && usesInside) {
                 cv.text('Inside temperature is affected by auxiliary heating while it is running.',

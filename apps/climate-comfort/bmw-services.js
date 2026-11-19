@@ -5,6 +5,8 @@ const CATALOG = '/etc/oap/someip/someip-interfaces.json';
 const STRONG = /connected.?drive|climate.*rule|rule.*climate|automat.*habit|smart.?interior|entitlement|licen[sc]e|subscription|service.*right|customer.*contract|personal.*assistant/i;
 const BROAD = /climate|intelligent.*function/i;
 const TOP = 135, BOTTOM = 450, STEP = 26;
+const GRID_STEP = 34;
+const RULE = /rule|habit|automat|smart.?interior/i;
 
 function inspectCatalog(catalog) {
     if (!catalog || !catalog.interfaces || typeof catalog.interfaces !== 'object' || Array.isArray(catalog.interfaces)) {
@@ -25,6 +27,7 @@ function inspectCatalog(catalog) {
                 name: field,
                 readable: fields[field] && fields[field].getter != null,
                 notified: fields[field] && fields[field].notifier != null,
+                writable: fields[field] && fields[field].setter != null,
             })),
             methods,
         });
@@ -46,52 +49,68 @@ function scan() {
     }
 }
 
-function lines(report) {
-    const output = [];
-    const add = text => {
-        const words = String(text).split(' ');
-        let line = '';
-        words.forEach(word => {
-            if (line && line.length + word.length + 1 > 112) { output.push(line); line = ''; }
-            line += (line ? ' ' : '') + word;
-        });
-        if (line) output.push(line);
-    };
-    if (!report.ok) {
-        add('The catalog could not be read. No service status has been inferred.');
-        add('Error: ' + report.error);
-        return output;
+function detailLines(report, selected) {
+    if (!report.ok) return ['The catalog could not be read.', 'Error: ' + report.error,
+        'Original climate rules: Not verified'];
+    const match = report.matches[selected];
+    if (!match) return ['Select an interface from the list.'];
+    const output = [
+        match.name,
+        'Instances: ' + (match.instances.join(', ') || 'Not listed'),
+        'Original climate rules: Not verified',
+        '',
+    ];
+    const ruleFields = match.fields.filter(field => RULE.test(field.name));
+    const ruleMethods = match.methods.filter(name => RULE.test(name));
+    output.push('Fields related to rules or automation: ' + ruleFields.length);
+    ruleFields.forEach(field => output.push(field.name + (field.readable ? ' [read]' : '') +
+        (field.notified ? ' [event]' : '') + (field.writable ? ' [setter listed]' : '')));
+    output.push('Methods related to rules or automation: ' + ruleMethods.length);
+    ruleMethods.forEach(name => output.push(name + ' [not called]'));
+    if (!ruleFields.length && !ruleMethods.length) {
+        output.push('No rule-named entries found in this interface.');
     }
-    if (!report.matches.length) add('No matching interface names were found. This does not prove the service is unavailable.');
-    report.matches.forEach(match => {
-        add(match.name);
-        add('Instances: ' + (match.instances.join(', ') || 'Not listed'));
-        const fields = match.fields.map(field => field.name + (field.readable ? ' [read]' : field.notified ? ' [event]' : ''));
-        add('Fields: ' + (fields.join(', ') || 'None listed'));
-        if (match.methods.length) add('Methods listed (not called): ' + match.methods.join(', '));
-        output.push('');
-    });
-    if (report.matchCount > report.matches.length) add('Showing the first ' + report.matches.length + ' of ' + report.matchCount + ' candidates.');
+    output.push('', 'Other fields: ' + (match.fields.length - ruleFields.length) + ' (hidden)');
     return output;
 }
 
-const maxScroll = report => Math.max(0, lines(report).length * STEP - (BOTTOM - TOP));
+function maxScroll(report, selected = null) {
+    if (selected === null && report.ok) {
+        return Math.max(0, Math.ceil(report.matches.length / 2) * GRID_STEP - 4 - (BOTTOM - TOP));
+    }
+    return Math.max(0, detailLines(report, selected).length * STEP - (BOTTOM - TOP));
+}
 
-function render(cv, theme, report, scroll) {
-    cv.text('BMW services test (read-only)', 66, 86, 27, theme.text);
+function render(cv, theme, report, scroll, selected = null, select = () => {}) {
+    const overview = selected === null && report.ok;
+    cv.text(overview ? 'BMW rule interfaces (read-only)' : 'BMW rule interface details (read-only)', 66, 86, 27, theme.text);
     cv.text(report.ok ? report.interfaceCount + ' interfaces / ' + report.matchCount + ' candidates'
         : 'Catalog unavailable: ' + report.error, 66, 117, 18, theme.dim);
     cv.clip(55, TOP, 1490, BOTTOM - TOP);
-    lines(report).forEach((line, index) => {
-        const y = TOP + 21 + index * STEP - scroll;
-        if (y - 18 >= TOP && y <= BOTTOM) {
-            const width = cv.textWidth(line, 18);
-            cv.text(line, 66, y, Math.min(18, 1460 * 18 / Math.max(1, width)), theme.text);
-        }
-    });
+    if (overview) {
+        if (!report.matches.length) cv.text('No matching names found. Rule state remains unverified.', 66, TOP + 24, 20, theme.dim);
+        report.matches.forEach((match, index) => {
+            const x = 66 + (index % 2) * 750;
+            const y = TOP + Math.floor(index / 2) * GRID_STEP - scroll;
+            if (y + 30 <= TOP || y >= BOTTOM) return;
+            const label = (index + 1) + '. ' + match.name.replace(/^de\.bmw\.(infotainment|infrastructure)\./, '');
+            cv.roundRect(x, y, 725, 30, 6, '#ffffff12');
+            cv.text(label, x + 8, y + 21, Math.min(17, 700 * 17 / Math.max(1, cv.textWidth(label, 17))), theme.text);
+            const top = Math.max(y, TOP), bottom = Math.min(y + 30, BOTTOM);
+            cv.target(x, top, 725, bottom - top, () => select(index), 'bmw-service-' + index, 6);
+        });
+    } else {
+        detailLines(report, selected).forEach((line, index) => {
+            const y = TOP + 21 + index * STEP - scroll;
+            if (y - 18 >= TOP && y <= BOTTOM) {
+                const width = cv.textWidth(line, 18);
+                cv.text(line, 66, y, Math.min(18, 1460 * 18 / Math.max(1, width)), theme.text);
+            }
+        });
+    }
     cv.noclip();
-    cv.text('Catalog presence does not confirm a subscription or enabled rules.', 66, 497, 17, theme.dim);
-    const max = maxScroll(report);
+    cv.text('Open a candidate to inspect rule fields. Actual rule state is not yet verified.', 66, 497, 17, theme.dim);
+    const max = maxScroll(report, selected);
     if (max > 0) {
         const bar = { x: 1555, y: TOP, w: 6, h: BOTTOM - TOP };
         const height = Math.max(20, bar.h * bar.h / (bar.h + max));
@@ -100,4 +119,4 @@ function render(cv, theme, report, scroll) {
     }
 }
 
-module.exports = { inspectCatalog, scan, render, maxScroll };
+module.exports = { inspectCatalog, scan, render, maxScroll, detailLines };

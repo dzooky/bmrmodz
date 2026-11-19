@@ -18,8 +18,10 @@ function renderSteering(cv, theme, settings, mSport, gpu, temperatureFor) {
     cv.text(reading.label + ' ' + (Number.isFinite(reading.value) ? reading.value + ' °C' : '– °C'),
         800, 501, 18, theme.dim, center);
 
-    renderControlPanel(cv, CONTROL_X, 240, 'Heating', HEATING_COLOR, true, theme, gpu);
-    renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', CONTROL_X, HEATING_COLOR);
+    const enabled = settings.get('appEnabled') === true;
+    const color = enabled ? HEATING_COLOR : theme.dim;
+    renderControlPanel(cv, CONTROL_X, 240, 'Heating', color, true, theme, gpu);
+    renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', CONTROL_X, color, enabled);
 
 }
 

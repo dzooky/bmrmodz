@@ -163,6 +163,7 @@ mgu.run({
         let page = 'Info';
         let servicesReport = null;
         let servicesScroll = 0;
+        let servicesSelection = null;
         let aboutScroll = 0;
         let voStatus = savedCodes ? 'Saved vehicle order' : null;
         let readRequested = !savedCodes;
@@ -222,12 +223,13 @@ mgu.run({
         function scanBmwServices() {
             servicesReport = bmwServices.scan();
             servicesScroll = 0;
+            servicesSelection = null;
             page = 'BMW services';
         }
 
         ctx.onScroll(delta => {
             if (page === 'BMW services' && servicesReport) {
-                const next = Math.max(0, Math.min(bmwServices.maxScroll(servicesReport), servicesScroll + delta));
+                const next = Math.max(0, Math.min(bmwServices.maxScroll(servicesReport, servicesSelection), servicesScroll + delta));
                 if (next === servicesScroll) return false;
                 servicesScroll = next;
                 return true;
@@ -272,9 +274,15 @@ mgu.run({
             } else if (page === 'Steering') {
                 renderSteering(cv, theme, ctx.settings, equipment.mSportSteeringWheel === true, gpu, temperatureFor);
             } else if (page === 'BMW services') {
-                bmwServices.render(cv, theme, servicesReport, servicesScroll);
+                bmwServices.render(cv, theme, servicesReport, servicesScroll, servicesSelection, index => {
+                    servicesSelection = index;
+                    servicesScroll = 0;
+                });
                 for (const [x, label, run, key] of [
-                    [1225, 'Back', () => { page = 'My Car'; }, 'bmw-services-back'],
+                    [1225, servicesSelection === null ? 'Back' : 'List', () => {
+                        if (servicesSelection === null) page = 'My Car';
+                        else { servicesSelection = null; servicesScroll = 0; }
+                    }, 'bmw-services-back'],
                     [1375, 'Rescan', scanBmwServices, 'bmw-services-rescan'],
                 ]) {
                     cv.roundRect(x, 471, 125, 40, 10, '#ffffff19');
