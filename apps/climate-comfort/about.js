@@ -9,6 +9,7 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.52', 'Use garage test thresholds: heating at or below 20 C, ventilation at or above 10 C.'],
     ['0.1.51', 'Remove the extra vehicle-state interface required by engine-off testing.'],
     ['0.1.50', 'Allow automatic activation with ignition on for engine-off vehicle testing.'],
     ['0.1.49', 'Explain the effect of auxiliary heating on inside temperature readings.'],

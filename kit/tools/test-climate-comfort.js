@@ -10,6 +10,7 @@ const select = require(path.join(app, 'temperature-source'));
 const createAutomation = require(path.join(app, 'automation'));
 const createSettingsPage = require(path.join(app, 'settings'));
 const getActivationState = require(path.join(app, 'activation-state'));
+const applyTestThresholds = require(path.join(app, 'test-thresholds'));
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
 function sourceTests() {
@@ -81,6 +82,32 @@ function sourceTests() {
         assert(texts.includes(notice));
         assert(bounds.every(bottom => bottom <= 482)); // leave room for the footer
     }
+}
+
+function garageThresholdTests() {
+    const manifest = JSON.parse(fs.readFileSync(path.join(app, 'app.json'), 'utf8'));
+    const values = {};
+    for (const item of manifest.settings) values[item.key] = item.default;
+    values.frontLeftHeatingTemperature = 8;
+    values.frontLeftVentilationTemperature = 25;
+    values.frontLeftHeatingLevel = 2;
+    values.temperatureSource = 'outside';
+    const settings = { schema: manifest.settings, get: key => values[key], set: (key, value) => { values[key] = value; } };
+    applyTestThresholds(settings, false);
+    assert.equal(values.frontLeftHeatingTemperature, 8);
+    applyTestThresholds(settings, true);
+    for (const item of manifest.settings) {
+        if (item.key.endsWith('HeatingTemperature')) {
+            assert.equal(values[item.key], 20); assert.equal(item.max, 20);
+        } else if (item.key.endsWith('VentilationTemperature')) {
+            assert.equal(values[item.key], 10); assert.equal(item.min, 10);
+        }
+    }
+    assert.equal(values.frontLeftHeatingLevel, 2);
+    assert.equal(values.temperatureSource, 'outside');
+    values.frontLeftHeatingTemperature = 18;
+    applyTestThresholds(settings, true);
+    assert.equal(values.frontLeftHeatingTemperature, 18);
 }
 
 function activationStateTests() {
@@ -260,6 +287,7 @@ async function commandTests() {
 (async () => {
     sourceTests();
     activationStateTests();
+    garageThresholdTests();
     await temperatureAvailabilityTests();
     await automationTests();
     await commandTests();

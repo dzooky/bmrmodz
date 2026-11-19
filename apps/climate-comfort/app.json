@@ -2,7 +2,7 @@
   "id": "climate-comfort",
   "title": "Climate Comfort",
   "description": "Development preview of seat heating, seat ventilation and steering wheel heating rules for BMW iDrive 7.",
-  "version": "0.1.51",
+  "version": "0.1.52",
   "vendor": "custom",
   "loggingId": "CLCM",
   "settings": [
@@ -10,10 +10,10 @@
       "key": "frontLeftVentilationTemperature",
       "label": "Front left ventilation temperature",
       "type": "number",
-      "min": 25,
+      "min": 10,
       "max": 40,
       "step": 1,
-      "default": 25,
+      "default": 10,
       "hidden": true
     },
     {
@@ -21,19 +21,19 @@
       "label": "Front left heating temperature",
       "type": "number",
       "min": 0,
-      "max": 15,
+      "max": 20,
       "step": 1,
-      "default": 15,
+      "default": 20,
       "hidden": true
     },
     {
       "key": "frontRightVentilationTemperature",
       "label": "Front right ventilation temperature",
       "type": "number",
-      "min": 25,
+      "min": 10,
       "max": 40,
       "step": 1,
-      "default": 25,
+      "default": 10,
       "hidden": true
     },
     {
@@ -41,9 +41,9 @@
       "label": "Front right heating temperature",
       "type": "number",
       "min": 0,
-      "max": 15,
+      "max": 20,
       "step": 1,
-      "default": 15,
+      "default": 20,
       "hidden": true
     },
     {
@@ -91,19 +91,19 @@
       "label": "Steering wheel heating temperature",
       "type": "number",
       "min": 0,
-      "max": 15,
+      "max": 20,
       "step": 1,
-      "default": 15,
+      "default": 20,
       "hidden": true
     },
     {
       "key": "rearLeftVentilationTemperature",
       "label": "Rear left ventilation temperature",
       "type": "number",
-      "min": 25,
+      "min": 10,
       "max": 40,
       "step": 1,
-      "default": 25,
+      "default": 10,
       "hidden": true
     },
     {
@@ -111,19 +111,19 @@
       "label": "Rear left heating temperature",
       "type": "number",
       "min": 0,
-      "max": 15,
+      "max": 20,
       "step": 1,
-      "default": 15,
+      "default": 20,
       "hidden": true
     },
     {
       "key": "rearRightVentilationTemperature",
       "label": "Rear right ventilation temperature",
       "type": "number",
-      "min": 25,
+      "min": 10,
       "max": 40,
       "step": 1,
-      "default": 25,
+      "default": 10,
       "hidden": true
     },
     {
@@ -131,9 +131,9 @@
       "label": "Rear right heating temperature",
       "type": "number",
       "min": 0,
-      "max": 15,
+      "max": 20,
       "step": 1,
-      "default": 15,
+      "default": 20,
       "hidden": true
     },
     {
@@ -287,7 +287,8 @@
       }
     ],
     "customSettings": true,
-    "allowEngineOffTest": true
+    "allowEngineOffTest": true,
+    "garageThresholdTest": true
   },
   "signals": {
     "de.bmw.infotainment.vehicle.CDS": {

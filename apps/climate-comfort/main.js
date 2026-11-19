@@ -17,6 +17,7 @@ const createSettingsPage = require('./settings');
 const selectTemperature = require('./temperature-source');
 const createAutomation = require('./automation');
 const getActivationState = require('./activation-state');
+const applyTestThresholds = require('./test-thresholds');
 
 const NOTICE = [
     'This application is still in development phase and not ready for public use.',
@@ -106,6 +107,7 @@ function renderEquipment(cv, theme, equipment, rows, voStatus) {
 mgu.run({
     start(ctx) {
         ctx.hideButton('BTN_SETTINGS');
+        applyTestThresholds(ctx.settings, ctx.spec.config.garageThresholdTest === true);
         const settingsPage = createSettingsPage(ctx.settings);
         const rows = ctx.spec.config.previewEquipment;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
