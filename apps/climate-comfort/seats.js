@@ -75,9 +75,9 @@ function renderSeats(cv, theme, settings, equipment, row, test, gpu, temperature
                 center + CONTROL_OFFSET, 'Heating', '#ff945e', test, row === 'Front', gpu);
         }
         cv.text(row + ' ' + side.toLowerCase(), center, 473, 24, theme.text, { align: 'center' });
-        if (equipment[prefix + 'SeatHeating'] === true) {
+        if (equipment[prefix + 'SeatHeating'] === true || equipment[prefix + 'SeatVentilation'] === true) {
             const temperature = temperatures[key];
-            const label = Number.isFinite(temperature) ? temperature + ' °C' : '– °C';
+            const label = 'Footwell ' + (Number.isFinite(temperature) ? temperature + ' °C' : '– °C');
             cv.text(label, center, 501, 18, theme.dim, { align: 'center' });
         }
     });

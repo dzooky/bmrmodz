@@ -78,13 +78,17 @@ function renderEquipment(cv, theme, equipment, rows, voStatus, temperatureDiagno
     cv.text('Equipment', 66, 96, 19, theme.dim);
     cv.text('Installed', 1450, 96, 19, theme.dim, center);
     if (voStatus) cv.text(voStatus, 800, 70, 17, theme.dim, center);
-    cv.text('Seat temperature reads', 1000, 96, 17, theme.dim, center);
+    cv.text('Footwell temperature read', 1000, 96, 17, theme.dim, center);
+
+    const temperatureRow = { frontSeatHeating: 'front', rearSeatHeating: 'rear' };
+    if (equipment.frontSeatHeating !== true) temperatureRow.frontSeatVentilation = 'front';
+    if (equipment.rearSeatHeating !== true) temperatureRow.rearSeatVentilation = 'rear';
 
     rows.forEach(({ key, label }, index) => {
         const y = 140 + index * 62;
         cv.fillRect(55, y - 25, 1490, 1, theme.dim);
         cv.text(label, 66, y + 13, 24, theme.text);
-        const row = key === 'frontSeatHeating' ? 'front' : key === 'rearSeatHeating' ? 'rear' : null;
+        const row = temperatureRow[key];
         if (row && equipment[key] === true) {
             for (const [offset, side] of [[0, 'Left'], [1, 'Right']]) {
                 const result = temperatureDiagnostics[row + side] || 'Open ' + (row === 'front' ? 'Front' : 'Rear') + ' to read';
@@ -123,7 +127,7 @@ mgu.run({
         }
         const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
         const temperatureDiagnostics = {};
-        const readSeatTemperature = link ? createSeatTemperatureReader(link, temperatureDiagnostics) : null;
+        const readFootwellTemperatures = link ? createSeatTemperatureReader(link, temperatureDiagnostics) : null;
         const seatTemperatures = {};
         let temperatureReading = false;
         let nextTemperatureRead = 0;
@@ -168,24 +172,15 @@ mgu.run({
 
         async function refreshSeatTemperatures(row) {
             const prefix = row.toLowerCase();
-            if (!readSeatTemperature || temperatureReading || Date.now() < nextTemperatureRead ||
-                equipment[prefix + 'SeatHeating'] !== true) return;
+            if (!readFootwellTemperatures || temperatureReading || Date.now() < nextTemperatureRead ||
+                (equipment[prefix + 'SeatHeating'] !== true && equipment[prefix + 'SeatVentilation'] !== true)) return;
             temperatureReading = true;
             try {
-                for (const side of ['Left', 'Right']) {
-                    const key = prefix + side;
-                    if (page !== row) break;
-                    try {
-                        const result = await enqueueDiagnostic(() => (
-                            page === row && equipment[prefix + 'SeatHeating'] === true
-                                ? readSeatTemperature(key) : null
-                        ));
-                        if (page === row) seatTemperatures[key] = result;
-                    } catch (error) {
-                        if (page === row) seatTemperatures[key] = null;
-                        ctx.log.warn('Climate Comfort ' + key + ' temperature: ' + error.message);
-                    }
-                }
+                await enqueueDiagnostic(async () => {
+                    if (page !== row) return;
+                    const temperatures = await readFootwellTemperatures();
+                    Object.assign(seatTemperatures, temperatures);
+                });
             } finally {
                 temperatureReading = false;
                 nextTemperatureRead = Date.now() + 5000;
@@ -213,7 +208,7 @@ mgu.run({
             if (tabs[index] && page !== tabs[index]) {
                 page = tabs[index];
                 nextTemperatureRead = 0;
-                if (link && (page === 'Front' || page === 'Rear')) link.wake(0x40);
+                if (link && (page === 'Front' || page === 'Rear')) link.wake(0x78);
             }
         });
 

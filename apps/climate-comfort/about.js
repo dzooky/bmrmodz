@@ -9,6 +9,7 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.44', 'Show the footwell temperature for each seat from IHKA.'],
     ['0.1.43', 'Retry alternate seat temperature reads and show replies in My Car.'],
     ['0.1.42', 'Render test and sync labels with smooth control icons.'],
     ['0.1.41', 'Sync front or all seat settings from the driver seat.'],
