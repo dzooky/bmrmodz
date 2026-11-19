@@ -7,6 +7,10 @@
     "mguHmi": [
       "ID7"
     ],
+    "requires": {
+      "idrive7-renderd": "2.1.19",
+      "mgu-inputgate": "1.2.1"
+    },
     "build": {
       "python": "kit/tools/build.py",
       "args": [
