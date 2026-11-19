@@ -51,14 +51,39 @@ async function readBelt(request, position) {
     return null;
 }
 
-async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true, waitMs = BELT_WAIT_MS, signal, report = () => {}) {
+function createBeltReader(request, clock = Date.now) {
+    const cache = new Map();
+    const read = position => {
+        const current = cache.get(position);
+        if (current && (current.pending || clock() < current.expires)) {
+            return current.error ? Promise.reject(current.error) : current.promise;
+        }
+        const entry = { pending: true, expires: 0, error: null, promise: null };
+        cache.set(position, entry);
+        entry.promise = readBelt(request, position).then(state => {
+            entry.pending = false;
+            entry.expires = clock() + (state === 0 || state === 1 ? 5000 : 500);
+            return state;
+        }, error => {
+            entry.pending = false;
+            entry.error = error;
+            entry.expires = clock() + 500;
+            throw error;
+        });
+        return entry.promise;
+    };
+    read.clear = () => cache.clear();
+    return read;
+}
+
+async function waitForBelt(request, position, log, ready, enqueue, onLatched, keepWaiting = () => true, waitMs = BELT_WAIT_MS, signal, report = () => {}, readState) {
     const deadline = Date.now() + waitMs;
     while (Date.now() < deadline && keepWaiting()) {
         const state = await enqueue(async () => {
             if (Date.now() >= deadline || !keepWaiting()) return null;
             let belt = null, beltError = null;
             try {
-                belt = await readBelt(request, position);
+                belt = await (readState ? readState(position) : readBelt(request, position));
             } catch (error) {
                 log.warn('Climate Comfort belt check: ' + error.message);
                 beltError = /busy|TEMPORARILY_NOT_ACCEPTED/i.test(error.message) ? 'Belt: TASU busy' : 'Belt unavailable';
@@ -76,4 +101,4 @@ async function waitForBelt(request, position, log, ready, enqueue, onLatched, ke
     return false;
 }
 
-module.exports = { createCancellation, pause, readBelt, beltCheckDelay, waitForBelt, BELT_WAIT_MS };
+module.exports = { createCancellation, createBeltReader, pause, readBelt, beltCheckDelay, waitForBelt, BELT_WAIT_MS };

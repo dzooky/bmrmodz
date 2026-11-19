@@ -377,6 +377,37 @@ async function cancellationAndRestartTests() {
     releases.shift()(false); await flush();
 }
 
+async function diagnosticPacingTests() {
+    const { createBeltReader } = require(path.join(app, 'belt-test'));
+    let time = 1000, reads = 0, state = 0, busy = false;
+    const reader = createBeltReader(async () => {
+        reads++;
+        if (busy) throw Error('TASU busy');
+        return [0x71, 1, 0xa0, 0xd2, state];
+    }, () => time);
+    assert.deepEqual(await Promise.all([reader('frontLeft'), reader('frontLeft')]), [0, 0]);
+    assert.equal(reads, 1);
+    await reader('frontRight'); assert.equal(reads, 2);
+    time += 4999; await reader('frontLeft'); assert.equal(reads, 2);
+    time++; state = 1; assert.equal(await reader('frontLeft'), 1); assert.equal(reads, 3);
+    time += 4000; assert.equal(await reader('frontLeft'), 1); assert.equal(reads, 3);
+    reader.clear(); busy = true;
+    await assert.rejects(reader('frontLeft'), /TASU busy/); assert.equal(reads, 4);
+    time += 499; await assert.rejects(reader('frontLeft'), /TASU busy/); assert.equal(reads, 4);
+    time++; busy = false; assert.equal(await reader('frontLeft'), 1); assert.equal(reads, 5);
+
+    const createQueue = require(path.join(app, 'diagnostic-queue'));
+    const starts = [];
+    const queue = createQueue(350, () => time, async ms => { time += ms; });
+    await queue(async () => { starts.push(time); });
+    await queue(async () => { starts.push(time); queue.backoff(1000); });
+    await assert.rejects(queue(async () => { starts.push(time); throw Error('No response'); }), /No response/);
+    await queue(async () => { starts.push(time); });
+    assert(starts[1] - starts[0] >= 350);
+    assert(starts[2] - starts[1] >= 1000);
+    assert(starts[3] - starts[2] >= 350);
+}
+
 async function commandTests() {
     const h = diagnosticHarness();
     const seats = h.load('ihka-test')(h.ctx, () => true, operation => operation());
@@ -423,5 +454,6 @@ async function commandTests() {
     await manualFrontTest();
     await combinedFrontCommandsTest();
     await cancellationAndRestartTests();
+    await diagnosticPacingTests();
     console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, live diagnostic/engine gating, session decisions, belt retries and complete press/release/stop, unlimited Front Start/Stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });

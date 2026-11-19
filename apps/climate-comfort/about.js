@@ -9,6 +9,7 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.55', 'Share belt reads per seat and pace diagnostics to reduce TASU busy errors.'],
     ['0.1.54', 'Show each front test stage and cancel belt waits when stopped.'],
     ['', 'Keep older tasks from marking a restarted test as completed.'],
     ['0.1.53', 'Start and stop front-seat automatic tests without a time limit.'],

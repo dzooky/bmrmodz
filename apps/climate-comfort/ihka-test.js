@@ -1,7 +1,7 @@
 'use strict';
 
 const { Diag, replyTo, hex } = require('./kit/diag');
-const { pause, waitForBelt } = require('./belt-test');
+const { pause, waitForBelt, createBeltReader } = require('./belt-test');
 
 const IHKA = 0x78;
 const REQUEST_GAP_MS = 300;
@@ -17,13 +17,27 @@ const SEATS = {
 function createIhkaTest(ctx, activationReady, enqueue) {
     const diag = ctx.isPreview ? null : new Diag(ctx.signals, ctx.log);
     const active = new Set();
+    const readSharedBelt = createBeltReader(readBeltRequest);
+    let nextRequest = 0;
 
     async function request(address, service, data, maxRetries = 3) {
-        const reply = await diag.physical(address, service, data, 1500, replyTo(service, data),
-            { hardTimeoutMs: 4500, callTimeoutMs: 2000, maxRetries, retryBaseMs: 400 });
-        if (!reply) throw new Error('No response from ' + hex(address));
-        if (reply[0] === 0x7F) throw new Error('ECU ' + hex(address) + ' NRC ' + hex(reply[2]));
-        return reply;
+        const remaining = nextRequest - Date.now();
+        if (remaining > 0) await pause(remaining);
+        try {
+            const reply = await diag.physical(address, service, data, 1500, replyTo(service, data),
+                { hardTimeoutMs: 4500, callTimeoutMs: 2000, maxRetries, retryBaseMs: 400 });
+            if (!reply) throw new Error('No response from ' + hex(address));
+            if (reply[0] === 0x7F) throw new Error('ECU ' + hex(address) + ' NRC ' + hex(reply[2]));
+            return reply;
+        } catch (error) {
+            if (/busy|TEMPORARILY_NOT_ACCEPTED/i.test(error.message)) {
+                nextRequest = Date.now() + 1000;
+                if (enqueue.backoff) enqueue.backoff(1000);
+            }
+            throw error;
+        } finally {
+            nextRequest = Math.max(nextRequest, Date.now() + 350);
+        }
     }
 
     async function readLevel(offset) {
@@ -106,7 +120,7 @@ function createIhkaTest(ctx, activationReady, enqueue) {
                 return false;
             }
             return await waitForBelt(readBeltRequest, position, ctx.log, ready, enqueue,
-                () => activate(button, offset, target, ready, report), automaticReady || (() => true), options && options.waitMs, options && options.signal, report);
+                () => activate(button, offset, target, ready, report), automaticReady || (() => true), options && options.waitMs, options && options.signal, report, readSharedBelt);
         } catch (error) {
             ctx.log.warn('Climate Comfort ' + key + ': ' + error.message);
             const message = error.message;
@@ -120,7 +134,7 @@ function createIhkaTest(ctx, activationReady, enqueue) {
         }
     }
 
-    return { run, isActive: key => active.has(key) };
+    return { run, resetBeltChecks: readSharedBelt.clear, isActive: key => active.has(key) };
 }
 
 module.exports = createIhkaTest;

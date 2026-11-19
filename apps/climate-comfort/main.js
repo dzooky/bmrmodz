@@ -18,6 +18,7 @@ const selectTemperature = require('./temperature-source');
 const createAutomation = require('./automation');
 const getActivationState = require('./activation-state');
 const applyTestThresholds = require('./test-thresholds');
+const createDiagnosticQueue = require('./diagnostic-queue');
 
 const NOTICE = [
     'This application is still in development phase and not ready for public use.',
@@ -114,12 +115,7 @@ mgu.run({
         const cacheFile = link && path.join(ctx.dataDir, 'vehicle-order.json');
         const savedCodes = cacheFile && loadSavedCodes(cacheFile, ctx.log);
         let equipment = savedCodes ? equipmentFromCodes(savedCodes) : {};
-        let diagnosticTail = Promise.resolve();
-        function enqueueDiagnostic(operation) {
-            const result = diagnosticTail.then(operation);
-            diagnosticTail = result.catch(() => {});
-            return result;
-        }
+        const enqueueDiagnostic = createDiagnosticQueue();
         const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
         const readFootwellTemperatures = link ? createSeatTemperatureReader(link, ctx.log) : null;
         const seatTemperatures = {};
@@ -169,6 +165,7 @@ mgu.run({
                 else {
                     nextTemperatureRead = 0;
                     if (link) link.wake(0x78);
+                    ihkaTest.resetBeltChecks();
                     automation.start();
                 }
             },
@@ -217,7 +214,7 @@ mgu.run({
                 });
             } finally {
                 temperatureReading = false;
-                nextTemperatureRead = Date.now() + 5000;
+                nextTemperatureRead = Date.now() + (frontTest && frontTest.isRunning() ? 10000 : 5000);
             }
         }
 
