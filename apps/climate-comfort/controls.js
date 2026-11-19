@@ -7,7 +7,7 @@ function renderTemperatureButton(cv, settings, key, x, y, direction, color) {
     cv.polyline([[x - 10, y + direction * 4], [x, y - direction * 6],
         [x + 10, y + direction * 4]], 3, color);
     cv.target(x - 38, y - 23, 76, 46, () => adjustSetting(settings, key, direction),
-        key + (direction > 0 ? '-up' : '-down'));
+        key + (direction > 0 ? '-up' : '-down'), 10, color);
 }
 
 function adjustSetting(settings, key, direction) {
@@ -96,7 +96,7 @@ function renderControlAction(cv, theme, x, y, label, color, key, run, height = 3
         if (run) cv.strokeRoundRect(x - 61, y, 122, height, 8, 1, color);
         cv.text(label, x, y + height / 2 + 6, 18, run ? theme.text : theme.dim, { align: 'center' });
     }
-    if (run) cv.target(x - 61, y, 122, height, run, key);
+    if (run) cv.target(x - 61, y, 122, height, run, key, 8, color);
 }
 
 module.exports = { renderTemperature, adjustSetting, settingValue, renderControlPanel, renderControlAction };

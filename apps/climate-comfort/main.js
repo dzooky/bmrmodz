@@ -16,6 +16,7 @@ const renderSteering = require('./steering');
 const createSettingsPage = require('./settings');
 const selectTemperature = require('./temperature-source');
 const createAutomation = require('./automation');
+const getActivationState = require('./activation-state');
 
 const NOTICE = [
     'This application is still in development phase and not ready for public use.',
@@ -147,16 +148,13 @@ mgu.run({
         }
         let temperatureReading = false;
         let nextTemperatureRead = 0;
-        const car = link ? new Car(ctx, ['rpm']) : null;
-        const engineState = () => {
-            if (!car) return null;
-            const { rpm, demo } = car.data();
-            if (demo || Date.now() - car.lastCar > 5000 || !Number.isFinite(rpm)) return null;
-            return rpm >= 300;
-        };
-        const engineRunning = () => engineState() === true;
-        const ihkaTest = createIhkaTest(ctx, engineRunning, enqueueDiagnostic);
-        const automation = createAutomation(ctx.settings, temperatureFor, engineState, ihkaTest, wheelTest, ctx.log);
+        const car = link ? new Car(ctx, ['rpm', 'condition']) : null;
+        const allowEngineOffTest = ctx.spec.config.allowEngineOffTest === true;
+        const activationState = () => car
+            ? getActivationState(car.data(), allowEngineOffTest, car.lastCar) : null;
+        const activationReady = () => activationState() === true;
+        const ihkaTest = createIhkaTest(ctx, activationReady, enqueueDiagnostic);
+        const automation = createAutomation(ctx.settings, temperatureFor, activationState, ihkaTest, wheelTest, ctx.log);
         let tabs = [];
         let page = 'Info';
         let aboutScroll = 0;

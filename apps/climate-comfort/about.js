@@ -9,6 +9,10 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.50', 'Allow automatic activation with ignition on for engine-off vehicle testing.'],
+    ['0.1.49', 'Explain the effect of auxiliary heating on inside temperature readings.'],
+    ['', 'Match Settings selection highlights to the rounded menu rows.'],
+    ['', 'Match temperature and level highlights to their shape and segment color.'],
     ['0.1.48', 'Use selected temperature sources for automatic activation.'],
     ['', 'Show selected readings below seats and the steering wheel.'],
     ['', 'Use the driver sensor for inside steering wheel temperature.'],
@@ -109,7 +113,7 @@ function renderAbout(cv, theme, offset) {
     text('CLIMATE COMFORT', 640, 218, 30, theme.text,
         { align: 'center', font: 'bold', spacing: 2.5 });
     text('Temperature rules for seat heating, ventilation and steering wheel heating.', 640, 252, 19, theme.dim, center);
-    text('Automatic activation requires the engine to be running and the relevant seat belt to be fastened.',
+    text('This test version requires ignition on and the relevant seat belt to be fastened.',
         640, 280, 19, theme.dim, center);
     text('Version ' + version, 640, 309, 18, theme.dim, center);
     text('Developed by dzooky@bmrmodz', 640, 349, 18, theme.text, center);

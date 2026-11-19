@@ -23,7 +23,7 @@ function renderLevelButton(cv, settings, key, x, y, direction, color) {
     cv.polyline([[x - direction * 4, y - 10], [x + direction * 6, y],
         [x - direction * 4, y + 10]], 3, color);
     cv.target(x - 20, y - 23, 40, 46, () => adjustSetting(settings, key, direction),
-        key + (direction > 0 ? '-right' : '-left'));
+        key + (direction > 0 ? '-right' : '-left'), 10, color);
 }
 
 function syncSeats(settings, equipment, allSeats) {

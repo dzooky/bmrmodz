@@ -3,7 +3,7 @@
 const WINDOW_MS = 60000;
 const POSITIONS = ['frontLeft', 'frontRight', 'rearLeft', 'rearRight'];
 
-module.exports = function createAutomation(settings, temperatureFor, engineState, seats, wheel, log, clock) {
+module.exports = function createAutomation(settings, temperatureFor, activationState, seats, wheel, log, clock) {
     const now = clock || Date.now;
     let running = false, generation = 0, deadline = 0, currentEquipment = {};
     const completed = new Set(), pending = new Set(), nextAttempt = new Map(), initial = new Map();
@@ -43,13 +43,13 @@ module.exports = function createAutomation(settings, temperatureFor, engineState
 
     function tick(equipment) {
         currentEquipment = equipment;
-        const engine = engineState();
-        // Missing RPM is not an engine-stop event and must not rearm the session.
-        if (engine === false) {
+        const enabled = activationState();
+        // An unavailable activation state must not rearm the session.
+        if (enabled === false) {
             if (running) { running = false; generation++; }
             return;
         }
-        if (engine !== true) return;
+        if (enabled !== true) return;
         if (!running) {
             running = true;
             generation++;
@@ -71,7 +71,7 @@ module.exports = function createAutomation(settings, temperatureFor, engineState
             if (!condition) return;
             const session = generation;
             const ready = () => {
-                if (generation !== session || engineState() !== true || now() >= deadline) return false;
+                if (generation !== session || activationState() !== true || now() >= deadline) return false;
                 const currentJob = jobs(currentEquipment).find(candidate => candidate.key === job.key);
                 if (!currentJob || currentJob.level !== job.level ||
                     settings.get(job.thresholdKey) !== condition.threshold) return false;

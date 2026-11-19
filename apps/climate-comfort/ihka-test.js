@@ -14,7 +14,7 @@ const SEATS = {
     rearRight: { Heating: [0x23, 24], Ventilation: [0x25, 26] },
 };
 
-function createIhkaTest(ctx, engineRunning, enqueue) {
+function createIhkaTest(ctx, activationReady, enqueue) {
     const diag = ctx.isPreview ? null : new Diag(ctx.signals, ctx.log);
     const active = new Set();
 
@@ -92,9 +92,9 @@ function createIhkaTest(ctx, engineRunning, enqueue) {
         if (!control || !Number.isInteger(target) || target < 1 || target > 3 || active.has(key)) return;
         active.add(key);
         const [button, offset] = control;
-        const requiresEngine = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
+        const requiresActivation = mode === 'Ventilation' && (position === 'rearLeft' || position === 'rearRight');
         const automaticReady = options && options.ready;
-        const ready = () => (!requiresEngine || engineRunning()) && (!automaticReady || automaticReady());
+        const ready = () => (!requiresActivation || activationReady()) && (!automaticReady || automaticReady());
         try {
             if (!diag) {
                 await pause(REQUEST_GAP_MS);

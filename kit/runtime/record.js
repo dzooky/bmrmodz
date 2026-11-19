@@ -113,7 +113,7 @@ class Recorder {
      * key names it from frame to frame (the controller stays on it). Drawn by the caller; where the kit
      * runs the screen (display.js) it rings the one the controller is on.
      */
-    target(x, y, w, h, run, key, r) { this.targets.push({ x, y, w, h, run, key: String(key), r }); return this; }
+    target(x, y, w, h, run, key, r, focusColor) { this.targets.push({ x, y, w, h, run, key: String(key), r, focusColor }); return this; }
 
     /* ---------- canvas.js API ---------- */
     /** Draw pixel image `id` (see setImage) scaled into x, y, w, h (nearest pixel). */

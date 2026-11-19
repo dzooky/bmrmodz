@@ -9,6 +9,7 @@ const app = path.resolve(__dirname, '../../apps/climate-comfort');
 const select = require(path.join(app, 'temperature-source'));
 const createAutomation = require(path.join(app, 'automation'));
 const createSettingsPage = require(path.join(app, 'settings'));
+const getActivationState = require(path.join(app, 'activation-state'));
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 
 function sourceTests() {
@@ -56,6 +57,42 @@ function sourceTests() {
     render();
     assert(!targets['rear-temperature-source']);
     assert(!targets['steering-temperature-source']);
+
+    const notice = 'Inside temperature is affected by auxiliary heating while it is running.';
+    values.temperatureSource = 'inside';
+    render(); assert(!texts.includes(notice));
+    equipment.auxiliaryHeating = true;
+    render(); assert(texts.includes(notice));
+    values.temperatureSource = 'outside';
+    values.rearTemperatureSource = 'inside';
+    values.steeringTemperatureSource = 'inside';
+    render(); assert(!texts.includes(notice)); // hidden equipment choices do not count
+    equipment.rearSeatHeating = true;
+    render(); assert(texts.includes(notice));
+    values.rearTemperatureSource = 'outside';
+    render(); assert(!texts.includes(notice));
+    equipment.steeringWheelHeating = true;
+    render(); assert(texts.includes(notice));
+    values.steeringTemperatureSource = 'outside';
+    render(); assert(!texts.includes(notice));
+    values.temperatureSource = 'inside';
+    for (const key of ['temperature-source', 'rear-temperature-source', 'steering-temperature-source']) {
+        page.close(); render(); targets[key](); render();
+        assert(texts.includes(notice));
+        assert(bounds.every(bottom => bottom <= 482)); // leave room for the footer
+    }
+}
+
+function activationStateTests() {
+    const data = { demo: false, rpm: 0, condition: 7 };
+    assert.equal(getActivationState(data, true, 0, 10000), true);
+    for (const condition of [8, 10]) assert.equal(getActivationState({ ...data, condition }, true, 0, 10000), true);
+    for (const condition of [1, 2, 3, 5, 12]) assert.equal(getActivationState({ ...data, condition }, true, 0, 10000), false);
+    for (const condition of [undefined, 15]) assert.equal(getActivationState({ ...data, condition }, true, 0, 10000), null);
+    assert.equal(getActivationState({ ...data, demo: true }, true, 0, 10000), null);
+    assert.equal(getActivationState(data, false, 10000, 10000), false);
+    assert.equal(getActivationState({ ...data, rpm: 700 }, false, 10000, 10000), true);
+    assert.equal(getActivationState({ ...data, rpm: 700 }, false, 0, 10000), null);
 }
 
 async function automationTests() {
@@ -209,7 +246,8 @@ async function commandTests() {
 
 (async () => {
     sourceTests();
+    activationStateTests();
     await automationTests();
     await commandTests();
-    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, engine gating, session decisions, belt retries and complete press/release/stop.');
+    console.log('PASS: source selection, rear fallback, driver sensor for steering, UI choices, ignition/engine gating, session decisions, belt retries and complete press/release/stop.');
 })().catch(error => { console.error(error); process.exitCode = 1; });
