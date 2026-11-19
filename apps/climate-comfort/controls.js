@@ -1,5 +1,7 @@
 'use strict';
 
+const controlTexture = require('./control-texture');
+
 function renderTemperatureButton(cv, settings, key, x, y, direction, color) {
     cv.roundRect(x - 38, y - 23, 76, 46, 10, '#ffffff12');
     cv.polyline([[x - 10, y + direction * 4], [x, y - direction * 6],
@@ -47,8 +49,7 @@ function renderControlIcon(cv, x, y, title, color) {
     }
 }
 
-function renderControlPanel(cv, x, height, title, color, steering = false) {
-    cv.strokeRoundRect(x - 82, 92, 164, height, 15, 2, color);
+function drawPanelIcon(cv, x, steering, title, color) {
     if (steering) {
         cv.arc(x - 4, 132, 10.5, 12.5, 76, 360, color);
         cv.roundRect(x - 7.5, 128.5, 7, 7, 3.5, color);
@@ -63,13 +64,38 @@ function renderControlPanel(cv, x, height, title, color, steering = false) {
     } else {
         renderControlIcon(cv, x, 125, title, color);
     }
+}
+
+function renderControlPanel(cv, x, height, title, color, steering = false, theme, gpu) {
+    cv.strokeRoundRect(x - 82, 92, 164, height, 15, 2, color);
+    const key = steering ? 'steering-icon' : title + '-icon';
+    const draw = pen => drawPanelIcon(pen, 24, steering, title, color);
+    // The icon drawing uses its original vertical coordinates inside a translated pen.
+    const rendered = controlTexture(cv, theme, gpu, key, color, x - 24, 101, 48, 46, pen => {
+        draw({
+            arc: (cx, cy, ...args) => pen.arc(cx, cy - 101, ...args),
+            polyline: (points, ...args) => pen.polyline(points.map(([px, py]) => [px, py - 101]), ...args),
+            roundRect: (left, top, ...args) => pen.roundRect(left, top - 101, ...args),
+        });
+    });
+    if (!rendered) drawPanelIcon(cv, x, steering, title, color);
     cv.text(title, x, 159, 18, color, { align: 'center' });
 }
 
-function renderControlAction(cv, theme, x, y, label, color, key, run, height = 32) {
-    cv.roundRect(x - 61, y, 122, height, 8, '#ffffff12');
-    if (run) cv.strokeRoundRect(x - 61, y, 122, height, 8, 1, color);
-    cv.text(label, x, y + height / 2 + 6, 17, run ? theme.text : theme.dim, { align: 'center' });
+function renderControlAction(cv, theme, x, y, label, color, key, run, height = 32, gpu) {
+    const enabled = !!run;
+    const draw = pen => {
+        pen.roundRect(0, 0, 122, height, 8, '#ffffff12');
+        if (enabled) pen.strokeRoundRect(0, 0, 122, height, 8, 1, color);
+        pen.text(label, 61, height / 2 + 6, 17, enabled ? theme.text : theme.dim, { align: 'center' });
+    };
+    const rendered = controlTexture(cv, theme, gpu, key,
+        [label, color, enabled, theme.text, theme.dim], x - 61, y, 122, height, draw);
+    if (!rendered) {
+        cv.roundRect(x - 61, y, 122, height, 8, '#ffffff12');
+        if (run) cv.strokeRoundRect(x - 61, y, 122, height, 8, 1, color);
+        cv.text(label, x, y + height / 2 + 6, 18, run ? theme.text : theme.dim, { align: 'center' });
+    }
     if (run) cv.target(x - 61, y, 122, height, run, key);
 }
 

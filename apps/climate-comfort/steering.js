@@ -15,13 +15,13 @@ function renderSteering(cv, theme, settings, mSport, wheelTest, gpu) {
     drawWheel(cv, theme, gpu, 800 - SIZE / 2, 93);
     cv.text(mSport ? 'M Sport' : 'Standard', 800, 473, 24, theme.text, center);
 
-    renderControlPanel(cv, CONTROL_X, 304, 'Heating', HEATING_COLOR, true);
+    renderControlPanel(cv, CONTROL_X, 304, 'Heating', HEATING_COLOR, true, theme, gpu);
     renderTemperature(cv, theme, settings, 'steeringHeatingTemperature', CONTROL_X, HEATING_COLOR);
     const key = 'steeringHeating';
     const enabled = !wheelTest.isBusy();
     const action = wheelTest.isActive(key) ? 'Deactivate' : wheelTest.isPending(key) ? 'Cancel' : 'Test heating';
     renderControlAction(cv, theme, CONTROL_X, 350, action, HEATING_COLOR, key + '-test',
-        enabled ? wheelTest.run : null);
+        enabled ? wheelTest.run : null, 32, gpu);
 }
 
 module.exports = renderSteering;
