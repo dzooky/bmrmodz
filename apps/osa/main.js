@@ -128,6 +128,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
                 ['0.2.50', 'Scrollable release history'],
                 ['0.2.49', 'Settings tab in Standard layout'],
                 ['0.2.46', 'App language in Settings'],

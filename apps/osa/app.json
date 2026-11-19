@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.50",
+  "version": "0.2.51",
   "settingsBeforeLast": true,
   "settingsTabInStandard": true,
   "vendor": "custom",
@@ -36,10 +36,6 @@
       "type": "choice",
       "default": "auto",
       "options": [
-        [
-          "auto",
-          "Use iDrive language"
-        ],
         [
           "en",
           "English"
