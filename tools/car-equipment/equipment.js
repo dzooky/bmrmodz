@@ -4,9 +4,10 @@ const ALIASES=Object.freeze({hud:'610',head_up_display:'610',cluster_6wb:'6WB',d
 function normalize(x) { if(typeof x!=='string')return null; const s=x.trim().toLowerCase();const code=ALIASES[s]||s.toUpperCase();return /^[0-9A-Z]{3}$/.test(code)?code:null; }
 function status(code,codes) { return !codes?'unknown':codes.has(code); }
 class Equipment {
-  constructor(link) {this.link=link;this.codes=null;this.error='Not loaded';this.updatedAt=null;this.pending=null;}
+  constructor(link) {this.link=link;this.codes=null;this.error='Not loaded';this.updatedAt=null;this.pending=null;this.attemptedAt=0;}
   async refresh() {
     if(this.pending)return this.pending;
+    this.attemptedAt=Date.now();
     this.pending=(async()=>{try{
       const result=await readVehicleOrder(this.link);
       if(result.codes){this.codes=result.codes;this.error=null;this.updatedAt=new Date().toISOString();}
