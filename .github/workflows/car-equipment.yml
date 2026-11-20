@@ -26,4 +26,7 @@ jobs:
         run: |
           for file in tools/car-equipment/*.js kit/runtime/car-equipment.js; do node --check "$file"; done
       - name: Test Vehicle Order and TASU response handling
-        run: node tools/car-equipment/test.js
+        run: |
+          node tools/car-equipment/test.js
+          node tools/car-equipment/cache.test.js
+          node tools/car-equipment/one-shot.test.js
