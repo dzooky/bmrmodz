@@ -1,7 +1,7 @@
 {
   "id": "dpf",
   "title": "DPF Status",
-  "description": "Read-only diesel particulate filter status monitoring",
+  "description": "Read-only BMW DPF monitoring for B57 and B47 diesel engines, with validated soot, ash and regeneration distance gauges.",
   "version": "0.1.38",
   "vendor": "custom",
   "loggingId": "DPF1",
