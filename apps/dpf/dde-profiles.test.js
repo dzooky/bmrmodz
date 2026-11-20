@@ -12,7 +12,7 @@ assert.deepStrictEqual(b57.overview.map(row=>row[0]),['SOOT','ASH','SINCE','AVER
 assert.strictEqual(b47.detail.length,0,'B47 must not use B57 detail DIDs');
 assert.ok(b57.detail.some(row=>row[0]==='TEMP'));
 assert.ok(b57.detail.some(row=>row[0]==='PRESSURE'));
-const raw={SOOT:0x067e,ASH:0x073b,SINCE:0x0006e076,AVERAGE:0x0241};
+const raw={SOOT:0x067e,ASH:0x073b,SINCE:0x0006e078,AVERAGE:0x0241};
 assert.strictEqual((raw.SOOT*b47.overview[0][3]).toFixed(2),'25.36');
 assert.strictEqual((raw.ASH*b47.overview[1][3]).toFixed(2),'28.24');
 assert.strictEqual(km({raw:raw.SINCE},b47.distanceFactor).toFixed(2),'450.68');
