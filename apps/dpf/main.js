@@ -18,6 +18,7 @@ const regenMessage = require('./regen-message');
 const { t: translate, setRuntimeTranslations } = require('./kit/i18n');
 const locales = require('./translations');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
+const CarEquipment = require('./kit/car-equipment');
 
 const W = 1600;
 const H = 520;
@@ -26,6 +27,28 @@ const TABS = ['Overview', 'Detail', 'About'];
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
+        // Fail closed: 6WB must be confirmed in a valid FA/VO before cluster features are offered.
+        ctx.settings.values.cluster6wbAvailable = false;
+        let equipmentChecking = false;
+        let equipmentCheckedAt = 0;
+        async function refreshClusterEquipment() {
+            if (equipmentChecking || Date.now() - equipmentCheckedAt < 30000) return;
+            equipmentChecking = true;
+            equipmentCheckedAt = Date.now();
+            try {
+                const result = await CarEquipment.has('6WB', { timeout: 12000 });
+                const supported = result === true;
+                ctx.settings.set('cluster6wbAvailable', supported);
+                if (!supported && ctx.settings.get('regenCluster')) ctx.settings.set('regenCluster', false);
+                log.info('DPF Car Equipment 6WB (VO) = ' + result);
+            } catch (error) {
+                ctx.settings.set('cluster6wbAvailable', false);
+                if (ctx.settings.get('regenCluster')) ctx.settings.set('regenCluster', false);
+                log.warn('DPF Car Equipment 6WB: ' + String(error && error.message || error));
+            } finally { equipmentChecking = false; }
+        }
+        refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
+
         let idriveLanguage = 'en';
         const languageOptions = ctx.settings.item('language').options.map(([code, label]) =>
             [code === 'auto' ? 'en' : code, label.replace(/ \(auto\)$/, '')]);
@@ -197,10 +220,12 @@ mgu.run({
             return request.raw >= 4 && request.raw <= 6 ? 'requested' : 'idle';
         }
 
-        const clusterEnabled = () => ctx.settings.get('regenCluster') === true;
+        const clusterEnabled = () => ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('regenCluster') === true;
         const indicator = regenMessage.createIndicator();
         let clusterTestStartedAt = null;
-        ctx.settings.onAction('regenClusterTest', () => { clusterTestStartedAt = Date.now(); });
+        ctx.settings.onAction('regenClusterTest', () => {
+            if (ctx.settings.values.cluster6wbAvailable === true) clusterTestStartedAt = Date.now();
+        });
         regenMessage.start(log, () => {
             const now = Date.now();
             const liveMessage = indicator(clusterEnabled() ? regenState(15000) : null, now);
@@ -306,6 +331,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.34', 'Cluster notification settings require detected 6WB'],
                 ['0.1.31', 'All 22 iDrive languages'],
                 ['0.1.26', 'Cluster regeneration messages'],
                 ['0.1.24', 'Equal-height gauges on Overview'],
@@ -479,6 +505,7 @@ mgu.run({
             if (next && next !== page) return openPage(next);
         });
         ui.onVisible((name, visible) => {
+            if (name === 'MAIN' && visible) refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
             if (name === 'MAIN' && visible && identified && !testing
                 && (page === 'detail' ? !hasDetailMeasurements() : !readAttempted)) {
                 testSelected();
