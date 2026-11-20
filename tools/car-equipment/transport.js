@@ -59,7 +59,7 @@ class HmiLink {
         if(!/^ok\b/.test(answer))throw new Error('TASU subscription failed: '+answer);
         this.ready=true;if(!settled){settled=true;resolve();}
       }).catch(fail);
-    }).finally(()=>{this.starting=null;});
+    }).then(value=>{this.starting=null;return value;},error=>{this.starting=null;throw error;});
     return this.starting;
   }
   _rejectAll(e){
