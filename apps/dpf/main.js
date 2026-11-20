@@ -21,7 +21,7 @@ const { ReadOnlyDiag } = require('./kit/readonly-diag');
 
 const W = 1600;
 const H = 520;
-const TABS = ['Overview', 'Detail', 'About'];
+const TABS = ['Overview', 'Detail', 'B47 Probe', 'About'];
 
 mgu.run({
     async start(ctx) {
@@ -72,6 +72,7 @@ mgu.run({
         const DDE = 0x12;
         const EXPECTED = '0F1FE8';
         let identified = false;
+        let ddeIndex = null;
         let identifying = true;
         let readAttempted = false;
         let testing = false;
@@ -100,8 +101,59 @@ mgu.run({
         ];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         const regenDids = dids.slice(-2);
+        // Probe results are raw UDS replies, deliberately not decoded as B47 values.
+        // The regular B57 measurement and regeneration paths stay unchanged.
+        const probeDids = [
+            ['SOOT', 0x44BE], ['ASH', 0x44BD],
+            ['SINCE', 0x44BF], ['REGEN REQ', 0x44BB],
+            ['MODE', 0x467E], ['PRESSURE', 0x44ED],
+            ['TEMP', 0x4502], ['AVG REGEN', 0x44C7]
+        ];
+        let probeBusy = false;
+        let probeState = 'Open this tab to start the read-only scan';
+        const probeResults = {};
+        async function runProbe() {
+            if (probeBusy) return;
+            probeBusy = true;
+            probeState = 'Identifying DDE...';
+            Object.keys(probeResults).forEach(key => delete probeResults[key]);
+            try {
+                if (!link.ready) await link.init();
+                if (!link.available) {
+                    probeState = 'TASU unavailable';
+                    return;
+                }
+                link.wake(DDE);
+                const ident = await link.physical(DDE, 0x22, [0xF1, 0x50], 1800,
+                    b => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50) ||
+                        (b[0] === 0x7F && b[1] === 0x22)), requestOptions);
+                if (ident && ident[0] === 0x62 && ident.length >= 6) {
+                    ddeIndex = hexBytes(ident.slice(3, 6)).replace(/ /g, '');
+                }
+                probeResults.IDENTITY = ident ? hexBytes(ident).slice(0, 75) : 'TIMEOUT';
+                probeState = 'Reading raw DPF replies...';
+                for (const [name, did] of probeDids) {
+                    if (page !== 'probe' || !ui.isVisible('MAIN')) {
+                        probeState = 'Scan stopped (tab closed)';
+                        break;
+                    }
+                    const response = await link.physical(DDE, 0x22,
+                        [(did >> 8) & 255, did & 255], 1800,
+                        u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) ||
+                            (u[0] === 0x7F && u[1] === 0x22)), requestOptions);
+                    probeResults[name] = response ? hexBytes(response).slice(0, 75) : 'TIMEOUT';
+                    log.info('DPF B47 PROBE ' + name + ' DID ' + did.toString(16) + ': ' + probeResults[name]);
+                }
+                if (page === 'probe') probeState = 'Complete - photograph the screen';
+            } catch (e) {
+                probeState = 'Probe error: ' + String(e.message || e).slice(0, 55);
+                log.warn('DPF B47 probe: ' + String(e));
+            } finally {
+                probeBusy = false;
+            }
+        }
         async function testSelected(regenOnly = false) {
-            if (!identified || (!regenOnly && page === 'about')) return;
+            if (!identified || page === 'probe' || (!regenOnly && page === 'about')) return;
             if (testing) {
                 readPending = true;
                 return;
@@ -172,6 +224,7 @@ mgu.run({
                     return;
                 }
                 const actual = hexBytes(u.slice(3, 6)).replace(/ /g, '');
+                ddeIndex = actual;
                 if (actual !== EXPECTED) {
                     log.warn('DPF unexpected DDE: ' + actual + ' (expected ' + EXPECTED + ')');
                     return;
@@ -328,6 +381,22 @@ mgu.run({
                 { align: 'center', font: 'bold' });
         }
 
+        function renderProbe(cv, t) {
+            cv.text('B47 READ-ONLY DIAGNOSTICS', 48, 75, 30, t.text, { font: 'bold', literal: true });
+            cv.text('ECU 0x12  /  DDE INDEX: ' + (ddeIndex || 'UNKNOWN'), 48, 119, 21, t.dim, { literal: true });
+            cv.text(probeState, 48, 155, 19, t.warn, { literal: true });
+            cv.text('IDENT: ' + (probeResults.IDENTITY || '--'), 48, 196, 17, t.dim, { literal: true });
+            probeDids.forEach(([name, did], i) => {
+                const col = i % 2, row = Math.floor(i / 2);
+                const x = 48 + col * 766, y = 231 + row * 62;
+                cv.text(name + '  ' + did.toString(16).toUpperCase(), x, y, 19, t.text,
+                    { font: 'bold', literal: true });
+                cv.text(probeResults[name] || '--', x, y + 25, 16, t.dim, { literal: true });
+            });
+            cv.text('Raw replies only; not verified DPF measurements. Reopen tab to rescan.',
+                48, 508, 15, t.dim, { literal: true });
+        }
+
         function renderDetail(cv, t) {
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
             if (!hasDetailMeasurements()) {
@@ -384,9 +453,14 @@ mgu.run({
                 G.frame(cv, t, TABS.map(label => translate(label)), 1, []);
                 return ui.image('MAIN_GFX', cv);
             }
+            if (page === 'probe') {
+                renderProbe(cv, t);
+                G.frame(cv, t, TABS.map(label => translate(label)), 2, []);
+                return ui.image('MAIN_GFX', cv);
+            }
             if (page === 'about') {
                 renderAbout(cv, t);
-                G.frame(cv, t, TABS.map(label => translate(label)), 2, []);
+                G.frame(cv, t, TABS.map(label => translate(label)), 3, []);
                 return ui.image('MAIN_GFX', cv);
             }
 
@@ -471,15 +545,16 @@ mgu.run({
             const openingDetail = next === 'detail' && page !== 'detail';
             page = next;
             if (openingDetail || next === 'overview') testSelected();
+            if (next === 'probe') runProbe();
             return render();
         }
 
         ctx.onTab(index => {
-            const next = ['overview', 'detail', 'about'][index];
+            const next = ['overview', 'detail', 'probe', 'about'][index];
             if (next && next !== page) return openPage(next);
         });
         ui.onVisible((name, visible) => {
-            if (name === 'MAIN' && visible && identified && !testing
+            if (name === 'MAIN' && visible && page !== 'probe' && identified && !testing
                 && (page === 'detail' ? !hasDetailMeasurements() : !readAttempted)) {
                 testSelected();
             }
@@ -489,11 +564,12 @@ mgu.run({
         (async () => {
             await identify();
             identifying = false;
-            if (identified && page !== 'about' && ui.isVisible('MAIN')) await testSelected();
+            if (identified && page !== 'about' && page !== 'probe' && ui.isVisible('MAIN')) await testSelected();
             let nextPageRead = 0;
             while (true) {
                 const dataReady = page === 'detail' ? hasDetailMeasurements() : hasMeasurements();
                 await sleep(5000);
+                if (page === 'probe' || probeBusy) continue;
                 const pageVisible = page !== 'about' && ui.isVisible('MAIN');
                 const clusterActive = clusterEnabled();
                 if (testing || (!pageVisible && !clusterActive)) continue;
