@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.53",
+  "version": "0.2.54",
   "settingsBeforeLast": true,
   "settingsTabInStandard": true,
   "vendor": "custom",
@@ -255,6 +255,12 @@
         85,
         90
       ]
+    },
+    {
+      "key": "reloadEquipment",
+      "label": "Reload Equipment",
+      "type": "action",
+      "hint": "Read vehicle equipment again"
     }
   ],
   "signals": {
@@ -290,6 +296,6 @@
   "requires": {
     "idrive7-renderd": "2.1.19",
     "mgu-inputgate": "1.2.1",
-    "bmrmodz-car-equipment": "0.1.0"
+    "bmrmodz-car-equipment": "0.1.4"
   }
 }

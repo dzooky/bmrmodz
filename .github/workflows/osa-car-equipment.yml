@@ -27,7 +27,13 @@ jobs:
           const fs=require('fs'), assert=require('assert');
           const osa=JSON.parse(fs.readFileSync('apps/osa/app.json'));
           const repo=JSON.parse(fs.readFileSync('mgu-repo.json'));
-          assert.strictEqual(osa.requires['bmrmodz-car-equipment'],'0.1.0');
+          assert.strictEqual(osa.requires['bmrmodz-car-equipment'],'0.1.4');
+          assert.strictEqual(osa.settings[osa.settings.length - 1].key, 'reloadEquipment');
+          assert.strictEqual(osa.settings[osa.settings.length - 1].type, 'action');
+          const source=fs.readFileSync('apps/osa/main.js','utf8');
+          assert.ok(source.includes("CarEquipment.request({ op: 'reload' }"));
+          assert.ok(source.includes("scheduleEquipmentCheck()"));
+          assert.ok(!source.includes("ctx.settings.set('oilCluster', false)"));
           assert.ok(repo.tools.some(t=>t.id==='bmrmodz-car-equipment'));
           const gate=osa.settings.find(s=>s.key==='cluster6wbAvailable');
           const option=osa.settings.find(s=>s.key==='oilCluster');
