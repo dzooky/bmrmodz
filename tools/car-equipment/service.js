@@ -7,7 +7,7 @@ const SOCKET=process.env.CAR_EQUIPMENT_SOCKET||'/run/bmrmodz-car-equipment/ctl.s
 function serve(link,socketPath) {
   const equipment=new Equipment(link);
   const target=socketPath||SOCKET;
-  fs.mkdirSync(path.dirname(target),{recursive:true});
+  try { fs.mkdirSync(path.dirname(target)); } catch (e) { if (e.code !== 'EEXIST') throw e; }
   try { fs.unlinkSync(target); } catch(e) {if(e.code!=='ENOENT')throw e;}
   const server=net.createServer(c=>{
     c.setEncoding('utf8');let buffer='';
@@ -18,9 +18,9 @@ function serve(link,socketPath) {
         try{req=JSON.parse(line);}catch(e){c.write(JSON.stringify({ok:false,error:'Invalid JSON'})+'\n');continue;}
         try {
           let reply;
-          if(req.op==='get'||req.op==='status')reply={ok:true,...equipment.summary()};
+          if(req.op==='get'||req.op==='status')reply=Object.assign({ok:true},equipment.summary());
           else if(req.op==='check')reply=equipment.check(req.codes);
-          else if(req.op==='refresh')reply={ok:true,...await equipment.refresh()};
+          else if(req.op==='refresh')reply=Object.assign({ok:true},await equipment.refresh());
           else reply={ok:false,error:'Unsupported operation'};
           if(!c.destroyed)c.write(JSON.stringify(reply)+'\n');
         }catch(e){if(!c.destroyed)c.write(JSON.stringify({ok:false,error:String(e.message||e)})+'\n');}
