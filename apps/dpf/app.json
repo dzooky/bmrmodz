@@ -147,5 +147,9 @@
       "hint": "Three flashes each: yellow, red and green"
     }
   ],
-  "settingsTabInStandard": true
+  "settingsTabInStandard": true,
+  "requires": {
+    "idrive7-renderd": "2.1.19",
+    "mgu-inputgate": "1.2.1"
+  }
 }
