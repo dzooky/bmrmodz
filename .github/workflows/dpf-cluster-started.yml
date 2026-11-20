@@ -29,7 +29,7 @@ jobs:
           node - <<'NODE'
           const fs=require('fs'),assert=require('assert');
           const app=JSON.parse(fs.readFileSync('apps/dpf/app.json','utf8'));
-          assert.strictEqual(app.version,'0.1.36');
+          assert.ok(app.version.startsWith('0.1.') && Number(app.version.split('.')[2]) >= 36, 'DPF Started message requires version >=0.1.36');
           assert.strictEqual(app.settings.find(s=>s.key==='regenClusterTest').when.cluster6wbAvailable,true);
           assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.0');
           NODE
