@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-car-equipment",
   "kind": "tool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Car Equipment",
-  "description": "Shared read-only BMW MGU iDrive 7 vehicle-equipment detection for BMRMODZ OSA, DPF Monitor and other apps. Reads FA/VO using the same decoder and gateway query as Climate Comfort; caches SA codes and serves local yes/no/unknown checks. Uses TASU via hmictl supplied by the separately installed IterioDev Comfort HU Tool. Vehicle validation pending.",
+  "description": "Shared read-only BMW MGU iDrive 7 equipment detection for BMRMODZ apps. Reads validated FA/VO only when needed; persists vehicle option codes locally for fast shared queries without repeated gateway diagnostics. Uses TASU via hmictl from IterioDev Comfort.",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [
