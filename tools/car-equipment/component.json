@@ -1,0 +1,52 @@
+{
+  "id": "bmrmodz-car-equipment",
+  "kind": "tool",
+  "version": "0.1.0",
+  "title": "Car Equipment",
+  "description": "Shared read-only vehicle equipment detection for BMRMODZ OSA, DPF Monitor and future BMW MGU apps. Reads the Vehicle Order (FA/VO) using the same gateway DID and validated decoder as Climate Comfort, caches option codes, and answers single or batch equipment checks via a local Unix socket. Missing equipment returns false only after a valid VO read; unavailable/invalid VO returns unknown. Initial development build: a compatible MGU diagnostic transport adapter is required before in-car operation.",
+  "optional": true,
+  "uninstallable": true,
+  "mguHmi": [
+    "ID7"
+  ],
+  "requires": {
+    "mgu-deploy": "0.7.11"
+  },
+  "files": [
+    {
+      "path": "service.js",
+      "from": "service.js",
+      "mode": "0644"
+    },
+    {
+      "path": "vehicle-order.js",
+      "from": "vehicle-order.js",
+      "mode": "0644"
+    },
+    {
+      "path": "equipment.js",
+      "from": "equipment.js",
+      "mode": "0644"
+    },
+    {
+      "path": "transport.js",
+      "from": "transport.js",
+      "mode": "0644"
+    }
+  ],
+  "units": [
+    {
+      "name": "bmrmodz-car-equipment.service",
+      "from": "bmrmodz-car-equipment.service"
+    }
+  ],
+  "enable": [
+    {
+      "unit": "bmrmodz-car-equipment.service",
+      "target": "multi-user.target"
+    }
+  ],
+  "restart": [
+    "bmrmodz-car-equipment.service"
+  ]
+}\n
