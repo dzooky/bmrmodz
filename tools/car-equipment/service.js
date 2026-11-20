@@ -20,11 +20,16 @@ function serve(link,socketPath,options) {
           let reply;
           if(req.op==='get'||req.op==='status')reply=Object.assign({ok:true},equipment.summary());
           else if(req.op==='check'){
+            // Check is cache-only. Never cause another gateway read.
+            // The only automatic read occurs once on an uncached service startup.
             if(equipment.pending)await equipment.pending;
-            else if(!equipment.codes&&Date.now()-equipment.attemptedAt>30000)await equipment.refresh();
             reply=equipment.check(req.codes);
           }
-          else if(req.op==='refresh')reply=Object.assign({ok:true},await equipment.refresh());
+          else if(req.op==='reload'||req.op==='refresh'){
+            // Explicit user action only. Keep refresh as an alias for existing apps.
+            const result=await equipment.refresh();
+            reply=Object.assign({ok:true},result);
+          }
           else reply={ok:false,error:'Unsupported operation'};
           if(!c.destroyed)c.write(JSON.stringify(reply)+'\n');
         }catch(e){if(!c.destroyed)c.write(JSON.stringify({ok:false,error:String(e.message||e)})+'\n');}
@@ -33,7 +38,7 @@ function serve(link,socketPath,options) {
   });
   server.listen(target,()=>{
     fs.chmodSync(target,0o666);
-    // Never re-read the gateway on every service restart when a valid VO is cached.
+    // Single initial gateway read only when cache is missing. Never retry on checks.
     if(!equipment.codes)equipment.refresh().catch(console.error);
   });
   function close(){server.close();try{fs.unlinkSync(target);}catch(e){}}
