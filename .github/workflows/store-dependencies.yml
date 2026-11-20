@@ -26,7 +26,8 @@ jobs:
             const app = JSON.parse(fs.readFileSync('apps/'+id+'/app.json'));
             for (const [key, version] of Object.entries(required))
               assert.strictEqual(app.requires[key], version, id+': '+key);
-            if (['osa','dpf'].includes(id)) assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.0');
+            if (id === 'osa') assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.0');
+            else if (id === 'dpf') assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.4');
             else if (id === 'climate-comfort') assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.1');
             else assert.strictEqual(app.requires['bmrmodz-car-equipment'], undefined, id+' should not install Car Equipment');
           }
