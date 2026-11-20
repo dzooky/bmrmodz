@@ -26,10 +26,10 @@ jobs:
             const app = JSON.parse(fs.readFileSync('apps/'+id+'/app.json'));
             for (const [key, version] of Object.entries(required))
               assert.strictEqual(app.requires[key], version, id+': '+key);
-            if (id === 'osa') assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.0');
+            if (['osa','dpf'].includes(id)) assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.0');
             else assert.strictEqual(app.requires['bmrmodz-car-equipment'], undefined, id+' should not install Car Equipment');
           }
           const component = JSON.parse(fs.readFileSync('tools/car-equipment/component.json'));
           assert.strictEqual(component.id,'bmrmodz-car-equipment');
-          console.log('All per-app requirements correctly inherited; OSA requires Car Equipment only.');
+          console.log('All per-app requirements correctly inherited; OSA and DPF require Car Equipment.');
           NODE
