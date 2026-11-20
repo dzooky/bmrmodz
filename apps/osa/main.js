@@ -14,6 +14,7 @@ const Language = require('./language');
 const { t: translate } = require('./kit/i18n');
 const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
+const CarEquipment = require('./kit/car-equipment');
 const turboIconPreview = require('./turbo-icon-preview');
 const fs = require('fs');
 const path = require('path');
@@ -27,6 +28,30 @@ mgu.run({
         const { ui, log } = ctx;
         const getLanguage = Language.start(ctx);
         let page = 0;
+        // These indicate VO option codes, not whether HUD/cluster rendering works.
+        const installedEquipment = { '610': 'unknown', '6WB': 'unknown', '6U3': 'unknown' };
+        let equipmentCheckedAt = null;
+        let equipmentChecking = false;
+        async function refreshCarEquipment() {
+            if (equipmentChecking || (equipmentCheckedAt && Date.now() - equipmentCheckedAt < 30000)) return;
+            equipmentChecking = true;
+            try {
+                const checked = await CarEquipment.check(['610', '6WB', '6U3'], { timeout: 12000 });
+                ['610', '6WB', '6U3'].forEach(code => {
+                    installedEquipment[code] = checked.results && checked.results[code] !== undefined
+                        ? checked.results[code] : 'unknown';
+                });
+                equipmentCheckedAt = Date.now();
+                log.info('OSA VO equipment: 610=' + installedEquipment['610'] +
+                    ', 6WB=' + installedEquipment['6WB'] + ', 6U3=' + installedEquipment['6U3'] +
+                    (checked.error ? ' (' + checked.error + ')' : ''));
+            } catch (error) {
+                equipmentCheckedAt = Date.now();
+                log.warn('OSA Car Equipment: ' + String(error && error.message || error));
+            } finally { equipmentChecking = false; }
+        }
+        refreshCarEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
+
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
             // Join matching runs across rows to avoid seams inside solid areas.
@@ -126,8 +151,16 @@ mgu.run({
             fitText(cv, 'Shows live estimates for reaching target temperatures.', 640, 285, 19, t.dim, 890, { align: 'center' });
             fitText(cv, 'Saves warm-up history locally for comparison with previous sessions.', 640, 312, 19, t.dim, 890, { align: 'center' });
 
+            const voText = value => value === true ? 'Yes' : value === false ? 'No' : 'Unknown';
+            // VO identification is informational; existing cluster messages are unchanged.
+            fitText(cv, 'VO equipment: HUD ' + voText(installedEquipment['610']) +
+                ' | 6WB ' + voText(installedEquipment['6WB']) +
+                ' | 6U3 ' + voText(installedEquipment['6U3']),
+                640, 345, 16, t.dim, 950, { align: 'center' });
+
             const newsX = 1120;
             const milestones = [
+                ['0.2.52', 'Car Equipment VO detection: HUD and cluster options'],
                 ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
                 ['0.2.50', 'Scrollable release history'],
                 ['0.2.49', 'Settings tab in Standard layout'],
@@ -656,6 +689,7 @@ mgu.run({
 
         const switchPage = (next) => {
             page = (next + 4) % 4;
+            if (page === 3) refreshCarEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
             return render();
         };
 
