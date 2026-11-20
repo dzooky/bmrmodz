@@ -499,12 +499,16 @@ mgu.run({
             const estimateAvailable = !inProgress && averageKm > 0 && !stale('AVERAGE')
                 && hasReading('SINCE') && !stale('SINCE');
             const sinceKm = estimateAvailable ? ddeProfiles.km(readings.SINCE, profile.distanceFactor) : null;
-            const remainingKm = estimateAvailable ? Math.max(0, averageKm - sinceKm) : null;
-            cv.text('EST. DISTANCE TO REGEN', statusX + 18, 252, 16, t.dim, { font: 'bold' });
-            cv.text('Based on average distance between regenerations',
+            // Count down to the average interval; once exceeded, show +km beyond it.
+            // The average is not a guaranteed regeneration trigger.
+            const distanceToAverageKm = estimateAvailable ? averageKm - sinceKm : null;
+            const distanceText = distanceToAverageKm === null ? '--'
+                : (distanceToAverageKm < 0 ? '+' + (-distanceToAverageKm).toFixed(1)
+                    : distanceToAverageKm.toFixed(1)) + ' km';
+            cv.text('DISTANCE TO AVG REGEN', statusX + 18, 252, 16, t.dim, { font: 'bold' });
+            cv.text('Countdown to average; +km after average',
                 statusX + 18, 273, 12, t.dim);
-            cv.text(remainingKm === null ? '--' : remainingKm.toFixed(1) + ' km',
-                statusX + 18, 315, 42, t.text, { font: 'num' });
+            cv.text(distanceText, statusX + 18, 315, 42, t.text, { font: 'num' });
             if (estimateAvailable) {
                 G.segBar(cv, t, statusX + 18, 342, statusWidth - 36, 26, {
                     panel: false, ramp: 'hot', min: 0, max: averageKm, step: averageKm / 12, value: sinceKm
