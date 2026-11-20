@@ -1,0 +1,38 @@
+name: OSA Car Equipment integration
+on:
+  push:
+    branches:
+      - feature/osa-car-equipment
+  pull_request:
+    paths:
+      - 'apps/osa/main.js'
+      - 'apps/osa/app.json'
+      - 'kit/runtime/car-equipment.js'
+      - '.github/workflows/osa-car-equipment.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check apps/osa/main.js
+          node --check kit/runtime/car-equipment.js
+      - name: Validate OSA dependency and conditional setting
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'), assert=require('assert');
+          const osa=JSON.parse(fs.readFileSync('apps/osa/app.json'));
+          const repo=JSON.parse(fs.readFileSync('mgu-repo.json'));
+          assert.strictEqual(osa.requires['bmrmodz-car-equipment'],'0.1.0');
+          assert.ok(repo.tools.some(t=>t.id==='bmrmodz-car-equipment'));
+          const gate=osa.settings.find(s=>s.key==='cluster6wbAvailable');
+          const option=osa.settings.find(s=>s.key==='oilCluster');
+          assert.strictEqual(gate.hidden,true);
+          assert.strictEqual(gate.default,false);
+          assert.strictEqual(option.when.cluster6wbAvailable,true);
+          console.log('OSA 6WB dependency and visibility verified');
+          NODE
