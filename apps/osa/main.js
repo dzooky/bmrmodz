@@ -28,30 +28,28 @@ mgu.run({
         const { ui, log } = ctx;
         const getLanguage = Language.start(ctx);
         let page = 0;
-        // These indicate VO option codes, not whether HUD/cluster rendering works.
-        const installedEquipment = { '610': 'unknown', '6WB': 'unknown', '6U3': 'unknown' };
-        let equipmentCheckedAt = null;
+        // Default to absent until a validated VO explicitly confirms 6WB.
+        // This hidden setting is the visibility gate for Notification on cluster.
+        ctx.settings.values.cluster6wbAvailable = false;
         let equipmentChecking = false;
-        async function refreshCarEquipment() {
-            if (equipmentChecking || (equipmentCheckedAt && Date.now() - equipmentCheckedAt < 30000)) return;
+        let equipmentCheckedAt = 0;
+        async function refreshClusterEquipment() {
+            if (equipmentChecking || Date.now() - equipmentCheckedAt < 30000) return;
             equipmentChecking = true;
+            equipmentCheckedAt = Date.now();
             try {
-                const checked = await CarEquipment.check(['610', '6WB', '6U3'], { timeout: 12000 });
-                ['610', '6WB', '6U3'].forEach(code => {
-                    installedEquipment[code] = checked.results && checked.results[code] !== undefined
-                        ? checked.results[code] : 'unknown';
-                });
-                equipmentCheckedAt = Date.now();
-                log.info('OSA VO equipment: 610=' + installedEquipment['610'] +
-                    ', 6WB=' + installedEquipment['6WB'] + ', 6U3=' + installedEquipment['6U3'] +
-                    (checked.error ? ' (' + checked.error + ')' : ''));
+                const result = await CarEquipment.has('6WB', { timeout: 12000 });
+                const supported = result === true;
+                ctx.settings.set('cluster6wbAvailable', supported);
+                if (!supported && ctx.settings.get('oilCluster')) ctx.settings.set('oilCluster', false);
+                log.info('OSA Car Equipment 6WB (VO) = ' + result);
             } catch (error) {
-                equipmentCheckedAt = Date.now();
-                log.warn('OSA Car Equipment: ' + String(error && error.message || error));
+                ctx.settings.set('cluster6wbAvailable', false);
+                if (ctx.settings.get('oilCluster')) ctx.settings.set('oilCluster', false);
+                log.warn('OSA Car Equipment 6WB: ' + String(error && error.message || error));
             } finally { equipmentChecking = false; }
         }
-        refreshCarEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
-
+        refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
             // Join matching runs across rows to avoid seams inside solid areas.
@@ -151,16 +149,9 @@ mgu.run({
             fitText(cv, 'Shows live estimates for reaching target temperatures.', 640, 285, 19, t.dim, 890, { align: 'center' });
             fitText(cv, 'Saves warm-up history locally for comparison with previous sessions.', 640, 312, 19, t.dim, 890, { align: 'center' });
 
-            const voText = value => value === true ? 'Yes' : value === false ? 'No' : 'Unknown';
-            // VO identification is informational; existing cluster messages are unchanged.
-            fitText(cv, 'VO equipment: HUD ' + voText(installedEquipment['610']) +
-                ' | 6WB ' + voText(installedEquipment['6WB']) +
-                ' | 6U3 ' + voText(installedEquipment['6U3']),
-                640, 345, 16, t.dim, 950, { align: 'center' });
-
             const newsX = 1120;
             const milestones = [
-                ['0.2.52', 'Car Equipment VO detection: HUD and cluster options'],
+                ['0.2.52', 'Show cluster notification setting only when VO contains 6WB'],
                 ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
                 ['0.2.50', 'Scrollable release history'],
                 ['0.2.49', 'Settings tab in Standard layout'],
@@ -423,7 +414,7 @@ mgu.run({
             const { demo, oil } = car.data();
             if (demo || !G.isNum(oil)) return null;
             const message = warmupMessage(oil, oilWarmTarget(), mono());
-            return ctx.settings.get('oilCluster') ? message : null;
+            return ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('oilCluster') ? message : null;
         }, recordCluster, () => testPhase() >= 0, () => testMode === 'clusterLowerTest', getLanguage);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
@@ -689,7 +680,7 @@ mgu.run({
 
         const switchPage = (next) => {
             page = (next + 4) % 4;
-            if (page === 3) refreshCarEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
+
             return render();
         };
 
@@ -713,6 +704,7 @@ mgu.run({
         });
 
         ui.onVisible((name, on) => {
+            if (name === 'MAIN' && on) refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
             if (name === 'MAIN') transmission.setVisible(on);
         });
         transmission.setVisible(ui.isVisible('MAIN'));
