@@ -36,8 +36,7 @@ async function run(){
    await sleep(100);
    assert.strictEqual(reads,completed,'no further reads after success');
  }finally{
-   await new Promise(resolve=>instance.server.close(resolve));
-   instance.close();
+   await new Promise(resolve=>{instance.server.once('close',resolve);instance.close();});
    fs.rmSync(dir,{recursive:true,force:true});
  }
  console.log('Car Equipment waiting + automatic retry + persistent cache validated');
