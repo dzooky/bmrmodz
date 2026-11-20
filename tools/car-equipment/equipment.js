@@ -12,7 +12,7 @@ class Equipment {
       if(result.codes){this.codes=result.codes;this.error=null;this.updatedAt=new Date().toISOString();}
       else {this.codes=null;this.error=result.error;this.updatedAt=null;}
     }catch(e){this.codes=null;this.error=String(e&&e.message||e);this.updatedAt=null;}
-    return this.summary();})().finally(()=>{this.pending=null;});
+    return this.summary();})().then(value=>{this.pending=null;return value;},error=>{this.pending=null;throw error;});
     return this.pending;
   }
   summary(){return {available:!!this.codes,source:'vehicle_order',updatedAt:this.updatedAt,error:this.error};}
