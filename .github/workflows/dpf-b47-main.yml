@@ -26,10 +26,12 @@ jobs:
           const fs=require('fs'), assert=require('assert');
           const app=JSON.parse(fs.readFileSync('apps/dpf/app.json'));
           const source=fs.readFileSync('apps/dpf/main.js','utf8');
-          assert.ok(app.version.startsWith('0.1.') && Number(app.version.split('.')[2]) >= 38);
+          assert.ok(app.version.startsWith('0.1.') && Number(app.version.split('.')[2]) >= 40);
           assert.ok(source.includes("ddeProfiles.forDde(actual)"));
           assert.ok(source.includes("if (!profile || !profile.regeneration) return null;"));
           assert.ok(source.includes("profile && profile.regeneration"));
           assert.ok(source.includes("const statusText = inProgress ? 'IN PROGRESS'"));
-          console.log('Both engine types share existing graphical regeneration status, B47 unknown until verified.');
+          assert.ok(source.includes('distanceToAverageKm < 0'), 'show +km after average interval');
+          assert.ok(!source.includes('Math.max(0, averageKm - sinceKm)'), 'do not clamp countdown at zero');
+          console.log('DPF signed average-distance countdown and B47/B57 status verified.');
           NODE
