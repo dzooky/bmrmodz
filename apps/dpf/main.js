@@ -114,12 +114,14 @@ mgu.run({
         let probeState = 'Open this tab to start the read-only scan';
         const probeResults = {};
         const probeCandidates = {};
+        const probeRaw = {};
         async function runProbe() {
             if (probeBusy) return;
             probeBusy = true;
             probeState = 'Identifying DDE...';
             Object.keys(probeResults).forEach(key => delete probeResults[key]);
             Object.keys(probeCandidates).forEach(key => delete probeCandidates[key]);
+            Object.keys(probeRaw).forEach(key => delete probeRaw[key]);
             try {
                 if (!link.ready) await link.init();
                 if (!link.available) {
@@ -146,6 +148,7 @@ mgu.run({
                             (u[0] === 0x7F && u[1] === 0x22)), requestOptions);
                     probeResults[name] = response ? hexBytes(response).slice(0, 75) : 'TIMEOUT';
                     probeCandidates[name] = b47ProbeValues.candidate(did, response);
+                    probeRaw[name] = b47ProbeValues.rawReading(did, response);
                     log.info('DPF B47 PROBE ' + name + ' DID ' + did.toString(16) + ': ' + probeResults[name]);
                 }
                 if (page === 'probe') probeState = 'Complete - photograph the screen';
@@ -399,10 +402,13 @@ mgu.run({
                 const estimate = probeCandidates[name];
                 if (estimate) cv.text('EST: ' + estimate.display + ' (' + estimate.note + ')',
                     x, y + 41, 15, t.warn, { literal: true });
+                else if (probeRaw[name])
+                    cv.text(probeRaw[name].display + ' - unit / state not verified',
+                        x, y + 41, 14, t.warn, { literal: true });
                 else if (probeResults[name] && probeResults[name] !== 'TIMEOUT')
-                    cv.text('No verified physical unit - compare raw only', x, y + 41, 14, t.dim, { literal: true });
+                    cv.text('No valid decoded payload', x, y + 41, 14, t.dim, { literal: true });
             });
-            cv.text('EST = unverified B47 candidate. Compare BimmerLink immediately. Reopen to rescan.',
+            cv.text('EST = candidate; RAW = unscaled. Verify against live BimmerLink. Reopen to rescan.',
                 48, 508, 15, t.dim, { literal: true });
         }
 
