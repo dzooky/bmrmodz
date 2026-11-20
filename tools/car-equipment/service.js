@@ -19,7 +19,11 @@ function serve(link,socketPath) {
         try {
           let reply;
           if(req.op==='get'||req.op==='status')reply=Object.assign({ok:true},equipment.summary());
-          else if(req.op==='check')reply=equipment.check(req.codes);
+          else if(req.op==='check'){
+            if(equipment.pending)await equipment.pending;
+            else if(!equipment.codes&&Date.now()-equipment.attemptedAt>30000)await equipment.refresh();
+            reply=equipment.check(req.codes);
+          }
           else if(req.op==='refresh')reply=Object.assign({ok:true},await equipment.refresh());
           else reply={ok:false,error:'Unsupported operation'};
           if(!c.destroyed)c.write(JSON.stringify(reply)+'\n');
