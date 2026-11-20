@@ -36,13 +36,13 @@ async function run(){
  assert.ok(REQUEST.indexOf('f21022000002000000023f0600')>=0);
  assert.ok(SUB.indexOf('0xf8a6')>=0);
  const equipment=new Equipment({ready:true,read:async()=>response});
- assert.strictEqual(equipment.check(['610']).results['610'],'unknown');
+ assert.strictEqual(equipment.check(['610']).results['610'],'waiting');
  await equipment.refresh();
  assert.strictEqual(equipment.check(['610','6U3']).results['610'],true);
  assert.strictEqual(equipment.check(['494','6WB']).results['6WB'],true);
  assert.strictEqual(equipment.check(['5AZ']).results['5AZ'],false);
  const fail=new Equipment({ready:true,read:async()=>null});
- await fail.refresh();assert.strictEqual(fail.check(['610']).results['610'],'unknown');
+ await fail.refresh();assert.strictEqual(fail.check(['610']).results['610'],'waiting');
  assert.ok(fail.error);
  const sock=path.join(os.tmpdir(),'car-equipment-test-'+process.pid+'.sock');
  const instance=serve({ready:true,read:async()=>response},sock,{cacheFile:null});
