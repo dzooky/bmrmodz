@@ -4,7 +4,7 @@
  * DPF Status
  *
  * Read-only DDE monitor. Identifies DDE 0x12 via physical UDS 22 F1 50.
- * Displays DPF measurements for the identified B57 DDE.
+ * Displays validated DPF measurements for identified B57 or B47 DDE.
  *
  * No diagnostic service other than the read-only services exposed by
  * ReadOnlyDiag can be sent by this app.
@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
 const regenMessage = require('./regen-message');
+const ddeProfiles = require('./dde-profiles');
 const { t: translate, setRuntimeTranslations } = require('./kit/i18n');
 const locales = require('./translations');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
@@ -93,7 +94,8 @@ mgu.run({
             }
         });
         const DDE = 0x12;
-        const EXPECTED = '0F1FE8';
+        let profile = null;
+        let ddeIndex = null;
         let identified = false;
         let identifying = true;
         let readAttempted = false;
@@ -104,25 +106,12 @@ mgu.run({
         let detailReadAttempted = false;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
-        const dids = [
-            ['SOOT', 0x44BE, 2, 0.01525902],
-            ['ASH', 0x44BD, 2, 0.01525902],
-            ['SINCE', 0x44BF, 4, 1],
-            ['AVERAGE', 0x4B2F, 4, 1],
-            ['REQUEST', 0x44BB, 1, 1],
-            ['MODE', 0x467E, 4, 1]
-        ];
-        // D83BX7C0A ReadDataByIdentifier scalings and offsets.
-        const detailDids = [
-            ['PRESSURE', 0x44EB, 2, 0.03814755, 500],
-            ['TEMP', 0x44EF, 2, 0.03128099, -50],
-            ['RUNTIME', 0x44B7, 4, 1],
-            ['LOCK', 0x44C2, 1, 1],
-            ['AVG TEMP', 0x4B4A, 2, 0.1, -3276.7],
-            ['REMAINING', 0x4C78, 2, 10]
-        ];
+        // B57 calibration is unchanged; B47 gets only its verified DIDs.
+        const overviewDids = () => profile ? profile.overview : [];
+        const detailDids = () => profile ? profile.detail : [];
+        const regenDids = () => profile && profile.regeneration
+            ? profile.overview.filter(([key]) => key === 'REQUEST' || key === 'MODE') : [];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
-        const regenDids = dids.slice(-2);
         async function testSelected(regenOnly = false) {
             if (!identified || (!regenOnly && page === 'about')) return;
             if (testing) {
@@ -132,7 +121,7 @@ mgu.run({
             testing = true;
             const address = DDE;
             const readingPage = page;
-            const selected = regenOnly ? regenDids : readingPage === 'detail' ? detailDids : dids;
+            const selected = regenOnly ? regenDids() : readingPage === 'detail' ? detailDids() : overviewDids();
             try {
                 link.wake(address);
                 for (const [name, did, len, factor, offset = 0] of selected) {
@@ -179,6 +168,8 @@ mgu.run({
 
         const identify = async () => {
             identified = false;
+            profile = null;
+            ddeIndex = null;
             try {
                 if (!link.ready) await link.init();
                 if (!link.available) {
@@ -195,10 +186,13 @@ mgu.run({
                     return;
                 }
                 const actual = hexBytes(u.slice(3, 6)).replace(/ /g, '');
-                if (actual !== EXPECTED) {
-                    log.warn('DPF unexpected DDE: ' + actual + ' (expected ' + EXPECTED + ')');
+                ddeIndex = actual;
+                profile = ddeProfiles.forDde(actual);
+                if (!profile) {
+                    log.warn('DPF unsupported DDE index: ' + actual);
                     return;
                 }
+                log.info('DPF DDE ' + profile.engine + ' detected (index ' + actual + ')');
                 identified = true;
             } catch (e) {
                 log.warn('DPF identify: ' + String(e.message || e));
@@ -207,10 +201,12 @@ mgu.run({
 
         const hasReading = key => !!readings[key];
         const hasMeasurements = () => ['SOOT', 'ASH', 'SINCE', 'AVERAGE'].some(hasReading);
-        const hasDetailMeasurements = () => detailDids.some(([key]) => hasReading(key) && !stale(key));
+        const hasDetailMeasurements = () => detailDids().some(([key]) => hasReading(key) && !stale(key));
         const stale = key => hasReading(key) && Date.now() - readings[key].at >= 90000;
 
         function regenState(maxAge = 90000) {
+            // Never reuse B57 mode bit semantics on unverified B47 values.
+            if (!profile || !profile.regeneration) return null;
             const now = Date.now();
             const mode = readings.MODE;
             if (!mode || now - mode.at >= maxAge) return null;
@@ -220,11 +216,13 @@ mgu.run({
             return request.raw >= 4 && request.raw <= 6 ? 'requested' : 'idle';
         }
 
-        const clusterEnabled = () => ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('regenCluster') === true;
+        const clusterEnabled = () => !!(profile && profile.regeneration) &&
+            ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('regenCluster') === true;
         const indicator = regenMessage.createIndicator();
         let clusterTestStartedAt = null;
         ctx.settings.onAction('regenClusterTest', () => {
-            if (ctx.settings.values.cluster6wbAvailable === true) clusterTestStartedAt = Date.now();
+            if (profile && profile.regeneration && ctx.settings.values.cluster6wbAvailable === true)
+                clusterTestStartedAt = Date.now();
         });
         regenMessage.start(log, () => {
             const now = Date.now();
@@ -326,11 +324,12 @@ mgu.run({
             cv.text('DPF STATUS', 640, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
             cv.text('Read-only diesel particulate filter monitor for BMW iDrive 7.', 640, 258, 19, t.dim, { align: 'center' });
-            cv.text('Shows soot and ash mass, regeneration distances and status,', 640, 285, 19, t.dim, { align: 'center' });
-            cv.text('plus detailed measurements from supported B57 DDE units.', 640, 312, 19, t.dim, { align: 'center' });
+            cv.text('Supports B57 and B47 DDE with validated soot, ash and distances.', 640, 285, 19, t.dim, { align: 'center' });
+            cv.text('Regeneration status and advanced detail are verified on B57 only.', 640, 312, 19, t.dim, { align: 'center' });
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.38', 'B47 core gauges with automatic DDE detection'],
                 ['0.1.37', 'Started alert translated into all languages'],
                 ['0.1.36', 'New Started alert on regeneration begin'],
                 ['0.1.34', 'Cluster notification settings require detected 6WB'],
@@ -358,6 +357,13 @@ mgu.run({
 
         function renderDetail(cv, t) {
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
+            if (profile && !profile.detail.length) {
+                cv.text('Additional B47 measurements are not verified yet', 800, 245, 24, t.dim,
+                    { align: 'center', literal: true });
+                cv.text('Soot, ash and regeneration distances are available in Overview',
+                    800, 289, 19, t.dim, { align: 'center', literal: true });
+                return;
+            }
             if (!hasDetailMeasurements()) {
                 const loading = identifying || (identified && !detailReadAttempted);
                 cv.text(loading ? 'LOADING DETAIL DATA' : 'NO DETAIL DATA',
@@ -431,7 +437,7 @@ mgu.run({
 
             function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
                 const reading = readings[key];
-                const value = reading ? (unit === 'km' ? reading.raw / 1000 : reading.value) : null;
+                const value = reading ? (unit === 'km' ? ddeProfiles.km(reading, profile.distanceFactor) : reading.value) : null;
                 G.segBar(cv, t, x, y, columnWidth, gaugeHeight, {
                     label: translate(label), value, unit, decimals,
                     min: 0, max, step,
@@ -448,7 +454,8 @@ mgu.run({
             gauge('SOOT', 'Soot mass', 'g', 100, 5, 20, 2, massX, 44);
             gauge('ASH', 'Ash mass', 'g', 100, 5, 20, 2, massX, 286);
 
-            const averageKm = readings.AVERAGE ? readings.AVERAGE.raw / 1000 : 0;
+            const averageKm = profile && readings.AVERAGE
+                ? ddeProfiles.km(readings.AVERAGE, profile.averageFactor) : 0;
             if (averageKm > 0) {
                 gauge('SINCE', 'Since last regen', 'km', averageKm, averageKm / 16,
                     averageKm / 2, 1, distanceX, 44, 1);
@@ -463,7 +470,7 @@ mgu.run({
 
             G.panel(cv, t, statusX, 44, statusWidth, 464, null);
             cv.text('REGENERATION', statusX + 18, 83, 20, t.text, { font: 'bold' });
-            // D83BX7C0A STATUS_REGENERATION_CSF decoding, using direct ReadDataByIdentifier.
+            // Regeneration statuses are B57-only until B47 state bits are validated.
             const state = regenState();
             const inProgress = state === 'active';
             const statusText = inProgress ? 'IN PROGRESS' : state === 'requested' ? 'REQUESTED'
@@ -473,7 +480,7 @@ mgu.run({
 
             const estimateAvailable = !inProgress && averageKm > 0 && !stale('AVERAGE')
                 && hasReading('SINCE') && !stale('SINCE');
-            const sinceKm = estimateAvailable ? readings.SINCE.raw / 1000 : null;
+            const sinceKm = estimateAvailable ? ddeProfiles.km(readings.SINCE, profile.distanceFactor) : null;
             const remainingKm = estimateAvailable ? Math.max(0, averageKm - sinceKm) : null;
             cv.text('EST. DISTANCE TO REGEN', statusX + 18, 252, 16, t.dim, { font: 'bold' });
             cv.text('Based on average distance between regenerations',
@@ -534,7 +541,7 @@ mgu.run({
                     nextPageRead = now + (dataReady ? 60000 : 5000);
                     await testSelected();
                 } else if (clusterActive) {
-                    await testSelected(true);
+                    if (profile && profile.regeneration) await testSelected(true);
                 }
             }
         })().catch(e => log.warn('DPF polling: ' + e));
