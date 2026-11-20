@@ -30,3 +30,4 @@ jobs:
           node tools/car-equipment/test.js
           node tools/car-equipment/cache.test.js
           node tools/car-equipment/one-shot.test.js
+          node tools/car-equipment/health.test.js
