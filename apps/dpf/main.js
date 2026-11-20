@@ -331,6 +331,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.36', 'New Started alert on regeneration begin'],
                 ['0.1.34', 'Cluster notification settings require detected 6WB'],
                 ['0.1.31', 'All 22 iDrive languages'],
                 ['0.1.26', 'Cluster regeneration messages'],
