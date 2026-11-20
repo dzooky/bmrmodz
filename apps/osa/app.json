@@ -183,11 +183,21 @@
       ]
     },
     {
+      "key": "cluster6wbAvailable",
+      "label": "6WB cluster detected",
+      "type": "bool",
+      "default": false,
+      "hidden": true
+    },
+    {
       "key": "oilCluster",
       "label": "Notification on cluster",
       "type": "bool",
       "default": false,
-      "notification": true
+      "notification": true,
+      "when": {
+        "cluster6wbAvailable": true
+      }
     },
     {
       "key": "clusterBcTest",
