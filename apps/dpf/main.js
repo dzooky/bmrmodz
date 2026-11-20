@@ -28,26 +28,44 @@ const TABS = ['Overview', 'Detail', 'About'];
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
-        // Fail closed: 6WB must be confirmed in a valid FA/VO before cluster features are offered.
+        // Never enable cluster messages without confirmed 6WB in the cached VO.
+        // An unresolved VO is a temporary state, not a reason to overwrite user preferences.
         ctx.settings.values.cluster6wbAvailable = false;
         let equipmentChecking = false;
         let equipmentCheckedAt = 0;
-        async function refreshClusterEquipment() {
-            if (equipmentChecking || Date.now() - equipmentCheckedAt < 30000) return;
+        let equipmentRetry = null;
+        function scheduleEquipmentCheck() {
+            if (equipmentRetry) return;
+            equipmentRetry = setTimeout(() => {
+                equipmentRetry = null;
+                refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment retry: ' + error));
+            }, 10000);
+        }
+        async function refreshClusterEquipment(force = false) {
+            if (equipmentChecking || (!force && Date.now() - equipmentCheckedAt < 10000)) return;
             equipmentChecking = true;
             equipmentCheckedAt = Date.now();
             try {
+                if (force) {
+                    const reloaded = await CarEquipment.request({ op: 'reload' }, { timeout: 15000 });
+                    if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
+                        log.warn('DPF Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
+                }
                 const result = await CarEquipment.has('6WB', { timeout: 12000 });
                 const supported = result === true;
                 ctx.settings.set('cluster6wbAvailable', supported);
-                if (!supported && ctx.settings.get('regenCluster')) ctx.settings.set('regenCluster', false);
                 log.info('DPF Car Equipment 6WB (VO) = ' + result);
+                if (result !== true && result !== false) scheduleEquipmentCheck();
+                else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
             } catch (error) {
                 ctx.settings.set('cluster6wbAvailable', false);
-                if (ctx.settings.get('regenCluster')) ctx.settings.set('regenCluster', false);
                 log.warn('DPF Car Equipment 6WB: ' + String(error && error.message || error));
+                scheduleEquipmentCheck();
             } finally { equipmentChecking = false; }
         }
+        ctx.settings.onAction('reloadEquipment', () => {
+            refreshClusterEquipment(true).catch(error => log.warn('DPF manual equipment reload: ' + error));
+        });
         refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
 
         let idriveLanguage = 'en';
