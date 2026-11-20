@@ -49,6 +49,19 @@ Other operations: `{"op":"status"}` and `{"op":"refresh"}`. On service startup, 
 
 **Equipment != feature permission:** a HUD option in FA does **not** prove that the app has a functioning renderer or is allowed to write to HUD. OSA/DPF must separately check actual rendering capability.
 
+## Client API for OSA / DPF Monitor
+
+The repository's App Kit now includes `kit/runtime/car-equipment.js`; packaged apps can use:
+
+```js
+const equipment = require('./kit/car-equipment');
+const hud = await equipment.has('610'); // true, false, or 'unknown'
+const options = await equipment.check(['610', '6WB', '6U3']);
+// options.results['610'], options.results['6WB'], options.results['6U3']
+```
+
+`unknown` also covers a missing tool, an unreadable VO, and a communication timeout; clients must not treat it as `false`. The shared library is available for future app integration; existing OSA/DPF application behavior has not been changed by this PR.
+
 ## Development / verification
 
 Run `node tools/car-equipment/test.js` from the repository root. The tests use synthetic VO frames; no vehicle is contacted. On the MGU, check the systemd service log and send `{"op":"refresh"}` then `{"op":"check","codes":["610","6WB","6U3"]}` via a Unix socket client. Cross-check against E-Sys FA/VO. Do not label it car-tested before doing so.
