@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-car-equipment",
   "kind": "tool",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "title": "Car Equipment",
-  "description": "Shared BMW MGU iDrive 7 read-only equipment tool. One initial FA/VO scan if no saved data; stores validated options persistently and serves all app checks from local cache. Rescans only after explicit reload/refresh command.",
+  "description": "Shared MGU read-only vehicle option cache. One VO read when no cache exists; subsequent checks use /var/opt cache, explicit reload rescans. Healthy service startup does not require diagnostic helper to be immediately available.",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [
@@ -49,5 +49,8 @@
   ],
   "restart": [
     "bmrmodz-car-equipment.service"
+  ],
+  "recmgr": [
+    "bmrmodz-car-equipment"
   ]
 }
