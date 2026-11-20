@@ -21,8 +21,9 @@ function resolveHelper() {
 }
 function parseResponse(hex){
   if(!/^[0-9a-f]+$/i.test(hex)||hex.length<20||hex.length%2)return null;
-  const n=parseInt(hex.slice(0,8),16),b=Buffer.from(hex.slice(8),'hex');
-  if(n!==b.length)return null;
+  const n=parseInt(hex.slice(0,8),16),raw=Buffer.from(hex.slice(8),'hex');
+  if(n>raw.length)return null;
+  const b=raw.slice(0,n);
   if(b.length>=5&&b[2]===0x7f)return {error:'TASU rejected request: '+b[4]};
   if(b.length<10||b[6]!==0x10)return null;
   const uds=Array.from(b.slice(9));
