@@ -1,5 +1,8 @@
 'use strict';
 const assert=require('assert');
+const path=require('path'),os=require('os');
+const client=require('../../kit/runtime/car-equipment');
+const {serve}=require('./service');
 const {Equipment,normalize}=require('./equipment');
 const {decodeVehicleOrder}=require('./vehicle-order');
 const {parseResponse,REQUEST,SUB}=require('./transport');
@@ -40,6 +43,17 @@ async function run(){
  assert.strictEqual(equipment.check(['5AZ']).results['5AZ'],false);
  const fail=new Equipment({ready:true,read:async()=>null});
  await fail.refresh();assert.strictEqual(fail.check(['610']).results['610'],'unknown');
- assert.ok(fail.error);console.log('Car Equipment: VO decoder / read-only transport / equipment checks passed');
+ assert.ok(fail.error);
+ const sock=path.join(os.tmpdir(),'car-equipment-test-'+process.pid+'.sock');
+ const instance=serve({ready:true,read:async()=>response},sock);
+ await new Promise((resolve,reject)=>{instance.server.once('listening',resolve);instance.server.once('error',reject);});
+ try{
+   const checked=await client.check(['hud','6WB','5AZ'],{socket:sock});
+   assert.strictEqual(checked.results.hud,true);
+   assert.strictEqual(checked.results['6WB'],true);
+   assert.strictEqual(checked.results['5AZ'],false);
+   assert.strictEqual(await client.has('610',{socket:sock}),true);
+ }finally{instance.close();}
+ console.log('Car Equipment: VO decoder, TASU parser, Unix socket and app client tests passed');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
