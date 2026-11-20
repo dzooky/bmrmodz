@@ -3,7 +3,7 @@ const fs=require('fs'),path=require('path');
 const {readVehicleOrder}=require('./vehicle-order');
 const ALIASES=Object.freeze({hud:'610',head_up_display:'610',cluster_6wb:'6WB',digital_cluster:'6WB',live_cockpit_professional:'6U3'});
 function normalize(x) { if(typeof x!=='string')return null; const s=x.trim().toLowerCase();const code=ALIASES[s]||s.toUpperCase();return /^[0-9A-Z]{3}$/.test(code)?code:null; }
-function status(code,codes) { return !codes?'unknown':codes.has(code); }
+function status(code,codes) { return !codes?'waiting':codes.has(code); }
 // MGU rootfs is read-only; /var/opt is the persistent writable tool home.
 const DEFAULT_CACHE='/var/opt/bmrmodz-car-equipment/equipment.json';
 const LEGACY_CACHE='/var/lib/bmrmodz-car-equipment/vehicle-order.json';

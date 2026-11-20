@@ -17,7 +17,7 @@ async function run(){
  let reads=0;
  try{
   const initial=new Equipment({ready:true,read:async()=>{reads++;return response;}},{cacheFile});
-  assert.strictEqual(initial.check(['6WB']).results['6WB'],'unknown');
+  assert.strictEqual(initial.check(['6WB']).results['6WB'],'waiting');
   await initial.refresh();
   assert.strictEqual(reads,1);
   assert.strictEqual(initial.check(['6WB']).results['6WB'],true);
@@ -32,7 +32,7 @@ async function run(){
   assert.strictEqual(next.check(['6WB']).results['6WB'],true,'failed refresh retains existing equipment');
   fs.writeFileSync(cacheFile,'{"schema":1,"codes":["bad code"],"updatedAt":"2026-11-20T00:00:00.000Z"}');
   const bad=new Equipment({ready:true,read:async()=>null},{cacheFile});
-  assert.strictEqual(bad.check(['6WB']).results['6WB'],'unknown','invalid cache must be rejected');
+  assert.strictEqual(bad.check(['6WB']).results['6WB'],'waiting','invalid cache must be rejected');
   const isolated=new Equipment({ready:true,read:async()=>response},{cacheFile:null});
   await isolated.refresh();assert.strictEqual(isolated.check(['6WB']).results['6WB'],true);
   assert.strictEqual(JSON.parse(fs.readFileSync(cacheFile,'utf8')).codes[0],'bad code');

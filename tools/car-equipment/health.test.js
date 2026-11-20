@@ -27,7 +27,7 @@ async function run(){
    assert.strictEqual(instance.server.listening,true,'service must survive missing helper');
    assert.strictEqual(attempts,1,'one initial helper attempt');
    let result=await client.check(['248'],{socket});
-   assert.strictEqual(result.results['248'],'unknown');
+   assert.strictEqual(result.results['248'],'waiting');
    for(let i=0;i<10;i++)await client.check(['248'],{socket});
    assert.strictEqual(attempts,1,'ordinary checks must not retry');
    available=true;
