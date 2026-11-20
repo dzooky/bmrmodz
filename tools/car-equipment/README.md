@@ -1,8 +1,8 @@
 # Car Equipment — BMRMODZ HU Tool
 
-**Version:** 0.1.3 · **iDrive 7 MGU** · **Persistent VO cache**
+**Version:** 0.1.4 · **iDrive 7 MGU** · **Persistent VO cache**
 
-Car Equipment is a background HU Tool that provides a shared read-only BMW Vehicle Order (FA/VO) equipment-check API to **OSA, DPF Monitor**, and other BMRMODZ applications. A client may ask once for a single option or an entire list, and receive yes / no / unknown. Car Equipment does not render on the instrument cluster or HUD.
+Car Equipment is a background HU Tool that provides a shared read-only BMW Vehicle Order (FA/VO) equipment-check API to **OSA, DPF Monitor**, and other BMRMODZ applications. A client may ask once for a single option or an entire list, and receive yes / no / waiting. Car Equipment does not render on the instrument cluster or HUD.
 
 ## How vehicle equipment is detected
 
@@ -44,9 +44,9 @@ Example reply from a *successfully read and validated* VO (illustrative, not a m
 {"ok":true,"results":{"610":true,"6WB":false,"6U3":true},"source":"vehicle_order","updatedAt":"2026-11-20T00:00:00.000Z","error":null}
 ```
 
-If VO cannot be read or validated, requested items return `"unknown"` (never `false`). Every key is echoed as requested; case-insensitive 3-character BMW SA codes are supported. Aliases: `hud` -> `610`, `digital_cluster` -> `6WB`, `live_cockpit_professional` -> `6U3`.
+If VO cannot be read or validated, requested items return `"waiting"` (never `false`). Every key is echoed as requested; case-insensitive 3-character BMW SA codes are supported. Aliases: `hud` -> `610`, `digital_cluster` -> `6WB`, `live_cockpit_professional` -> `6U3`.
 
-Other operations: `{"op":"status"}`, `{"op":"reload"}` and the backward-compatible alias `{"op":"refresh"}`. At service startup, the tool reads VO **once only if no valid saved cache exists**. Every ordinary `check` is cache-only; after an initial read failure it returns `unknown` and **never retries automatically**, even if the gateway later becomes available. A new scan occurs only on the explicit `reload`/`refresh` operation, which replaces the cache atomically on success and preserves the last known codes if it fails. Replies include `cached: true` if loaded from disk. The cache belongs to this head unit. UI reload buttons in other applications will be incorporated during their future updates; the existing Climate Comfort manual action continues to use the `refresh` alias.
+Other operations: `{"op":"status"}`, `{"op":"reload"}` and the backward-compatible alias `{"op":"refresh"}`. At service startup, the tool reads VO **once only if no valid saved cache exists**. Every ordinary `check` is cache-only; after an initial read failure it returns `waiting` immediately; the Tool retries once after 10 seconds, again after 10 seconds, then every 60 seconds until the full VO is successfully read. A new scan occurs only on the explicit `reload`/`refresh` operation, which replaces the cache atomically on success and preserves the last known codes if it fails. Replies include `cached: true` if loaded from disk. The cache belongs to this head unit. UI reload buttons in other applications will be incorporated during their future updates; the existing Climate Comfort manual action continues to use the `refresh` alias.
 
 **Equipment != feature permission:** a HUD option in FA does **not** prove that the app has a functioning renderer or is allowed to write to HUD. OSA/DPF must separately check actual rendering capability.
 
@@ -56,12 +56,12 @@ The repository's App Kit now includes `kit/runtime/car-equipment.js`; packaged a
 
 ```js
 const equipment = require('./kit/car-equipment');
-const hud = await equipment.has('610'); // true, false, or 'unknown'
+const hud = await equipment.has('610'); // true, false, or 'waiting'
 const options = await equipment.check(['610', '6WB', '6U3']);
 // options.results['610'], options.results['6WB'], options.results['6U3']
 ```
 
-`unknown` also covers a missing tool, an unreadable VO, and a communication timeout; clients must not treat it as `false`. Climate Comfort 0.1.61 uses this shared API instead of sending its own FA/VO request; existing OSA/DPF applications may keep using the 0.1.0-compatible client API without modification.
+An operational Car Equipment Tool returns `waiting` until it has a valid VO. If the client cannot reach the Tool at all, the existing client fallback still returns `unknown` for compatibility; applications must treat both as unconfirmed, never as `false`. Climate Comfort 0.1.61 uses this shared API instead of sending its own FA/VO request; existing OSA/DPF applications may keep using the 0.1.0-compatible client API without modification.
 
 ## Development / verification
 
@@ -72,3 +72,7 @@ Source credit: Vehicle Order decoding is adapted from the project's **Climate Co
 ## 0.1.3 – MGU health-check compatibility
 
 The MGU Store deployer checks that the systemd unit remains active without restarting for 10 seconds. Car Equipment now starts its Unix socket first and resolves the optional `hmictl` transport lazily on the initial uncached read or manual reload. If the helper is absent, the service remains active and reports unknown equipment, rather than crashing installation. The cache uses the MGU writable persistent `/var/opt` tool directory, Node 8-compatible filesystem calls, and the component lists its service under `recmgr`. Existing saved cache from the previous path is migrated if present/readable. The single initial read / manual reload-only behavior is unchanged. Run `node tools/car-equipment/health.test.js` for the missing-helper regression. Real MGU installation still needs validation.
+
+## 0.1.4 – Nonblocking waiting and automatic VO recovery
+
+When no validated VO is cached, app `check` requests immediately return `waiting` for equipment codes, without waiting on TASU. The service owns a single background VO reader and retries failed reads after 10 seconds twice, then once every 60 seconds. Once a validated complete VO is obtained, automatic reads stop and the persistent cache answers `true`/`false`. Explicit `reload` remains available; failed reloads retain the last valid cache. No app-specific gateway reads are performed. Older app clients that compare the result strictly with `true` continue to fail closed. The shared client returns `unknown` if the service itself cannot be contacted, so callers should treat both `waiting` and `unknown` as unresolved.
