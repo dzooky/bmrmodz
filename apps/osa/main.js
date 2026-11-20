@@ -14,6 +14,7 @@ const Language = require('./language');
 const { t: translate } = require('./kit/i18n');
 const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
+const CarEquipment = require('./kit/car-equipment');
 const turboIconPreview = require('./turbo-icon-preview');
 const fs = require('fs');
 const path = require('path');
@@ -27,6 +28,28 @@ mgu.run({
         const { ui, log } = ctx;
         const getLanguage = Language.start(ctx);
         let page = 0;
+        // Default to absent until a validated VO explicitly confirms 6WB.
+        // This hidden setting is the visibility gate for Notification on cluster.
+        ctx.settings.values.cluster6wbAvailable = false;
+        let equipmentChecking = false;
+        let equipmentCheckedAt = 0;
+        async function refreshClusterEquipment() {
+            if (equipmentChecking || Date.now() - equipmentCheckedAt < 30000) return;
+            equipmentChecking = true;
+            equipmentCheckedAt = Date.now();
+            try {
+                const result = await CarEquipment.has('6WB', { timeout: 12000 });
+                const supported = result === true;
+                ctx.settings.set('cluster6wbAvailable', supported);
+                if (!supported && ctx.settings.get('oilCluster')) ctx.settings.set('oilCluster', false);
+                log.info('OSA Car Equipment 6WB (VO) = ' + result);
+            } catch (error) {
+                ctx.settings.set('cluster6wbAvailable', false);
+                if (ctx.settings.get('oilCluster')) ctx.settings.set('oilCluster', false);
+                log.warn('OSA Car Equipment 6WB: ' + String(error && error.message || error));
+            } finally { equipmentChecking = false; }
+        }
+        refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
             // Join matching runs across rows to avoid seams inside solid areas.
@@ -128,6 +151,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.52', 'Show cluster notification setting only when VO contains 6WB'],
                 ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
                 ['0.2.50', 'Scrollable release history'],
                 ['0.2.49', 'Settings tab in Standard layout'],
@@ -390,7 +414,7 @@ mgu.run({
             const { demo, oil } = car.data();
             if (demo || !G.isNum(oil)) return null;
             const message = warmupMessage(oil, oilWarmTarget(), mono());
-            return ctx.settings.get('oilCluster') ? message : null;
+            return ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('oilCluster') ? message : null;
         }, recordCluster, () => testPhase() >= 0, () => testMode === 'clusterLowerTest', getLanguage);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
@@ -656,6 +680,7 @@ mgu.run({
 
         const switchPage = (next) => {
             page = (next + 4) % 4;
+
             return render();
         };
 
@@ -679,6 +704,7 @@ mgu.run({
         });
 
         ui.onVisible((name, on) => {
+            if (name === 'MAIN' && on) refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
             if (name === 'MAIN') transmission.setVisible(on);
         });
         transmission.setVisible(ui.isVisible('MAIN'));
