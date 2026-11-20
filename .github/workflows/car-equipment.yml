@@ -1,0 +1,28 @@
+name: Car Equipment checks
+on:
+  push:
+    branches:
+      - feature/car-equipment-tool
+  pull_request:
+    paths:
+      - 'tools/car-equipment/**'
+      - 'mgu-repo.json'
+      - '.github/workflows/car-equipment.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['18', '22']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Check JSON manifests
+        run: node -e "JSON.parse(require('fs').readFileSync('mgu-repo.json'));JSON.parse(require('fs').readFileSync('tools/car-equipment/component.json'))"
+      - name: Check JavaScript syntax
+        run: |
+          for file in tools/car-equipment/*.js; do node --check "$file"; done
+      - name: Test Vehicle Order and TASU response handling
+        run: node tools/car-equipment/test.js
