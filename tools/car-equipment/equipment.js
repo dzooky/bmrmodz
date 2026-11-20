@@ -4,7 +4,9 @@ const {readVehicleOrder}=require('./vehicle-order');
 const ALIASES=Object.freeze({hud:'610',head_up_display:'610',cluster_6wb:'6WB',digital_cluster:'6WB',live_cockpit_professional:'6U3'});
 function normalize(x) { if(typeof x!=='string')return null; const s=x.trim().toLowerCase();const code=ALIASES[s]||s.toUpperCase();return /^[0-9A-Z]{3}$/.test(code)?code:null; }
 function status(code,codes) { return !codes?'unknown':codes.has(code); }
-const DEFAULT_CACHE='/var/lib/bmrmodz-car-equipment/vehicle-order.json';
+// MGU rootfs is read-only; /var/opt is the persistent writable tool home.
+const DEFAULT_CACHE='/var/opt/bmrmodz-car-equipment/equipment.json';
+const LEGACY_CACHE='/var/lib/bmrmodz-car-equipment/vehicle-order.json';
 function validCode(code){return typeof code==='string'&&/^[0-9A-Z]{3}$/.test(code);}
 class Equipment {
   constructor(link,options) {
@@ -16,12 +18,17 @@ class Equipment {
   loadCache(){
     if(!this.cacheFile)return false;
     try{
-      const saved=JSON.parse(fs.readFileSync(this.cacheFile,'utf8'));
+      let source=this.cacheFile;
+      // Preserve cache created by 0.1.1/0.1.2 if readable.
+      if(source===DEFAULT_CACHE&&!fs.existsSync(source)&&fs.existsSync(LEGACY_CACHE))
+        source=LEGACY_CACHE;
+      const saved=JSON.parse(fs.readFileSync(source,'utf8'));
       if(saved.schema!==1||!Array.isArray(saved.codes)||saved.codes.length===0||saved.codes.length>512||
          saved.codes.some(code=>!validCode(code))||new Set(saved.codes).size!==saved.codes.length||
          typeof saved.updatedAt!=='string'||!Number.isFinite(Date.parse(saved.updatedAt))||
          Date.parse(saved.updatedAt)>Date.now()+60000)throw new Error('Invalid cached vehicle order');
       this.codes=new Set(saved.codes);this.updatedAt=saved.updatedAt;this.cached=true;this.error=null;
+      if(source!==this.cacheFile)this.saveCache();
       return true;
     }catch(e){
       this.codes=null;this.updatedAt=null;this.cached=false;
@@ -33,7 +40,8 @@ class Equipment {
     if(!this.cacheFile||!this.codes)return;
     const folder=path.dirname(this.cacheFile),tmp=this.cacheFile+'.'+process.pid+'.tmp';
     try{
-      fs.mkdirSync(folder,{recursive:true,mode:0o700});
+      // Node 8 on MGU does not support mkdirSync({recursive:true}).
+      try{fs.mkdirSync(folder,0o700);}catch(e){if(e.code!=='EEXIST')throw e;}
       fs.writeFileSync(tmp,JSON.stringify({schema:1,codes:Array.from(this.codes).sort(),updatedAt:this.updatedAt})+'\n',{mode:0o600});
       fs.renameSync(tmp,this.cacheFile);
     }catch(e){
@@ -66,4 +74,4 @@ class Equipment {
     return {ok:true,results:result,cached:this.cached,source:'vehicle_order',updatedAt:this.updatedAt,error:this.error};
   }
 }
-module.exports={Equipment,normalize,status,DEFAULT_CACHE};
+module.exports={Equipment,normalize,status,DEFAULT_CACHE,LEGACY_CACHE};

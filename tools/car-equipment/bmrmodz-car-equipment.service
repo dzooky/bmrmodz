@@ -5,12 +5,10 @@ After=vsomeipd.service
 Type=simple
 RuntimeDirectory=bmrmodz-car-equipment
 RuntimeDirectoryMode=0755
-StateDirectory=bmrmodz-car-equipment
-StateDirectoryMode=0700
 ExecStart=/usr/bin/node /var/opt/bmrmodz-car-equipment/current/service.js
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
-# Transport adapter MUST be provided before deployment (see README).
+# Transport is initialized lazily; missing hmictl leaves equipment unknown without crashing.
 [Install]
 WantedBy=multi-user.target

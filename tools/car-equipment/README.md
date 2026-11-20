@@ -1,6 +1,6 @@
 # Car Equipment — BMRMODZ HU Tool
 
-**Version:** 0.1.2 · **iDrive 7 MGU** · **Persistent VO cache**
+**Version:** 0.1.3 · **iDrive 7 MGU** · **Persistent VO cache**
 
 Car Equipment is a background HU Tool that provides a shared read-only BMW Vehicle Order (FA/VO) equipment-check API to **OSA, DPF Monitor**, and other BMRMODZ applications. A client may ask once for a single option or an entire list, and receive yes / no / unknown. Car Equipment does not render on the instrument cluster or HUD.
 
@@ -11,7 +11,7 @@ The Tool uses the **same ECU and DID and the same strict FA/VO parser as BMRMODZ
 1. MGU starts the Car Equipment systemd service.
 2. The service uses the locally installed **hmictl** TASU SOME/IP helper from the **IterioDev Comfort** HU Tool (declared as a dependency in `component.json`).
 3. A read-only `22 3F 06` request goes to gateway `0x10`, via the head unit's TASU diagnostic gateway `0xF8A6`.
-4. The complete response is validated and decoded into the vehicle's SALAPA / SA option codes, cached in memory, and atomically saved locally at `/var/lib/bmrmodz-car-equipment/vehicle-order.json` (mode `0600`).
+4. The complete response is validated and decoded into the vehicle's SALAPA / SA option codes, cached in memory, and atomically saved locally at `/var/opt/bmrmodz-car-equipment/equipment.json` (mode `0600`).
 5. After a head-unit restart, the service loads the validated saved codes and immediately answers app requests, **without another gateway read**.
 6. Clients check one or more codes through a **local-only Unix socket**.
 
@@ -68,3 +68,7 @@ const options = await equipment.check(['610', '6WB', '6U3']);
 Run `node tools/car-equipment/test.js`, `node tools/car-equipment/cache.test.js`, `node tools/car-equipment/one-shot.test.js`, and `node apps/climate-comfort/equipment.test.js` from the repository root. The tests use synthetic VO frames; no vehicle is contacted. On the MGU, check the systemd service log and send `{"op":"reload"}` then `{"op":"check","codes":["610","6WB","6U3"]}` via a Unix socket client. Cross-check against E-Sys FA/VO. Do not label it car-tested before doing so.
 
 Source credit: Vehicle Order decoding is adapted from the project's **Climate Comfort**. The HU Tool packaging and TASU helper CLI integration follow the **IterioDev Comfort** tool's published interface. No third-party executable is bundled.
+
+## 0.1.3 – MGU health-check compatibility
+
+The MGU Store deployer checks that the systemd unit remains active without restarting for 10 seconds. Car Equipment now starts its Unix socket first and resolves the optional `hmictl` transport lazily on the initial uncached read or manual reload. If the helper is absent, the service remains active and reports unknown equipment, rather than crashing installation. The cache uses the MGU writable persistent `/var/opt` tool directory, Node 8-compatible filesystem calls, and the component lists its service under `recmgr`. Existing saved cache from the previous path is migrated if present/readable. The single initial read / manual reload-only behavior is unchanged. Run `node tools/car-equipment/health.test.js` for the missing-helper regression. Real MGU installation still needs validation.
