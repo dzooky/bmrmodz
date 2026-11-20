@@ -324,11 +324,12 @@ mgu.run({
             cv.text('DPF STATUS', 640, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
             cv.text('Read-only diesel particulate filter monitor for BMW iDrive 7.', 640, 258, 19, t.dim, { align: 'center' });
-            cv.text('Shows soot and ash mass, regeneration distances and status,', 640, 285, 19, t.dim, { align: 'center' });
-            cv.text('plus detailed measurements from supported B57 DDE units.', 640, 312, 19, t.dim, { align: 'center' });
+            cv.text('Supports B57 and B47 DDE with validated soot, ash and distances.', 640, 285, 19, t.dim, { align: 'center' });
+            cv.text('Regeneration status and advanced detail are verified on B57 only.', 640, 312, 19, t.dim, { align: 'center' });
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.38', 'B47 core gauges with automatic DDE detection'],
                 ['0.1.37', 'Started alert translated into all languages'],
                 ['0.1.36', 'New Started alert on regeneration begin'],
                 ['0.1.34', 'Cluster notification settings require detected 6WB'],
