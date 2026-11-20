@@ -35,3 +35,15 @@ BimmerLink also showed coolant 62 °C, time since regeneration 12 h, fuel since 
 5. Report both snapshots and approximate times. Keep unknown scalings disabled until confirmed.
 
 This probe remains isolated on the `feature/dpf-b47-readonly-probe` branch; do not merge it with the main B57 app until values and states are verified.
+
+## Deferred measurements for weekend / when convenient
+
+**No special driving is requested.** The B47 core metrics (soot, ash, since last regeneration, average regeneration distance) have been repeatedly compared successfully with BimmerLink. The main DPF app can now show those in normal graphical gauges.
+
+Still to identify and confirm when naturally available:
+- Regen requested / active / interrupted / locked: capture simultaneous BimmerLink states and raw DID `44BB` and `467E`. A single idle snapshot cannot reveal bit layout. Do not manually trigger regen.
+- Temperature: `4502` raw alongside BimmerLink exhaust temperature at naturally differing conditions; confirm the exact sensor.
+- Pressure: `44ED` raw alongside BimmerLink before-DPF pressure and differential pressure; confirm which sensor, if either.
+- Optional: engine time, fuel consumed and remaining DPF life, but only after identifying their appropriate B47 read-only DIDs.
+
+These are follow-up diagnostics, **not blockers for B47 core support**. Keep the B47 probe as a separate tester branch until they can be validated; do not merge experimental raw display into main DPF.
