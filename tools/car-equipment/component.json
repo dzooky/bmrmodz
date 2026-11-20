@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-car-equipment",
   "kind": "tool",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "title": "Car Equipment",
-  "description": "Shared read-only BMW MGU iDrive 7 equipment detection for BMRMODZ apps. Reads validated FA/VO only when needed; persists vehicle option codes locally for fast shared queries without repeated gateway diagnostics. Uses TASU via hmictl from IterioDev Comfort.",
+  "description": "Shared BMW MGU iDrive 7 read-only equipment tool. One initial FA/VO scan if no saved data; stores validated options persistently and serves all app checks from local cache. Rescans only after explicit reload/refresh command.",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [
