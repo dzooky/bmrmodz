@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.51",
+  "version": "0.2.52",
   "settingsBeforeLast": true,
   "settingsTabInStandard": true,
   "vendor": "custom",
@@ -276,5 +276,8 @@
       "_optional": "Observation of BMW Check Control messages",
       "newCCMessage": "rs"
     }
+  },
+  "requires": {
+    "bmrmodz-car-equipment": "0.1.0"
   }
 }
