@@ -27,9 +27,10 @@ jobs:
             for (const [key, version] of Object.entries(required))
               assert.strictEqual(app.requires[key], version, id+': '+key);
             if (['osa','dpf'].includes(id)) assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.0');
+            else if (id === 'climate-comfort') assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.1');
             else assert.strictEqual(app.requires['bmrmodz-car-equipment'], undefined, id+' should not install Car Equipment');
           }
           const component = JSON.parse(fs.readFileSync('tools/car-equipment/component.json'));
           assert.strictEqual(component.id,'bmrmodz-car-equipment');
-          console.log('All per-app requirements correctly inherited; OSA and DPF require Car Equipment.');
+          console.log('All per-app requirements correctly inherited; OSA, DPF and Climate Comfort require Car Equipment.');
           NODE
