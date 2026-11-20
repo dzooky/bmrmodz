@@ -4,8 +4,8 @@
 const fs=require('fs'),net=require('net'),path=require('path');
 const {Equipment}=require('./equipment');
 const SOCKET=process.env.CAR_EQUIPMENT_SOCKET||'/run/bmrmodz-car-equipment/ctl.sock';
-function serve(link,socketPath) {
-  const equipment=new Equipment(link);
+function serve(link,socketPath,options) {
+  const equipment=new Equipment(link,options);
   const target=socketPath||SOCKET;
   try { fs.mkdirSync(path.dirname(target)); } catch (e) { if (e.code !== 'EEXIST') throw e; }
   try { fs.unlinkSync(target); } catch(e) {if(e.code!=='ENOENT')throw e;}
@@ -31,7 +31,11 @@ function serve(link,socketPath) {
       }
     });
   });
-  server.listen(target,()=>{fs.chmodSync(target,0o666);equipment.refresh().catch(console.error);});
+  server.listen(target,()=>{
+    fs.chmodSync(target,0o666);
+    // Never re-read the gateway on every service restart when a valid VO is cached.
+    if(!equipment.codes)equipment.refresh().catch(console.error);
+  });
   function close(){server.close();try{fs.unlinkSync(target);}catch(e){}}
   process.on('SIGTERM',close);process.on('SIGINT',close);
   return {server,equipment,close};

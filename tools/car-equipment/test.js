@@ -45,7 +45,7 @@ async function run(){
  await fail.refresh();assert.strictEqual(fail.check(['610']).results['610'],'unknown');
  assert.ok(fail.error);
  const sock=path.join(os.tmpdir(),'car-equipment-test-'+process.pid+'.sock');
- const instance=serve({ready:true,read:async()=>response},sock);
+ const instance=serve({ready:true,read:async()=>response},sock,{cacheFile:null});
  await new Promise((resolve,reject)=>{instance.server.once('listening',resolve);instance.server.once('error',reject);});
  try{
    const checked=await client.check(['hud','6WB','5AZ'],{socket:sock});
