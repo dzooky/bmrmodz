@@ -1,0 +1,35 @@
+name: MGU Store dependency manifests
+on:
+  push:
+    branches: [fix/store-per-app-requires]
+  pull_request:
+    paths:
+      - 'mgu-repo.json'
+      - 'apps/*/app.json'
+      - '.github/workflows/store-dependencies.yml'
+jobs:
+  requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Confirm independent app requirements
+        run: |
+          node - <<'NODE'
+          const fs = require('fs'), assert = require('assert');
+          const repo = JSON.parse(fs.readFileSync('mgu-repo.json'));
+          assert.strictEqual(repo.apps.requires, undefined, 'global apps.requires overrides app-specific requirements in MGU Store');
+          const required = {'idrive7-renderd': '2.1.19', 'mgu-inputgate': '1.2.1'};
+          for (const id of ['osa','climate-comfort','dpf','spritmonitor']) {
+            const app = JSON.parse(fs.readFileSync('apps/'+id+'/app.json'));
+            for (const [key, version] of Object.entries(required))
+              assert.strictEqual(app.requires[key], version, id+': '+key);
+            if (id === 'osa') assert.strictEqual(app.requires['bmrmodz-car-equipment'], '0.1.0');
+            else assert.strictEqual(app.requires['bmrmodz-car-equipment'], undefined, id+' should not install Car Equipment');
+          }
+          const component = JSON.parse(fs.readFileSync('tools/car-equipment/component.json'));
+          assert.strictEqual(component.id,'bmrmodz-car-equipment');
+          console.log('All per-app requirements correctly inherited; OSA requires Car Equipment only.');
+          NODE
