@@ -15,6 +15,7 @@ const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
 const regenMessage = require('./regen-message');
+const b47ProbeValues = require('./b47-probe-values');
 const { t: translate, setRuntimeTranslations } = require('./kit/i18n');
 const locales = require('./translations');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
@@ -112,11 +113,13 @@ mgu.run({
         let probeBusy = false;
         let probeState = 'Open this tab to start the read-only scan';
         const probeResults = {};
+        const probeCandidates = {};
         async function runProbe() {
             if (probeBusy) return;
             probeBusy = true;
             probeState = 'Identifying DDE...';
             Object.keys(probeResults).forEach(key => delete probeResults[key]);
+            Object.keys(probeCandidates).forEach(key => delete probeCandidates[key]);
             try {
                 if (!link.ready) await link.init();
                 if (!link.available) {
@@ -142,6 +145,7 @@ mgu.run({
                         u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) ||
                             (u[0] === 0x7F && u[1] === 0x22)), requestOptions);
                     probeResults[name] = response ? hexBytes(response).slice(0, 75) : 'TIMEOUT';
+                    probeCandidates[name] = b47ProbeValues.candidate(did, response);
                     log.info('DPF B47 PROBE ' + name + ' DID ' + did.toString(16) + ': ' + probeResults[name]);
                 }
                 if (page === 'probe') probeState = 'Complete - photograph the screen';
@@ -382,7 +386,7 @@ mgu.run({
         }
 
         function renderProbe(cv, t) {
-            cv.text('B47 READ-ONLY DIAGNOSTICS', 48, 75, 30, t.text, { font: 'bold', literal: true });
+            cv.text('B47 PROBE - BIMMERLINK COMPARE', 48, 75, 30, t.text, { font: 'bold', literal: true });
             cv.text('ECU 0x12  /  DDE INDEX: ' + (ddeIndex || 'UNKNOWN'), 48, 119, 21, t.dim, { literal: true });
             cv.text(probeState, 48, 155, 19, t.warn, { literal: true });
             cv.text('IDENT: ' + (probeResults.IDENTITY || '--'), 48, 196, 17, t.dim, { literal: true });
@@ -391,9 +395,14 @@ mgu.run({
                 const x = 48 + col * 766, y = 231 + row * 62;
                 cv.text(name + '  ' + did.toString(16).toUpperCase(), x, y, 19, t.text,
                     { font: 'bold', literal: true });
-                cv.text(probeResults[name] || '--', x, y + 25, 16, t.dim, { literal: true });
+                cv.text(probeResults[name] || '--', x, y + 20, 15, t.dim, { literal: true });
+                const estimate = probeCandidates[name];
+                if (estimate) cv.text('EST: ' + estimate.display + ' (' + estimate.note + ')',
+                    x, y + 41, 15, t.warn, { literal: true });
+                else if (probeResults[name] && probeResults[name] !== 'TIMEOUT')
+                    cv.text('No verified physical unit - compare raw only', x, y + 41, 14, t.dim, { literal: true });
             });
-            cv.text('Raw replies only; not verified DPF measurements. Reopen tab to rescan.',
+            cv.text('EST = unverified B47 candidate. Compare BimmerLink immediately. Reopen to rescan.',
                 48, 508, 15, t.dim, { literal: true });
         }
 
