@@ -28,5 +28,11 @@
         "kit/tools/oapgen"
       ]
     }
-  }
+  },
+  "tools": [
+    {
+      "id": "bmrmodz-car-equipment",
+      "path": "tools/car-equipment"
+    }
+  ]
 }

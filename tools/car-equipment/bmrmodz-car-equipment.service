@@ -1,0 +1,14 @@
+[Unit]
+Description=BMRMODZ Car Equipment - read-only vehicle order equipment service
+After=vsomeipd.service
+[Service]
+Type=simple
+RuntimeDirectory=bmrmodz-car-equipment
+RuntimeDirectoryMode=0755
+ExecStart=/usr/bin/node /var/opt/bmrmodz-car-equipment/current/service.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+# Transport adapter MUST be provided before deployment (see README).
+[Install]
+WantedBy=multi-user.target
