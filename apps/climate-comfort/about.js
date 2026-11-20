@@ -9,6 +9,8 @@ const BOTTOM = 512;
 const RELEASE_START = 105;
 const RELEASE_STEP = 22;
 const RELEASES = [
+    ['0.1.61', 'Detect car equipment through the shared Car Equipment HU Tool.'],
+    ['', 'Keep unknown options unconfirmed; refresh the vehicle order via My Car.'],
     ['0.1.60', 'Suspend experimental BMW rule reads while investigating a Store crash.'],
     ['', 'Restore the SOME/IP registrations used by version 0.1.58.'],
     ['0.1.58', 'Gray out and lock climate controls while the app is disabled.'],
