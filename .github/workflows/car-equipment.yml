@@ -6,6 +6,7 @@ on:
   pull_request:
     paths:
       - 'tools/car-equipment/**'
+      - 'kit/runtime/car-equipment.js'
       - 'mgu-repo.json'
       - '.github/workflows/car-equipment.yml'
 jobs:
@@ -23,6 +24,6 @@ jobs:
         run: node -e "JSON.parse(require('fs').readFileSync('mgu-repo.json'));JSON.parse(require('fs').readFileSync('tools/car-equipment/component.json'))"
       - name: Check JavaScript syntax
         run: |
-          for file in tools/car-equipment/*.js; do node --check "$file"; done
+          for file in tools/car-equipment/*.js kit/runtime/car-equipment.js; do node --check "$file"; done
       - name: Test Vehicle Order and TASU response handling
         run: node tools/car-equipment/test.js
