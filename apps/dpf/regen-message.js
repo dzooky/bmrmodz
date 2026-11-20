@@ -42,9 +42,9 @@ function createIndicator() {
         if (state === 'active') {
             const elapsed = now - startedAt;
             // Announce the transition once, then repeat "In Progress" each minute.
-            // The first repeat is one minute AFTER the "Started" message.
-            if (elapsed < ACTIVE_REPEAT_MS) return blink(STARTED, elapsed);
-            return blink(ACTIVE, (elapsed - ACTIVE_REPEAT_MS) % ACTIVE_REPEAT_MS);
+            // "In Progress" follows the 3-second "Started" window immediately.
+            if (elapsed < BLINK_MS) return blink(STARTED, elapsed);
+            return blink(ACTIVE, (elapsed - BLINK_MS) % ACTIVE_REPEAT_MS);
         }
         if (!message) return null;
         return blink(message, now - startedAt);
