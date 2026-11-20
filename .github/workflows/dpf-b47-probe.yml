@@ -29,9 +29,10 @@ jobs:
           node - <<'NODE'
           const fs=require('fs'),assert=require('assert');
           const app=JSON.parse(fs.readFileSync('apps/dpf/app.json','utf8'));
-          assert.strictEqual(app.version,'0.1.35');
+          assert.strictEqual(app.version,'0.1.38');
           const main=fs.readFileSync('apps/dpf/main.js','utf8');
           assert.ok(main.includes("b47ProbeValues.candidate(did, response)"));
           assert.ok(main.includes("EST: "));
-          console.log('DPF B47 v0.1.35 preview ready');
+          assert.ok(main.includes("b47ProbeValues.rawReading(did, response)"));
+          console.log('DPF B47 v0.1.38 preview ready');
           NODE
