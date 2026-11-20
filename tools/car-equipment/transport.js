@@ -92,6 +92,7 @@ class HmiLink {
     try{
       const ack=await this._line(REQUEST,5000);
       if(!/^ok\b/.test(ack)){event.resolve(null);throw new Error('TASU request failed: '+ack);}
+      if(this.pendingEvent===event&&!event.pending)event.setNormalTimeout();
       return await received;
     }catch(e){if(this.pendingEvent===event)event.resolve(null);throw e;}
   }
