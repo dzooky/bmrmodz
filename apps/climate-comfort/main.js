@@ -1,12 +1,11 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const Car = require('./kit/car');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
-const { readVehicleOrder } = require('./vehicle-order');
+const CarEquipment = require('./kit/car-equipment');
+const { CODES: EQUIPMENT_CODES, fromResults: equipmentFromResults } = require('./equipment');
 const createSeatTemperatureReader = require('./seat-temperature');
 const { renderAbout, maxScroll: maxAboutScroll } = require('./about');
 const renderSeats = require('./seats');
@@ -34,46 +33,6 @@ function equipmentTabs(equipment) {
     if (equipment.steeringWheelHeating === true) tabs.push('Steering');
     tabs.push('My Car', 'Settings', 'About');
     return tabs;
-}
-
-function equipmentFromCodes(codes) {
-    const heatBothRows = codes.has('4HA');
-    return {
-        steeringWheelHeating: codes.has('248'),
-        mSportSteeringWheel: codes.has('710'),
-        fourZoneClimate: codes.has('4NB'),
-        auxiliaryHeating: codes.has('536'),
-        frontSeatVentilation: codes.has('453') || undefined,
-        rearSeatVentilation: codes.has('454') || undefined,
-        frontSeatHeating: (heatBothRows || codes.has('494')) || undefined,
-        rearSeatHeating: heatBothRows || undefined,
-    };
-}
-
-function loadSavedCodes(file, log) {
-    try {
-        const codes = JSON.parse(fs.readFileSync(file, 'utf8'));
-        if (!Array.isArray(codes) || !codes.length || !codes.every(code =>
-            typeof code === 'string' && /^[0-9A-Z]{3}$/.test(code))) {
-            throw new Error('Invalid saved vehicle order');
-        }
-        return new Set(codes);
-    } catch (error) {
-        if (error.code !== 'ENOENT') log.warn('Climate Comfort: ' + error.message);
-        return null;
-    }
-}
-
-function saveCodes(file, codes, log) {
-    const temporary = file + '.tmp';
-    try {
-        fs.writeFileSync(temporary, JSON.stringify(Array.from(codes)));
-        fs.renameSync(temporary, file);
-        return true;
-    } catch (error) {
-        log.warn('Climate Comfort: saving vehicle order failed: ' + error.message);
-        return false;
-    }
 }
 
 function drawUnconfirmed(cv, x, y) {
@@ -109,9 +68,7 @@ mgu.run({
         const settingsPage = createSettingsPage(ctx.settings);
         const rows = ctx.spec.config.previewEquipment;
         const link = ctx.isPreview ? null : new ReadOnlyDiag(ctx.signals, ctx.log);
-        const cacheFile = link && path.join(ctx.dataDir, 'vehicle-order.json');
-        const savedCodes = cacheFile && loadSavedCodes(cacheFile, ctx.log);
-        let equipment = savedCodes ? equipmentFromCodes(savedCodes) : {};
+        let equipment = {};
         const enqueueDiagnostic = createDiagnosticQueue();
         const wheelTest = createWheelTest(ctx, enqueueDiagnostic);
         const readFootwellTemperatures = link ? createSeatTemperatureReader(link, ctx.log) : null;
@@ -165,32 +122,39 @@ mgu.run({
         let servicesScroll = 0;
         let servicesSelection = null;
         let aboutScroll = 0;
-        let voStatus = savedCodes ? 'Saved vehicle order' : null;
-        let readRequested = !savedCodes;
-
-        let equipmentAttempts = 0;
+        let voStatus = ctx.isPreview ? 'Preview equipment' : 'Checking Car Equipment...';
+        let equipmentChecking = false;
         let nextEquipmentRead = 0;
 
-        async function detectEquipment() {
-            if (!link || !readRequested || equipmentAttempts >= 3 || Date.now() < nextEquipmentRead ||
-                voStatus === 'Reading vehicle order...') return;
-            equipmentAttempts++;
-            voStatus = 'Reading vehicle order...';
+        async function detectEquipment(force = false) {
+            if (ctx.isPreview || equipmentChecking || (!force && Date.now() < nextEquipmentRead)) return;
+            equipmentChecking = true;
+            voStatus = 'Reading Car Equipment...';
             try {
-                const { codes, error } = await enqueueDiagnostic(() => readVehicleOrder(link));
-                if (!codes) {
-                    voStatus = error;
-                    ctx.log.warn('Climate Comfort: ' + error);
-                    return;
+                // Explicit rescan uses the tool's refresh API instead of its VO cache.
+                if (force) {
+                    const refreshed = await CarEquipment.request({ op: 'refresh' }, { timeout: 15000 });
+                    if (!refreshed || refreshed.ok !== true || refreshed.available !== true) {
+                        throw new Error(refreshed && refreshed.error || 'Vehicle order unavailable');
+                    }
                 }
-                equipment = equipmentFromCodes(codes);
-                readRequested = false;
-                voStatus = saveCodes(cacheFile, codes, ctx.log) ? 'Vehicle order saved' : 'Vehicle order read, save failed';
+                const result = await CarEquipment.check(EQUIPMENT_CODES, { timeout: 15000 });
+                equipment = equipmentFromResults(result.results);
+                const confirmed = EQUIPMENT_CODES.every(code => result.results &&
+                    (result.results[code] === true || result.results[code] === false));
+                if (result.ok && confirmed) {
+                    voStatus = 'Car Equipment: vehicle order detected';
+                } else {
+                    voStatus = 'Car Equipment: vehicle order unavailable';
+                    ctx.log.warn('Climate Comfort Car Equipment: ' + (result.error || 'Unknown equipment'));
+                }
             } catch (error) {
-                voStatus = 'Vehicle order: transport error';
-                ctx.log.warn('Climate Comfort: Vehicle Order read failed: ' + error.message);
+                equipment = {};
+                voStatus = 'Car Equipment: vehicle order unavailable';
+                ctx.log.warn('Climate Comfort Car Equipment: ' + String(error.message || error));
             } finally {
-                nextEquipmentRead = Date.now() + 3000;
+                equipmentChecking = false;
+                nextEquipmentRead = Date.now() + (voStatus.includes('detected') ? 60000 : 30000);
             }
         }
 
@@ -212,12 +176,8 @@ mgu.run({
         }
 
         function reloadEquipment() {
-            if (!link || voStatus === 'Reading vehicle order...') return;
-            link.wake();
-            readRequested = true;
-            equipmentAttempts = 0;
-            nextEquipmentRead = 0;
-            return detectEquipment();
+            if (ctx.isPreview || equipmentChecking) return;
+            return detectEquipment(true);
         }
 
         function scanBmwServices() {
@@ -252,7 +212,7 @@ mgu.run({
 
         ctx.loop('MAIN', 4, () => {
             wheelTest.tick();
-            detectEquipment();
+            detectEquipment().catch(error => ctx.log.warn('Climate Comfort Car Equipment poll: ' + error));
             refreshSeatTemperatures();
             if (ctx.isPreview) {
                 rows.forEach(({ key }) => { equipment[key] = ctx.settings.get(key) === true; });
@@ -295,7 +255,7 @@ mgu.run({
                 cv.text('BMW services test', 1080, 497, 19, theme.text, { align: 'center' });
                 cv.target(940, 471, 280, 40, scanBmwServices, 'bmw-services-test', 10);
                 if (link) {
-                    const busy = voStatus === 'Reading vehicle order...';
+                    const busy = equipmentChecking;
                     cv.roundRect(1245, 471, 245, 40, 10, '#ffffff19');
                     cv.text('Reload equipment', 1367, 497, 19, busy ? theme.dim : theme.text, { align: 'center' });
                     if (!busy) cv.target(1245, 471, 245, 40, reloadEquipment, 'reload-equipment');
