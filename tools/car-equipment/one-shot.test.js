@@ -32,12 +32,12 @@ async function run(){
    assert.strictEqual(reads,1,'one initial read when no cache');
    for(let i=0;i<30;i++){
      const result=await client.check(['248','6WB'],{socket});
-     assert.strictEqual(result.results['248'],'unknown');
+     assert.strictEqual(result.results['248'],'waiting');
    }
-   assert.strictEqual(reads,1,'failed initial read must not retry on checks');
+   assert.strictEqual(reads,1,'checks do not trigger immediate retries');
    working=true;
    for(let i=0;i<10;i++)await client.check(['248'],{socket});
-   assert.strictEqual(reads,1,'restored gateway does not cause background reads');
+   assert.strictEqual(reads,1,'checks do not trigger immediate reads');
    let reply=await client.request({op:'reload'},{socket});
    assert.strictEqual(reply.available,true);
    assert.strictEqual(reads,2,'explicit reload reads gateway once');
@@ -57,6 +57,6 @@ async function run(){
    if(instance)await stop();
    fs.rmSync(dir,{recursive:true,force:true});
  }
- console.log('One-shot Car Equipment: no automatic rechecks, manual reload, legacy refresh, restart cache OK');
+ console.log('One-shot Car Equipment: no premature rechecks, manual reload, legacy refresh, restart cache OK');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
