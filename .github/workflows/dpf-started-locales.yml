@@ -31,6 +31,6 @@ jobs:
             assert.ok(t.Requested && t['In Progress'] && t.Finished, lang + ' missing existing cluster state translation');
           }
           const app=JSON.parse(fs.readFileSync('apps/dpf/app.json','utf8'));
-          assert.strictEqual(app.version, '0.1.37');
+          assert.ok(app.version.startsWith('0.1.') && Number(app.version.split('.')[2]) >= 37, 'Started translations require DPF 0.1.37 or newer');
           console.log('Started and existing regeneration states checked in 21 translated locales + English fallback');
           NODE
