@@ -86,8 +86,8 @@ class HmiLink {
       let timer;
       const done=(fn,v)=>{clearTimeout(timer);this.pendingEvent=null;fn(v);};
       const arm=ms=>{clearTimeout(timer);timer=setTimeout(()=>done(resolve,null),ms);};
-      event={resolve:v=>done(resolve,v),reject:e=>done(reject,e),extend:()=>arm(10000)};
-      this.pendingEvent=event;arm(timeout||3000);
+      event={pending:false,resolve:v=>done(resolve,v),reject:e=>done(reject,e),extend:()=>{event.pending=true;arm(10000);},setNormalTimeout:()=>arm(timeout||3000)};
+      this.pendingEvent=event;arm((timeout||3000)+5000);
     });
     try{
       const ack=await this._line(REQUEST,5000);
