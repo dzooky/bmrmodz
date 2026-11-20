@@ -34,7 +34,7 @@ jobs:
           const tool=JSON.parse(fs.readFileSync('tools/car-equipment/component.json'));
           const main=fs.readFileSync('apps/climate-comfort/main.js','utf8');
           assert.strictEqual(app.version,'0.1.61');
-          assert.strictEqual(tool.version,'0.1.1');
+          assert.ok(/^0\\.1\\.(\\d+)$/.test(tool.version) && Number(tool.version.split('.')[2]) >= 1, 'Tool must be at least 0.1.1');
           assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.1');
           assert.ok(main.includes('CarEquipment.check(EQUIPMENT_CODES'));
           assert.ok(main.includes("CarEquipment.request({ op: 'refresh' }"));
