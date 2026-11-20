@@ -45,10 +45,24 @@ function serve(link,socketPath,options) {
   process.on('SIGTERM',close);process.on('SIGINT',close);
   return {server,equipment,close};
 }
-// Explicit provider boundary: do not fake VO detection if HU diagnostic transport is missing.
-if(require.main===module){
-  let provider;
-  try{provider=require('./transport').createLink();}catch(e){console.error('Car Equipment transport unavailable:',e.message);process.exit(1);}
-  serve(provider);
+// The daemon must come up even when the optional diagnostic helper is absent.
+// The helper is needed only for the first uncached read or an explicit reload.
+// A missing helper results in unknown equipment, NOT a crashing systemd service.
+function deferredLink(factory) {
+  let provider=null;
+  return {
+    get ready(){return !!(provider&&provider.ready);},
+    async init(){
+      if(!provider)provider=factory();
+      if(!provider.ready)await provider.init();
+    },
+    async read(target,did,timeout){
+      if(!provider)await this.init();
+      return provider.read(target,did,timeout);
+    }
+  };
 }
-module.exports={serve};
+if(require.main===module){
+  serve(deferredLink(()=>require('./transport').createLink()));
+}
+module.exports={serve,deferredLink};
