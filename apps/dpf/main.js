@@ -33,7 +33,7 @@ mgu.run({
         ctx.hideButton('BTN_SETTINGS');
         const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => openPage('overview'));
         const distanceHistory = distanceRecord.create(ctx.dataDir, log);
-        // Never enable cluster messages without confirmed 6WB in the cached VO.
+        // Enable cluster messages only when VO confirms 6WB or Live Cockpit Professional (6U3).
         // An unresolved VO is a temporary state, not a reason to overwrite user preferences.
         ctx.settings.values.cluster6wbAvailable = false;
         let equipmentChecking = false;
@@ -58,33 +58,37 @@ mgu.run({
                     if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
                         log.warn('DPF Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
                 }
-                const result = await CarEquipment.has('6WB', { timeout: 12000 });
-                const supported = result === true;
+                const checked = await CarEquipment.check(['6WB', '6U3'], { timeout: 12000 });
+                const sixWb = checked.results['6WB'];
+                const sixU3 = checked.results['6U3'];
+                const supported = sixWb === true || sixU3 === true;
+                const confirmed = [sixWb, sixU3].every(value => value === true || value === false);
                 ctx.settings.set('cluster6wbAvailable', supported);
-                ctx.settings.actionStatus.reloadEquipment = force && !reloadOk ? '6WB: stale cache (reload failed)' : result === true ? (force ? '6WB: detected (fresh)' : '6WB: detected') : result === false ? (force ? '6WB: not found (fresh)' : '6WB: not found') : '6WB: unknown';
-                log.info('DPF Car Equipment 6WB (VO) = ' + result);
-                if (result !== true && result !== false) scheduleEquipmentCheck();
+                const found = [sixWb === true ? '6WB' : null, sixU3 === true ? '6U3' : null].filter(Boolean).join('+');
+                ctx.settings.actionStatus.reloadEquipment = force && !reloadOk ? '6WB/6U3: stale cache' : found ? found + ': detected' + (force ? ' (fresh)' : '') : confirmed ? '6WB/6U3: not found' + (force ? ' (fresh)' : '') : '6WB/6U3: unknown';
+                log.info('DPF Car Equipment VO: 6WB=' + sixWb + ', 6U3=' + sixU3);
+                if (!confirmed) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
                 return reloadOk;
             } catch (error) {
                 ctx.settings.set('cluster6wbAvailable', false);
                 log.warn('DPF Car Equipment 6WB: ' + String(error && error.message || error));
-                ctx.settings.actionStatus.reloadEquipment = '6WB: read error';
+                ctx.settings.actionStatus.reloadEquipment = '6WB/6U3: read error';
                 scheduleEquipmentCheck();
                 return false;
             } finally { equipmentChecking = false; }
         }
-        ctx.settings.actionStatus = { reloadEquipment: '6WB: checking...' };
+        ctx.settings.actionStatus = { reloadEquipment: '6WB/6U3: checking...' };
         ctx.settings.onAction('reloadEquipment', () => {
             if (equipmentChecking) {
                 ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
                 return;
             }
-            ctx.settings.actionStatus.reloadEquipment = '6WB: checking...';
+            ctx.settings.actionStatus.reloadEquipment = '6WB/6U3: checking...';
             log.info('DPF manual equipment reload pressed');
             refreshClusterEquipment(true).then(success => {
-                if (!success && ctx.settings.actionStatus.reloadEquipment === '6WB: checking...')
-                    ctx.settings.actionStatus.reloadEquipment = '6WB: reload failed';
+                if (!success && ctx.settings.actionStatus.reloadEquipment === '6WB/6U3: checking...')
+                    ctx.settings.actionStatus.reloadEquipment = '6WB/6U3: reload failed';
                 log.info('DPF manual equipment reload finished: ' + (success ? 'success' : 'failed'));
             }).catch(error => {
                 ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
