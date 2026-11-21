@@ -34,7 +34,7 @@ jobs:
           const original = {'idrive7-renderd':'2.1.19','mgu-inputgate':'1.2.1'};
           for (const [id, version] of Object.entries(original))
             assert.strictEqual(dpf.requires[id], version);
-          assert.strictEqual(dpf.requires['bmrmodz-car-equipment'], '0.1.4');
+          assert.strictEqual(dpf.requires['bmrmodz-car-equipment'], '0.1.5');
           assert.strictEqual(dpf.settings[dpf.settings.length - 1].key, 'reloadEquipment');
           assert.strictEqual(dpf.settings[dpf.settings.length - 1].type, 'action');
           assert.ok(fs.readFileSync('kit/tools/build.py','utf8').includes("items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))"));
