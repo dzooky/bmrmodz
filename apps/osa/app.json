@@ -298,6 +298,6 @@
   "requires": {
     "idrive7-renderd": "2.1.19",
     "mgu-inputgate": "1.2.1",
-    "bmrmodz-car-equipment": "0.1.4"
+    "bmrmodz-car-equipment": "0.1.5"
   }
 }
