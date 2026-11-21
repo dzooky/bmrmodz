@@ -44,12 +44,14 @@ mgu.run({
             }, 10000);
         }
         async function refreshClusterEquipment(force = false) {
-            if (equipmentChecking || (!force && Date.now() - equipmentCheckedAt < 10000)) return;
+            if (equipmentChecking || (!force && Date.now() - equipmentCheckedAt < 10000)) return false;
             equipmentChecking = true;
             equipmentCheckedAt = Date.now();
             try {
+                let reloadSucceeded = !force;
                 if (force) {
                     const reloaded = await CarEquipment.request({ op: 'reload' }, { timeout: 15000 });
+                    reloadSucceeded = !!(reloaded && reloaded.ok === true && reloaded.available === true);
                     if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
                         log.warn('DPF Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
                 }
@@ -59,14 +61,29 @@ mgu.run({
                 log.info('DPF Car Equipment 6WB (VO) = ' + result);
                 if (result !== true && result !== false) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
+                return reloadSucceeded;
             } catch (error) {
                 ctx.settings.set('cluster6wbAvailable', false);
                 log.warn('DPF Car Equipment 6WB: ' + String(error && error.message || error));
                 scheduleEquipmentCheck();
+                return false;
             } finally { equipmentChecking = false; }
         }
+        ctx.settings.actionStatus = {};
         ctx.settings.onAction('reloadEquipment', () => {
-            refreshClusterEquipment(true).catch(error => log.warn('DPF manual equipment reload: ' + error));
+            if (equipmentChecking) {
+                ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
+                return;
+            }
+            ctx.settings.actionStatus.reloadEquipment = 'Reloading...';
+            log.info('DPF manual equipment reload requested');
+            return refreshClusterEquipment(true).then(success => {
+                ctx.settings.actionStatus.reloadEquipment = success ? 'Equipment refreshed' : 'Reload failed';
+                log.info('DPF manual equipment reload result: ' + (success ? 'success' : 'failed'));
+            }).catch(error => {
+                ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
+                log.warn('DPF manual equipment reload: ' + error);
+            });
         });
         refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
 
