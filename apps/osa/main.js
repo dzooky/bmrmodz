@@ -52,7 +52,7 @@ mgu.run({
                 let reloadOk = !force;
                 if (force) {
                     const reloaded = await CarEquipment.request({ op: 'reload' }, { timeout: 15000 });
-                    reloadOk = !!(reloaded && reloaded.ok === true && reloaded.available === true);
+                    reloadOk = !!(reloaded && reloaded.ok === true && reloaded.fresh === true);
                     if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
                         log.warn('OSA Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
                 }
