@@ -35,7 +35,7 @@ jobs:
           const main=fs.readFileSync('apps/climate-comfort/main.js','utf8');
           assert.strictEqual(app.version,'0.1.61');
           assert.ok(tool.version.startsWith('0.1.') && Number(tool.version.split('.')[2]) >= 1, 'Tool must be at least 0.1.1');
-          assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.1');
+          assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.5');
           assert.ok(main.includes('CarEquipment.check(EQUIPMENT_CODES'));
           assert.ok(main.includes("CarEquipment.request({ op: 'refresh' }"));
           assert.ok(!main.includes('readVehicleOrder('));

@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-car-equipment",
   "kind": "tool",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "title": "Car Equipment",
-  "description": "Shared MGU read-only vehicle option cache. Shared persistent VO cache; while unavailable, return waiting and retry automatically after 10s, then 60s. Explicit reload rescans. Healthy service startup does not require diagnostic helper to be immediately available.",
+  "description": "Shared MGU read-only vehicle option cache. Shared persistent VO cache; while unavailable, return waiting and retry automatically after 10s, then 60s. Explicit reload reports fresh=true only when gateway read succeeds; cached VO is preserved on failure. Healthy service startup does not require diagnostic helper to be immediately available.",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [

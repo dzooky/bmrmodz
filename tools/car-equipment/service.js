@@ -46,6 +46,7 @@ function serve(link,socketPath,options) {
             const result=await equipment.refresh();
             if(equipment.codes){failedReads=0;stopRetry();}
             else scheduleRetry();
+            // available may refer to an old cache; fresh confirms a new gateway read.
             reply=Object.assign({ok:true},result);
           }
           else reply={ok:false,error:'Unsupported operation'};
