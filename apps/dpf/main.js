@@ -54,14 +54,14 @@ mgu.run({
                 let reloadOk = !force;
                 if (force) {
                     const reloaded = await CarEquipment.request({ op: 'reload' }, { timeout: 15000 });
-                    reloadOk = !!(reloaded && reloaded.ok === true && reloaded.available === true);
+                    reloadOk = !!(reloaded && reloaded.ok === true && reloaded.fresh === true);
                     if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
                         log.warn('DPF Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
                 }
                 const result = await CarEquipment.has('6WB', { timeout: 12000 });
                 const supported = result === true;
                 ctx.settings.set('cluster6wbAvailable', supported);
-                ctx.settings.actionStatus.reloadEquipment = result === true ? '6WB: detected' : result === false ? '6WB: not found' : '6WB: unknown';
+                ctx.settings.actionStatus.reloadEquipment = force && !reloadOk ? '6WB: stale cache (reload failed)' : result === true ? '6WB: detected (fresh)' : result === false ? '6WB: not found (fresh)' : '6WB: unknown';
                 log.info('DPF Car Equipment 6WB (VO) = ' + result);
                 if (result !== true && result !== false) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
