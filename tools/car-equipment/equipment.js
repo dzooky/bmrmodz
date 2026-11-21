@@ -52,10 +52,10 @@ class Equipment {
   async refresh(){
     if(this.pending)return this.pending;
     this.attemptedAt=Date.now();
-    this.pending=(async()=>{try{
+    this.pending=(async()=>{let fresh=false;try{
       const result=await readVehicleOrder(this.link);
       if(result.codes){
-        this.codes=result.codes;this.error=null;this.updatedAt=new Date().toISOString();this.cached=false;
+        this.codes=result.codes;this.error=null;this.updatedAt=new Date().toISOString();this.cached=false;fresh=true;
         this.saveCache();
       }else{
         // On transient failures keep the last known VO instead of hammering ECUs.
@@ -63,7 +63,7 @@ class Equipment {
         this.error=result.error||'Vehicle order unavailable';
       }
     }catch(e){this.error=String(e&&e.message||e);}
-    return this.summary();})().then(value=>{this.pending=null;return value;},error=>{this.pending=null;throw error;});
+    return Object.assign(this.summary(),{fresh});})().then(value=>{this.pending=null;return value;},error=>{this.pending=null;throw error;});
     return this.pending;
   }
   summary(){return {available:!!this.codes,cached:this.cached,source:'vehicle_order',updatedAt:this.updatedAt,error:this.error};}
