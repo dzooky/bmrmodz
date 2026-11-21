@@ -139,7 +139,7 @@ function listSheet(settings, title, opts) {
             }
             return entries(this.group).map((s) => (s.group && !s.key ? { label: s.group, kind: 'more' }
                 : s.type === 'bool' ? { label: s.label, kind: 'toggle', on: !!settings.get(s.key) }
-                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run', value: settings.actionStatus && settings.actionStatus[s.key] || null }
+                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run', value: s.hideStatus ? null : settings.actionStatus && settings.actionStatus[s.key] || null }
                         : { label: s.label, value: settings.display(s.key), kind: values(s) ? 'more' : null }));
         },
         draw(r, t) {
