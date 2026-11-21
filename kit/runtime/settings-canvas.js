@@ -6,8 +6,8 @@
  */
 const { listSheet } = require('./sheet');
 
-module.exports = function createSettingsCanvas(settings, version, onDone) {
-    const sh = listSheet(settings, 'Settings', { version });
+module.exports = function createSettingsCanvas(settings, version, onDone, options) {
+    const sh = listSheet(settings, 'Settings', { version, bottomDone: !!(options && options.bottomDone) });
     return {
         draw(cv, theme) {
             const targets = sh.draw(cv, theme);
