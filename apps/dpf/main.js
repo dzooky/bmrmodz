@@ -61,7 +61,7 @@ mgu.run({
                 const result = await CarEquipment.has('6WB', { timeout: 12000 });
                 const supported = result === true;
                 ctx.settings.set('cluster6wbAvailable', supported);
-                ctx.settings.actionStatus.reloadEquipment = force && !reloadOk ? '6WB: stale cache (reload failed)' : result === true ? '6WB: detected (fresh)' : result === false ? '6WB: not found (fresh)' : '6WB: unknown';
+                ctx.settings.actionStatus.reloadEquipment = force && !reloadOk ? '6WB: stale cache (reload failed)' : result === true ? (force ? '6WB: detected (fresh)' : '6WB: detected') : result === false ? (force ? '6WB: not found (fresh)' : '6WB: not found') : '6WB: unknown';
                 log.info('DPF Car Equipment 6WB (VO) = ' + result);
                 if (result !== true && result !== false) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
