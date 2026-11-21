@@ -21,14 +21,17 @@ const { t: translate, setRuntimeTranslations } = require('./kit/i18n');
 const locales = require('./translations');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const CarEquipment = require('./kit/car-equipment');
+const createSettingsCanvas = require('./kit/settings-canvas');
 
 const W = 1600;
 const H = 520;
-const TABS = ['Overview', 'Detail', 'About'];
+const TABS = ['Overview', 'Detail', 'Settings', 'About'];
 
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
+        ctx.hideButton('BTN_SETTINGS');
+        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => openPage('overview'));
         const distanceHistory = distanceRecord.create(ctx.dataDir, log);
         // Never enable cluster messages without confirmed 6WB in the cached VO.
         // An unresolved VO is a temporary state, not a reason to overwrite user preferences.
@@ -65,8 +68,21 @@ mgu.run({
                 scheduleEquipmentCheck();
             } finally { equipmentChecking = false; }
         }
+        ctx.settings.actionStatus = {};
         ctx.settings.onAction('reloadEquipment', () => {
-            refreshClusterEquipment(true).catch(error => log.warn('DPF manual equipment reload: ' + error));
+            if (equipmentChecking) {
+                ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
+                return;
+            }
+            ctx.settings.actionStatus.reloadEquipment = 'Reloading...';
+            log.info('DPF manual equipment reload pressed');
+            refreshClusterEquipment(true).then(() => {
+                ctx.settings.actionStatus.reloadEquipment = 'Reload complete';
+                log.info('DPF manual equipment reload completed');
+            }).catch(error => {
+                ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
+                log.warn('DPF manual equipment reload: ' + error);
+            });
         });
         refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
 
@@ -133,7 +149,7 @@ mgu.run({
             ? profile.overview.filter(([key]) => key === 'REQUEST' || key === 'MODE') : [];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         async function testSelected(regenOnly = false) {
-            if (!identified || (!regenOnly && page === 'about')) return;
+            if (!identified || (!regenOnly && (page === 'about' || page === 'settings'))) return;
             if (testing) {
                 readPending = true;
                 return;
@@ -440,9 +456,14 @@ mgu.run({
                 G.frame(cv, t, TABS.map(label => translate(label)), 1, []);
                 return ui.image('MAIN_GFX', cv);
             }
+            if (page === 'settings') {
+                settingsCanvas.draw(cv, t);
+                G.frame(cv, t, TABS.map(label => translate(label)), 2, []);
+                return ui.image('MAIN_GFX', cv);
+            }
             if (page === 'about') {
                 renderAbout(cv, t);
-                G.frame(cv, t, TABS.map(label => translate(label)), 2, []);
+                G.frame(cv, t, TABS.map(label => translate(label)), 3, []);
                 return ui.image('MAIN_GFX', cv);
             }
 
@@ -537,8 +558,9 @@ mgu.run({
             return render();
         }
 
+        ctx.onScroll(delta => page === 'settings' ? settingsCanvas.scroll(delta) : false);
         ctx.onTab(index => {
-            const next = ['overview', 'detail', 'about'][index];
+            const next = ['overview', 'detail', 'settings', 'about'][index];
             if (next && next !== page) return openPage(next);
         });
         ui.onVisible((name, visible) => {
@@ -558,7 +580,7 @@ mgu.run({
             while (true) {
                 const dataReady = page === 'detail' ? hasDetailMeasurements() : hasMeasurements();
                 await sleep(5000);
-                const pageVisible = page !== 'about' && ui.isVisible('MAIN');
+                const pageVisible = page !== 'about' && page !== 'settings' && ui.isVisible('MAIN');
                 const clusterActive = clusterEnabled();
                 if (testing || (!pageVisible && !clusterActive)) continue;
                 if (!identified) await identify();
