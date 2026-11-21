@@ -2,7 +2,7 @@
   "id": "dpf",
   "title": "DPF Status",
   "description": "Read-only BMW DPF monitoring for B57 and B47 diesel engines, with validated soot, ash and regeneration distance gauges.",
-  "version": "0.1.54",
+  "version": "0.1.55",
   "config": {"customSettings": true},
   "vendor": "custom",
   "loggingId": "DPF1",
@@ -136,7 +136,7 @@
     },
     {
       "key": "cluster6wbAvailable",
-      "label": "6WB cluster detected",
+      "label": "6WB or 6U3 cluster detected",
       "type": "bool",
       "default": false,
       "hidden": true
