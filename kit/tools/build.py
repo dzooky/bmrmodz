@@ -216,6 +216,10 @@ def build_ui(spec, language='en'):
                     'cells': {'HeaderText': header,
                               'SelectedItem': {'value': values.index(s['default']) if s['default'] in values else 0, 'type': 'UInt'}},
                 }))
+            elif s['type'] == 'action':
+                # A one-row native HMI button is focusable/clickable. An action must
+                # not appear as a value/menu setting that offers no usable control.
+                items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))
             else:
                 strings[sid(app, 'SET_' + s['key'])] = s['label']
                 items.append(comp('tworow', name, rows=[{'Text1stRow': {'value': s['label'], 'type': 'Text'},

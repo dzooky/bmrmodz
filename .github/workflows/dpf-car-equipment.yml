@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - 'apps/dpf/main.js'
+      - 'kit/tools/build.py'
+      - 'kit/runtime/mgu.js'
       - 'apps/dpf/app.json'
       - 'kit/runtime/car-equipment.js'
       - '.github/workflows/dpf-car-equipment.yml'
@@ -21,6 +23,8 @@ jobs:
         run: |
           node --check apps/dpf/main.js
           node --check kit/runtime/car-equipment.js
+          node --check kit/runtime/mgu.js
+          python3 -m py_compile kit/tools/build.py
       - name: Validate DPF dependencies and conditional cluster settings
         run: |
           node - <<'NODE'
@@ -33,6 +37,7 @@ jobs:
           assert.strictEqual(dpf.requires['bmrmodz-car-equipment'], '0.1.4');
           assert.strictEqual(dpf.settings[dpf.settings.length - 1].key, 'reloadEquipment');
           assert.strictEqual(dpf.settings[dpf.settings.length - 1].type, 'action');
+          assert.ok(fs.readFileSync('kit/tools/build.py','utf8').includes("items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))"));
           assert.ok(!mainHasForcedReset());
           function mainHasForcedReset(){return fs.readFileSync('apps/dpf/main.js','utf8').includes("ctx.settings.set('regenCluster', false)");}
           assert.ok(repo.tools.some(t => t.id === 'bmrmodz-car-equipment'));

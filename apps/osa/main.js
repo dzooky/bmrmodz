@@ -326,7 +326,10 @@ mgu.run({
             const now = mono();
             if (d.demo || !G.isNum(d.rpm)) { warmSession = null; return; }
             if (d.rpm >= ENGINE_RUNNING_RPM) {
-                if (!warmSession && !sessionDone) {
+                // A completed warm-up has no active session until the engine stops.
+                // Without this guard the next render dereferences warmSession=null.
+                if (sessionDone) return;
+                if (!warmSession) {
                     if (!G.isNum(d.oil) || !G.isNum(d.coolant) || !G.isNum(outsideTemp)) return;
                     warmSession = { start: now, outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant,
                         oilTarget, coolantTarget, oilAt: null, coolantAt: null };

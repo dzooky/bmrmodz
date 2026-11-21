@@ -492,6 +492,9 @@ function wireSettings(ctx) {
         // one another setting offers it ("when"): shown or not as that one is
         if (s.when) ui.visible(comp, settings.shown(s));
         if (s.type === 'bool') return Promise.all([ui.text(comp, translate(s.label)), ui.checked(comp, !!settings.get(s.key))]);
+        // Native HMI action buttons have their static row label from build.py.
+        // They are clickable commands, not selectable value rows.
+        if (s.type === 'action') return null;
         if (values(s)) return ui.selected(comp, Math.max(0, values(s).indexOf(settings.get(s.key))));
         // other types: two-row buttons in the wide settings state, label above, value below
         return ui.cells(comp, 0, { Text1stRow: translate(s.label), Text2ndRow: translate(settings.display(s.key)) });

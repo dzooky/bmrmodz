@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - 'apps/osa/main.js'
+      - 'kit/tools/build.py'
+      - 'kit/runtime/mgu.js'
       - 'apps/osa/app.json'
       - 'kit/runtime/car-equipment.js'
       - '.github/workflows/osa-car-equipment.yml'
@@ -21,6 +23,8 @@ jobs:
         run: |
           node --check apps/osa/main.js
           node --check kit/runtime/car-equipment.js
+          node --check kit/runtime/mgu.js
+          python3 -m py_compile kit/tools/build.py
       - name: Validate OSA dependency and conditional setting
         run: |
           node - <<'NODE'
@@ -35,6 +39,10 @@ jobs:
           assert.ok(source.includes("scheduleEquipmentCheck()"));
           assert.ok(!source.includes("ctx.settings.set('oilCluster', false)"));
           assert.ok(repo.tools.some(t=>t.id==='bmrmodz-car-equipment'));
+          assert.ok(source.includes('if (sessionDone) return;'), 'completed warm-up must not dereference a null session');
+          const builder=fs.readFileSync('kit/tools/build.py','utf8');
+          assert.ok(builder.includes("items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))"), 'action must be a native button');
+          assert.ok(fs.readFileSync('kit/runtime/mgu.js','utf8').includes("if (s.type === 'action') return null;"));
           const gate=osa.settings.find(s=>s.key==='cluster6wbAvailable');
           const option=osa.settings.find(s=>s.key==='oilCluster');
           assert.strictEqual(gate.hidden,true);
