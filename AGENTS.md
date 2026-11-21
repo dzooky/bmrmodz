@@ -24,3 +24,13 @@ Keep the What’s New section in Spritmonitor’s About tab up to date as user-v
 - Use each app's existing i18n/translation mechanism and keys; do not introduce new English-only hard-coded UI text.
 - When changing wording or introducing a translation key, update all language files and keep the key sets aligned. Preserve placeholders, variables, formatting, and meaningful technical identifiers (e.g. DPF, 6WB, 6U3) across languages.
 - Before completing or pushing a UI/text change, run existing translation coverage/consistency checks where available and fix missing keys or untranslated new text. If no automated check exists, manually verify all supported languages.
+
+## Shared project state for ChatGPT and Codex
+
+- GitHub is the shared source of truth for code and documented project state. ChatGPT and Codex conversation histories are **not** synchronized; never assume either assistant has read the other's chats.
+- Before working on an app, read this AGENTS.md, the app's `app.json`, its `PROGRESS.md`, and the relevant source files. Check the current repository state rather than relying only on chat history.
+- Maintain `apps/<app>/PROGRESS.md` for each app. After a meaningful implementation, bug fix, in-car test result, or approved change of direction, update that file **in the same branch/PR as the code change**. Purely cosmetic micro-iterations may be grouped and recorded once when ready.
+- In PROGRESS.md distinguish: **implemented** (present in source), **automated-tested** (checks passed), **in-car verified** (explicit real-car confirmation), **in progress**, **known issues**, and **approved next steps**. Do not equate CI passing or a merged PR with verification in the car.
+- Record concrete version, relevant commit/PR references, test outcomes, and unresolved questions when known. Do not invent features, test results, vehicle readings, or approvals. Mark unknowns as unverified.
+- Treat PROGRESS.md as a concise handoff, not a transcript. Do not copy secrets, VINs, personal data, or raw conversation histories into it. Keep notes in English for cross-tool consistency.
+- At the beginning of a new ChatGPT or Codex session, read the latest PROGRESS.md and AGENTS.md. At the end, summarize changes and update PROGRESS.md if the project state changed. If a proposed change has not been approved, record it as a proposal, not an approved task.
