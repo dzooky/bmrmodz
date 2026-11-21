@@ -484,7 +484,7 @@ mgu.run({
             G.segBar(cv, t, massX, 286, distanceWidth, gaugeHeight, {
                 label: translate('Since last regen'), value: distanceKm, unit: 'km',
                 decimals: 1, min: 0, max: distanceMax, step: distanceMax / 16,
-                color: 'accent', scale: { every: distanceMax / 4 },
+                ramp: 'hot', limit: distanceMax, scale: { every: distanceMax / 4 },
                 marks: averageKm > 0 && averageKm <= distanceMax
                     ? [{ value: averageKm, color: 'warn' }] : []
             });
