@@ -2,9 +2,10 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.55",
+  "version": "0.2.56",
+  "config": {"customSettings": true},
   "settingsBeforeLast": true,
-  "settingsTabInStandard": true,
+  "settingsTabInStandard": false,
   "vendor": "custom",
   "loggingId": "OAA1",
   "iconGlyph": "temp",
@@ -259,6 +260,7 @@
     {
       "key": "reloadEquipment",
       "label": "Reload Equipment",
+      "actionLabel": "Reload",
       "type": "action",
       "hint": "Read vehicle equipment again"
     }
