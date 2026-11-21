@@ -160,13 +160,15 @@
       "when": {
         "cluster6wbAvailable": true
       },
-      "actionLabel": "Proceed"
+      "actionLabel": "Proceed",
+      "hideStatus": true
     },
     {
       "key": "reloadEquipment",
       "label": "Reload car equipment",
       "actionLabel": "Perform",
-      "type": "action"
+      "type": "action",
+      "hideStatus": true
     }
   ],
   "settingsTabInStandard": false,
