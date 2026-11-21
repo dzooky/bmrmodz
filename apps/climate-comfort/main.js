@@ -134,7 +134,7 @@ mgu.run({
                 // Explicit rescan uses the tool's refresh API instead of its VO cache.
                 if (force) {
                     const refreshed = await CarEquipment.request({ op: 'refresh' }, { timeout: 15000 });
-                    if (!refreshed || refreshed.ok !== true || refreshed.available !== true) {
+                    if (!refreshed || refreshed.ok !== true || refreshed.fresh !== true) {
                         throw new Error(refreshed && refreshed.error || 'Vehicle order unavailable');
                     }
                 }
