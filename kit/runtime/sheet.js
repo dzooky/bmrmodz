@@ -78,7 +78,7 @@ function list(r, t, key, rows, focus, y0, controller) {
         let right = x + w - 28;
         if (row.kind === 'toggle') { toggle(r, t, right - 76, cy - 19, row.on); right -= 100; } else if (row.kind === 'action') {
             const buttonW = 160;
-            pill(r, t, right - buttonW, cy - 22, buttonW, 44, translate(row.actionLabel || 'Run'), on);
+            pill(r, t, right - buttonW, cy - 22, buttonW, 44, translate(row.actionLabel || 'Run'), on || row.value === 'Reloading...');
             right -= buttonW + 20;
         } else if (row.kind === 'more') { chevron(r, t, right - 9, cy, t.dim); right -= 34; } else if (row.kind === 'radio') {
             r.circle(right - 15, cy, 15, row.on ? S : withAlpha('#ffffff', 0.25));
@@ -138,7 +138,7 @@ function listSheet(settings, title, opts) {
             }
             return entries(this.group).map((s) => (s.group && !s.key ? { label: s.group, kind: 'more' }
                 : s.type === 'bool' ? { label: s.label, kind: 'toggle', on: !!settings.get(s.key) }
-                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run' }
+                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run', value: settings.actionStatus && settings.actionStatus[s.key] || null }
                         : { label: s.label, value: settings.display(s.key), kind: values(s) ? 'more' : null }));
         },
         draw(r, t) {
