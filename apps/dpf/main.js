@@ -61,6 +61,7 @@ mgu.run({
                 const result = await CarEquipment.has('6WB', { timeout: 12000 });
                 const supported = result === true;
                 ctx.settings.set('cluster6wbAvailable', supported);
+                ctx.settings.actionStatus.reloadEquipment = result === true ? '6WB: detected' : result === false ? '6WB: not found' : '6WB: unknown';
                 log.info('DPF Car Equipment 6WB (VO) = ' + result);
                 if (result !== true && result !== false) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
@@ -68,20 +69,22 @@ mgu.run({
             } catch (error) {
                 ctx.settings.set('cluster6wbAvailable', false);
                 log.warn('DPF Car Equipment 6WB: ' + String(error && error.message || error));
+                ctx.settings.actionStatus.reloadEquipment = '6WB: read error';
                 scheduleEquipmentCheck();
                 return false;
             } finally { equipmentChecking = false; }
         }
-        ctx.settings.actionStatus = {};
+        ctx.settings.actionStatus = { reloadEquipment: '6WB: checking...' };
         ctx.settings.onAction('reloadEquipment', () => {
             if (equipmentChecking) {
                 ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
                 return;
             }
-            ctx.settings.actionStatus.reloadEquipment = 'Reloading...';
+            ctx.settings.actionStatus.reloadEquipment = '6WB: checking...';
             log.info('DPF manual equipment reload pressed');
             refreshClusterEquipment(true).then(success => {
-                ctx.settings.actionStatus.reloadEquipment = success ? 'Equipment refreshed' : 'Reload failed';
+                if (!success && ctx.settings.actionStatus.reloadEquipment === '6WB: checking...')
+                    ctx.settings.actionStatus.reloadEquipment = '6WB: reload failed';
                 log.info('DPF manual equipment reload finished: ' + (success ? 'success' : 'failed'));
             }).catch(error => {
                 ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
