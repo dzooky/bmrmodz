@@ -31,7 +31,7 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         ctx.hideButton('BTN_SETTINGS');
-        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => openPage('overview'));
+        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => openPage('overview'), { bottomDone: true });
         const distanceHistory = distanceRecord.create(ctx.dataDir, log);
         // Enable cluster messages only when VO confirms 6WB or Live Cockpit Professional (6U3).
         // An unresolved VO is a temporary state, not a reason to overwrite user preferences.
@@ -78,7 +78,7 @@ mgu.run({
                 return false;
             } finally { equipmentChecking = false; }
         }
-        ctx.settings.actionStatus = { reloadEquipment: '6WB/6U3: checking...' };
+        ctx.settings.actionStatus = {};
         ctx.settings.onAction('reloadEquipment', () => {
             if (equipmentChecking) {
                 ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
