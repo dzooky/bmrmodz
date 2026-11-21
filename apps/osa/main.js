@@ -31,7 +31,7 @@ mgu.run({
         const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => switchPage(0));
         const getLanguage = Language.start(ctx);
         let page = 0;
-        // 6WB-dependent cluster output is disabled until a validated VO confirms it.
+        // Cluster output is disabled until VO confirms 6WB or Live Cockpit Professional (6U3).
         // Never overwrite the user's notification preference when equipment is unresolved.
         ctx.settings.values.cluster6wbAvailable = false;
         let equipmentChecking = false;
@@ -57,12 +57,15 @@ mgu.run({
                         log.warn('OSA Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
                 }
                 // Only a cache check. The shared tool owns all gateway reads and retries.
-                const result = await CarEquipment.has('6WB', { timeout: 12000 });
-                const supported = result === true;
+                const checked = await CarEquipment.check(['6WB', '6U3'], { timeout: 12000 });
+                const sixWb = checked.results['6WB'];
+                const sixU3 = checked.results['6U3'];
+                const supported = sixWb === true || sixU3 === true;
+                const confirmed = [sixWb, sixU3].every(value => value === true || value === false);
                 if (ctx.settings.values.cluster6wbAvailable !== supported)
                     ctx.settings.set('cluster6wbAvailable', supported);
-                log.info('OSA Car Equipment 6WB (VO) = ' + result);
-                if (result !== true && result !== false) scheduleEquipmentCheck();
+                log.info('OSA Car Equipment VO: 6WB=' + sixWb + ', 6U3=' + sixU3);
+                if (!confirmed) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
                 return reloadOk;
             } catch (error) {

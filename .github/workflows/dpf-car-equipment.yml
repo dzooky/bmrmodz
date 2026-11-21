@@ -47,7 +47,7 @@ jobs:
           for (const key of ['regenCluster','regenClusterTest'])
             assert.strictEqual(dpf.settings.find(s => s.key === key).when.cluster6wbAvailable, true);
           const main = fs.readFileSync('apps/dpf/main.js','utf8');
-          assert.ok(main.includes("CarEquipment.has('6WB'"));
+          assert.ok(main.includes("CarEquipment.check(['6WB', '6U3']"));
           assert.ok(main.includes("ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('regenCluster') === true"));
           console.log('DPF Car Equipment integration manifest and logic validated.');
           NODE
