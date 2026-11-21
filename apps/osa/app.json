@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.57",
+  "version": "0.2.58",
   "config": {"customSettings": true},
   "settingsBeforeLast": true,
   "settingsTabInStandard": false,
@@ -202,21 +202,30 @@
     },
     {
       "key": "clusterBcTest",
+      "hidden": true,
       "label": "Cluster message test (20 s)",
       "type": "bool",
       "default": false
     },
     {
       "key": "clusterLowerTest",
+      "hidden": true,
       "label": "Lower cluster message test (20 s)",
       "type": "bool",
       "default": false
     },
     {
       "key": "clusterPassiveTest",
+      "hidden": true,
       "label": "Cluster observation test (90 s)",
       "type": "bool",
       "default": false
+    },
+    {
+      "key": "showNotificationTest",
+      "label": "Show notification message",
+      "actionLabel": "Proceed",
+      "type": "action"
     },
     {
       "key": "demo",
@@ -259,8 +268,9 @@
     },
     {
       "key": "reloadEquipment",
-      "label": "Reload Equipment",
-      "actionLabel": "Reload",
+      "label": "Reload car equipment",
+      "actionLabel": "Perform",
+      "hideStatus": true,
       "type": "action",
       "hint": "Read vehicle equipment again"
     }
