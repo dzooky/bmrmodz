@@ -76,7 +76,11 @@ function list(r, t, key, rows, focus, y0, controller) {
         if (on) r.strokeRoundRect(x, y, w, ROW_H, 14, 2, S);
         const cy = y + ROW_H / 2;
         let right = x + w - 28;
-        if (row.kind === 'toggle') { toggle(r, t, right - 76, cy - 19, row.on); right -= 100; } else if (row.kind === 'more') { chevron(r, t, right - 9, cy, t.dim); right -= 34; } else if (row.kind === 'radio') {
+        if (row.kind === 'toggle') { toggle(r, t, right - 76, cy - 19, row.on); right -= 100; } else if (row.kind === 'action') {
+            const buttonW = 160;
+            pill(r, t, right - buttonW, cy - 22, buttonW, 44, translate(row.actionLabel || 'Run'), on);
+            right -= buttonW + 20;
+        } else if (row.kind === 'more') { chevron(r, t, right - 9, cy, t.dim); right -= 34; } else if (row.kind === 'radio') {
             r.circle(right - 15, cy, 15, row.on ? S : withAlpha('#ffffff', 0.25));
             r.circle(right - 15, cy, row.on ? 6 : 12, row.on ? '#ffffff' : t.bg);
             right -= 44;
@@ -134,7 +138,8 @@ function listSheet(settings, title, opts) {
             }
             return entries(this.group).map((s) => (s.group && !s.key ? { label: s.group, kind: 'more' }
                 : s.type === 'bool' ? { label: s.label, kind: 'toggle', on: !!settings.get(s.key) }
-                    : { label: s.label, value: settings.display(s.key), kind: values(s) ? 'more' : null }));
+                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run' }
+                        : { label: s.label, value: settings.display(s.key), kind: values(s) ? 'more' : null }));
         },
         draw(r, t) {
             r.clear(t.bg);
