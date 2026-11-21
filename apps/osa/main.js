@@ -15,6 +15,7 @@ const { t: translate } = require('./kit/i18n');
 const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
 const CarEquipment = require('./kit/car-equipment');
+const createSettingsCanvas = require('./kit/settings-canvas');
 const turboIconPreview = require('./turbo-icon-preview');
 const fs = require('fs');
 const path = require('path');
@@ -26,6 +27,8 @@ const ENGINE_RUNNING_RPM = 300;
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
+        ctx.hideButton('BTN_SETTINGS');
+        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => switchPage(0));
         const getLanguage = Language.start(ctx);
         let page = 0;
         // 6WB-dependent cluster output is disabled until a validated VO confirms it.
@@ -42,12 +45,14 @@ mgu.run({
             }, 10000);
         }
         async function refreshClusterEquipment(force = false) {
-            if (equipmentChecking || (!force && Date.now() - equipmentCheckedAt < 10000)) return;
+            if (equipmentChecking || (!force && Date.now() - equipmentCheckedAt < 10000)) return false;
             equipmentChecking = true;
             equipmentCheckedAt = Date.now();
             try {
+                let reloadOk = !force;
                 if (force) {
                     const reloaded = await CarEquipment.request({ op: 'reload' }, { timeout: 15000 });
+                    reloadOk = !!(reloaded && reloaded.ok === true && reloaded.available === true);
                     if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
                         log.warn('OSA Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
                 }
@@ -59,15 +64,30 @@ mgu.run({
                 log.info('OSA Car Equipment 6WB (VO) = ' + result);
                 if (result !== true && result !== false) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
+                return reloadOk;
             } catch (error) {
                 if (ctx.settings.values.cluster6wbAvailable !== false)
                     ctx.settings.set('cluster6wbAvailable', false);
                 log.warn('OSA Car Equipment 6WB: ' + String(error && error.message || error));
                 scheduleEquipmentCheck();
+                return false;
             } finally { equipmentChecking = false; }
         }
+        ctx.settings.actionStatus = {};
         ctx.settings.onAction('reloadEquipment', () => {
-            refreshClusterEquipment(true).catch(error => log.warn('OSA manual equipment reload: ' + error));
+            if (equipmentChecking) {
+                ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
+                return;
+            }
+            ctx.settings.actionStatus.reloadEquipment = 'Reloading...';
+            log.info('OSA manual equipment reload pressed');
+            refreshClusterEquipment(true).then(success => {
+                ctx.settings.actionStatus.reloadEquipment = success ? 'Equipment refreshed' : 'Reload failed';
+                log.info('OSA manual equipment reload finished: ' + (success ? 'success' : 'failed'));
+            }).catch(error => {
+                ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
+                log.warn('OSA manual equipment reload: ' + error);
+            });
         });
         refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
         const rasterRuns = src => {
@@ -528,7 +548,7 @@ mgu.run({
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
-        const tabs = ['Engine', 'Transmission', 'Statistics', 'About'];
+        const tabs = ['Engine', 'Transmission', 'Statistics', 'Settings', 'About'];
 
         function render() {
             const t = ctx.theme();
@@ -679,6 +699,8 @@ mgu.run({
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             } else if (page === 3) {
+                settingsCanvas.draw(cv, t);
+            } else if (page === 4) {
                 renderAbout(cv, t);
             }
 
@@ -694,7 +716,8 @@ mgu.run({
         }
 
         ctx.onScroll(delta => {
-            if (page !== 3) return false;
+            if (page === 3) return settingsCanvas.scroll(delta);
+            if (page !== 4) return false;
             const next = Math.max(0, Math.min(maxAboutScroll, aboutScroll + delta));
             if (next === aboutScroll) return false;
             aboutScroll = next;
@@ -702,22 +725,12 @@ mgu.run({
         });
 
         const switchPage = (next) => {
-            page = (next + 4) % 4;
+            page = (next + 5) % 5;
 
             return render();
         };
 
         function pageBy(direction) {
-            if (ctx.settings.get('layout') === 'standard') {
-                if (ctx.display.sheet && ctx.display.sheet.settings) {
-                    ctx.display.closeSheet(false);
-                    return switchPage(direction > 0 ? 3 : 2);
-                }
-                if ((page === 2 && direction > 0) || (page === 3 && direction < 0)) {
-                    ctx.display._click('BTN_SETTINGS');
-                    return;
-                }
-            }
             return switchPage(page + direction);
         }
         ui.onClick('BTN_PAGE', () => pageBy(1));
