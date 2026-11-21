@@ -16,6 +16,7 @@ const path = require('path');
 const { decode: decodePng } = require('./png');
 const regenMessage = require('./regen-message');
 const ddeProfiles = require('./dde-profiles');
+const distanceRecord = require('./distance-record');
 const { t: translate, setRuntimeTranslations } = require('./kit/i18n');
 const locales = require('./translations');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
@@ -28,6 +29,7 @@ const TABS = ['Overview', 'Detail', 'About'];
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
+        const distanceHistory = distanceRecord.create(ctx.dataDir, log);
         // Never enable cluster messages without confirmed 6WB in the cached VO.
         // An unresolved VO is a temporary state, not a reason to overwrite user preferences.
         ctx.settings.values.cluster6wbAvailable = false;
@@ -162,6 +164,8 @@ mgu.run({
                         let raw = 0;
                         for (const b of response.slice(3)) raw = raw * 256 + b;
                         readings[name] = { raw, value: raw * factor + offset, at: Date.now() };
+                        if (name === 'SINCE' && profile)
+                            distanceHistory.observe(ddeProfiles.km(readings[name], profile.distanceFactor));
                     } else if (name === 'REQUEST' || name === 'MODE' || name === 'LOCK') {
                         delete readings[name];
                     }
@@ -445,46 +449,48 @@ mgu.run({
             const gutter = 16;
             const columnWidth = (W - 48 - 2 * gutter) * 0.4;
             const massX = 24;
-            const distanceX = massX + columnWidth + gutter;
-            const statusX = distanceX + columnWidth + gutter;
+            const secondX = massX + columnWidth + gutter;
+            const statusX = secondX + columnWidth + gutter;
             const statusWidth = W - 24 - statusX;
+            const distanceWidth = 2 * columnWidth + gutter;
 
-            // Keep both rows below the kit's automatic panel stretch threshold.
+            // Two mass gauges above one full-width adaptive distance gauge.
             const gaugeHeight = 213;
             const loading = !readAttempted && (identifying || identified);
 
-            function gauge(key, label, unit, max, step, tick, decimals, x, y, scaleDecimals = 0) {
+            function massGauge(key, label, x) {
                 const reading = readings[key];
-                const value = reading ? (unit === 'km' ? ddeProfiles.km(reading, profile.distanceFactor) : reading.value) : null;
-                G.segBar(cv, t, x, y, columnWidth, gaugeHeight, {
-                    label: translate(label), value, unit, decimals,
-                    min: 0, max, step,
-                    ramp: 'hot', limit: max,
+                G.segBar(cv, t, x, 44, columnWidth, gaugeHeight, {
+                    label: translate(label), value: reading ? reading.value : null,
+                    unit: 'g', decimals: 2, min: 0, max: 100, step: 5,
+                    ramp: 'hot', limit: 100,
                     zones: [
-                        { from: max * (90 / 150), to: max * (110 / 150), color: 'warn' },
-                        { from: max * (110 / 150), to: max, color: 'crit' }
+                        { from: 60, to: 73.333333, color: 'warn' },
+                        { from: 73.333333, to: 100, color: 'crit' }
                     ],
-                    scale: { every: tick, decimals: scaleDecimals }
+                    scale: { every: 20 }
                 });
-                if (stale(key)) cv.text('STALE', x + 18, y + 66, 15, t.warn, { font: 'bold' });
+                if (stale(key)) cv.text('STALE', x + 18, 110, 15, t.warn, { font: 'bold' });
             }
-
-            gauge('SOOT', 'Soot mass', 'g', 100, 5, 20, 2, massX, 44);
-            gauge('ASH', 'Ash mass', 'g', 100, 5, 20, 2, massX, 286);
+            massGauge('SOOT', 'Soot mass', massX);
+            massGauge('ASH', 'Ash mass', secondX);
 
             const averageKm = profile && readings.AVERAGE
                 ? ddeProfiles.km(readings.AVERAGE, profile.averageFactor) : 0;
-            if (averageKm > 0) {
-                gauge('SINCE', 'Since last regen', 'km', averageKm, averageKm / 16,
-                    averageKm / 2, 1, distanceX, 44, 1);
-                if (stale('AVERAGE') && !stale('SINCE')) {
-                    cv.text('AVG STALE', distanceX + 18, 110, 15, t.warn, { font: 'bold' });
-                }
-            } else {
-                gauge('SINCE', 'Since last regen', 'km', 800, 50, 200, 1, distanceX, 44);
-                if (!loading && !stale('SINCE')) cv.text('AVG UNAVAILABLE', distanceX + 18, 110, 15, t.dim, { font: 'bold' });
-            }
-            gauge('AVERAGE', 'Avg regen interval', 'km', 800, 50, 200, 1, distanceX, 286);
+            const sinceReading = readings.SINCE;
+            const distanceKm = sinceReading && profile
+                ? ddeProfiles.km(sinceReading, profile.distanceFactor) : null;
+            const distanceMax = distanceHistory.scale(averageKm, distanceKm);
+            G.segBar(cv, t, massX, 286, distanceWidth, gaugeHeight, {
+                label: translate('Since last regen'), value: distanceKm, unit: 'km',
+                decimals: 1, min: 0, max: distanceMax, step: distanceMax / 16,
+                color: 'accent', scale: { every: distanceMax / 4 },
+                marks: averageKm > 0 && averageKm <= distanceMax
+                    ? [{ value: averageKm, color: 'warn' }] : []
+            });
+            if (stale('SINCE')) cv.text('STALE', massX + 18, 352, 15, t.warn, { font: 'bold' });
+            if (!loading && averageKm <= 0 && !stale('SINCE'))
+                cv.text('AVG UNAVAILABLE', massX + 18, 352, 15, t.dim, { font: 'bold' });
 
             G.panel(cv, t, statusX, 44, statusWidth, 464, null);
             cv.text('REGENERATION', statusX + 18, 83, 20, t.text, { font: 'bold' });
