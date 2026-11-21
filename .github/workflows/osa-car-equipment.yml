@@ -31,7 +31,7 @@ jobs:
           const fs=require('fs'), assert=require('assert');
           const osa=JSON.parse(fs.readFileSync('apps/osa/app.json'));
           const repo=JSON.parse(fs.readFileSync('mgu-repo.json'));
-          assert.strictEqual(osa.requires['bmrmodz-car-equipment'],'0.1.4');
+          assert.strictEqual(osa.requires['bmrmodz-car-equipment'],'0.1.5');
           assert.strictEqual(osa.settings[osa.settings.length - 1].key, 'reloadEquipment');
           assert.strictEqual(osa.settings[osa.settings.length - 1].type, 'action');
           const source=fs.readFileSync('apps/osa/main.js','utf8');
