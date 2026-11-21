@@ -18,7 +18,8 @@ async function run(){
  try{
   const initial=new Equipment({ready:true,read:async()=>{reads++;return response;}},{cacheFile});
   assert.strictEqual(initial.check(['6WB']).results['6WB'],'waiting');
-  await initial.refresh();
+  const first=await initial.refresh();
+  assert.strictEqual(first.fresh,true,'first successful gateway read must be fresh');
   assert.strictEqual(reads,1);
   assert.strictEqual(initial.check(['6WB']).results['6WB'],true);
   assert.ok(fs.existsSync(cacheFile),'cache persisted');
@@ -27,7 +28,9 @@ async function run(){
   assert.strictEqual(next.check(['6WB','4NB']).results['6WB'],true);
   assert.strictEqual(next.check(['4NB']).results['4NB'],false);
   assert.strictEqual(reads,1,'reading cached answers must not contact vehicle');
-  await next.refresh();
+  const stale=await next.refresh();
+  assert.strictEqual(stale.fresh,false,'failed gateway read must never be reported as fresh');
+  assert.strictEqual(stale.available,true,'cached VO remains available to normal checks');
   assert.strictEqual(reads,2,'explicit refresh contacts gateway once');
   assert.strictEqual(next.check(['6WB']).results['6WB'],true,'failed refresh retains existing equipment');
   fs.writeFileSync(cacheFile,'{"schema":1,"codes":["bad code"],"updatedAt":"2026-11-20T00:00:00.000Z"}');
