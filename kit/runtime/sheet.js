@@ -50,9 +50,9 @@ function fit(r, s, size, w, font) {
  * A scrolling list of rows: rows = [{ label, value, kind: 'toggle'|'more'|'radio', on }].
  * Draws them from y0, keeps row `focus` in view (smooth), returns the rows' rects.
  */
-function list(r, t, key, rows, focus, y0, controller) {
+function list(r, t, key, rows, focus, y0, controller, bottomInset = 0) {
     // (r.extra: the page reaches lower on screen, display.js)
-    const S = t.sel || t.accent, bottom = BOTTOM + (r.extra || 0), H = bottom - y0;
+    const S = t.sel || t.accent, bottom = BOTTOM + (r.extra || 0) - bottomInset, H = bottom - y0;
     const total = rows.length * (ROW_H + GAP) - GAP;
     const fy = focus * (ROW_H + GAP);
     // st.y: where the list should be; st.show: where it is drawn (glides there, follows a finger at once).
@@ -114,6 +114,7 @@ function values(s) {
 /** opts: { version } (the app's, shown at the settings' top) */
 function listSheet(settings, title, opts) {
     const version = opts && opts.version;
+    const doneAtBottom = !!(opts && opts.doneAtBottom);
     // the settings offered now (settings.shown: "hidden", "when"); those with one "group" are one row that
     // opens their own list ({ group, items })
     const offered = () => (settings.shown ? settings.schema.filter((s) => settings.shown(s)) : settings.schema.filter((s) => !s.hidden));
@@ -138,7 +139,7 @@ function listSheet(settings, title, opts) {
             }
             return entries(this.group).map((s) => (s.group && !s.key ? { label: s.group, kind: 'more' }
                 : s.type === 'bool' ? { label: s.label, kind: 'toggle', on: !!settings.get(s.key) }
-                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run', value: settings.actionStatus && settings.actionStatus[s.key] || null }
+                    : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run', value: s.hideStatus ? null : settings.actionStatus && settings.actionStatus[s.key] || null }
                         : { label: s.label, value: settings.display(s.key), kind: values(s) ? 'more' : null }));
         },
         draw(r, t) {
@@ -151,11 +152,12 @@ function listSheet(settings, title, opts) {
             else if (version) r.text(translate('Version') + ' ' + version, 44, TOP + 38, 24, t.dim);
             const targets = [];
             // Back (a value list) / Done (the settings): top right
-            const bw = 150, bx = W - 40 - bw, by = TOP + 8;
+            const bottomDone = doneAtBottom && !this.open && !this.group;
+            const bw = 150, bx = W - 40 - bw, by = bottomDone ? BOTTOM - 52 : TOP + 8;
             // (the controller reaches it turning up from the first row: place -1)
             pill(r, t, bx, by, bw, 46, this.open || this.group ? 'Back' : 'Done', this.controller && (this.open ? this.sub : this.focus) === -1);
             targets.push({ x: bx - 10, y: by - 6, w: bw + 20, h: 58, act: () => this.back() });
-            const rects = list(r, t, this.key(), rows, this.open ? this.sub : this.focus, TOP + 74, this.controller);
+            const rects = list(r, t, this.key(), rows, this.open ? this.sub : this.focus, TOP + 74, this.controller, bottomDone ? 72 : 0);
             rects.forEach((q) => targets.push(Object.assign(q, { act: () => { if (this.open) this.sub = q.i; else this.focus = q.i; return this.choose(); } })));
             return targets;
         },

@@ -28,7 +28,7 @@ mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
         ctx.hideButton('BTN_SETTINGS');
-        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => switchPage(0));
+        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => switchPage(0), { doneAtBottom: true });
         const getLanguage = Language.start(ctx);
         let page = 0;
         // Cluster output is disabled until VO confirms 6WB or Live Cockpit Professional (6U3).
@@ -414,6 +414,10 @@ mgu.run({
             for (const other of testModes) {
                 if (other !== key && ctx.settings.get(other)) ctx.settings.set(other, false);
             }
+        });
+        ctx.settings.onAction('showNotificationTest', () => {
+            // Keep the existing first cluster notification test behavior.
+            ctx.settings.set('clusterBcTest', true);
         });
         ctx.signals.watch('de.bmw.infotainment.KombiInterface_2', '1', {
             newCCMessage: () => {
