@@ -20,7 +20,10 @@ const required = [
   'Check in progress', 'Reloading...', 'Reload failed',
   'Read vehicle equipment again',
   'Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)',
-  'Run'
+  'Run',
+  'English (auto) language value readability',
+  'Run button translated into all languages',
+  'Additional translations and Detail text sizing'
 ];
 
 test('all 21 non-English DPF locales have aligned nonempty translations', () => {
