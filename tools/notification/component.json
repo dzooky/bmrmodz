@@ -10,6 +10,7 @@
     "ID7"
   ],
   "requires": {
+    "idrive7-renderd": "2.1.19",
     "mgu-deploy": "0.7.11"
   },
   "files": [
