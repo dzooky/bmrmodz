@@ -457,6 +457,7 @@ mgu.run({
                 let available = opts.align === 'center' ? Math.min(x, W - x) * 2 - 32 : W - x - 24;
                 if (page === 'about') available = x >= 1120 ? W - x - 24 : x === 640 ? 880 : 150;
                 else if (page === 'detail' && size === 18) available = 700;
+                else if (page === 'detail' && opts.align === 'right') available = 700;
                 else if (page === 'overview' && x > 1200) available = W - x - 24;
                 const measured = cv.textWidth(text, size, { ...opts, literal: true });
                 const fitted = measured > available ? size * available / measured : size;
