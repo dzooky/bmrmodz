@@ -1,5 +1,16 @@
 # DPF Status progress
 
+## v0.1.66 — Prevent accumulated Recorder text auto-fit (2026-11-22)
+
+- **In-car user report:** selected `English (auto)` in the collapsed DPF Settings row remains visually too small through v0.1.65. OSA renders this correctly; the full DPF language picker works correctly.
+- **Confirmed root cause in code:** `Display.canvas()` reuses `Recorder` instances and `Recorder.reset()` does not remove overridden instance methods. DPF `render()` reassigned `cv.text` on each non-Settings frame, recursively stacking auto-fit wrappers. Rendering Settings first did not undo those wrappers.
+- **Implemented:** `delete cv.text` immediately after obtaining the Recorder on every render to restore its prototype method before Settings or the single DPF non-Settings fit wrapper. Keeps Overview, Detail and About fit rules; no changes to the OSA language module, 32 px selected-language size or 28 px language-picker size.
+- **Regression:** new source-backed renderer test simulates multiple Overview renders and tab switches to Settings using the same Recorder, asserting the fit factor stays stable across frames and Settings draws `English (auto)` at the native 32 px.
+- **Release notes:** 0.1.66 What's New translated across all 21 non-English catalogs. Version assertions updated.
+- **Automated CI:** pending when authored. **In-car verification:** pending. Do not claim visual resolution until tested on MGU.
+- No changes to DDE readings, regeneration state logic, notification tool or unrelated apps.
+
+
 ## v0.1.65 — Direct OSA language controller reuse (2026-11-22)
 
 - **In-car user report:** DPF v0.1.64 still shows a too-small selected English value on the main Settings page, despite the prior option-parity and font changes. The language picker and other languages are legible.
