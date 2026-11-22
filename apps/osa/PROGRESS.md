@@ -1,5 +1,14 @@
 # Oil Service Assistant progress
 
+## v0.2.61 — Manual notification preview button (2026-11-22)
+
+- Changed the Settings `clusterBcTest` notification preview from a boolean toggle to an `action` button.
+- User-visible label: `Show notification message`; button label: `Run`.
+- Registered a direct `onAction` handler; preview still works without live oil temperature or engine identification and uses shared Notification Tool 0.1.1.
+- Updated About release note and regression assertions. All automatic warm-up alert behavior stays unchanged.
+- **In-car verification pending** for the new button; CI pending.
+
+
 ## v0.2.60 — Shared KOMBI notification service (2026-11-22)
 
 - Migrated oil warm-up notification to shared `bmrmodz-notification` 0.1.1; no OSA-owned cluster-render socket, rasterizer or overlay lifecycle.

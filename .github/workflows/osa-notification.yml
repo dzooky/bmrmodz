@@ -31,12 +31,12 @@ jobs:
           const app=JSON.parse(fs.readFileSync('apps/osa/app.json','utf8'));
           const tool=JSON.parse(fs.readFileSync('tools/notification/component.json','utf8'));
           const main=fs.readFileSync('apps/osa/main.js','utf8');
-          assert.strictEqual(app.version,'0.2.60');
+          assert.strictEqual(app.version,'0.2.61');
           assert.strictEqual(app.requires['bmrmodz-notification'],tool.version);
           assert(!fs.existsSync('apps/osa/turbo-icon-preview.js'));
           assert(!/cluster-render|turboIconPreview/.test(main));
           assert(!app.settings.some(x=>['clusterLowerTest','clusterPassiveTest'].includes(x.key)));
-          assert(app.settings.some(x=>x.key==='clusterBcTest'));
+          assert(app.settings.some(x=>x.key==='clusterBcTest'&&x.type==='action'&&x.actionLabel==='Run'));
           assert(main.includes("oilNotification.start(log"));
-          console.log('OSA Notification Tool 0.2.60 package check: passed');
+          console.log('OSA Notification Tool 0.2.61 package check: passed');
           NODE

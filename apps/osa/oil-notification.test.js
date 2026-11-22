@@ -74,12 +74,19 @@ async function run() {
     assert.strictEqual(calls.length,3,'Manual preview does not require live temperature data');
     const app=JSON.parse(fs.readFileSync(__dirname + '/app.json','utf8'));
     const main=fs.readFileSync(__dirname + '/main.js','utf8');
-    assert.strictEqual(app.version,'0.2.60');
+    assert.strictEqual(app.version,'0.2.61');
     assert.strictEqual(app.requires['bmrmodz-notification'],'0.1.1');
     assert(!app.settings.some(s=>s.key==='clusterLowerTest'||s.key==='clusterPassiveTest'));
     assert(!main.includes('turboIconPreview'));
     assert(!main.includes('cluster-render'));
     assert(main.includes("oilNotification.show(log, getLanguage(), oilWarmTarget(), 'preview')"));
+    const testAction = app.settings.find(s=>s.key === 'clusterBcTest');
+    assert.strictEqual(testAction.type, 'action');
+    assert.strictEqual(testAction.label, 'Show notification message');
+    assert.strictEqual(testAction.actionLabel, 'Run');
+    assert(main.includes("ctx.settings.onAction('clusterBcTest'"));
+    assert(!main.includes("ctx.settings.get('clusterBcTest')"));
+    assert(!main.includes("ctx.settings.set('clusterBcTest'"));
     console.log('OSA shared Notification Tool: preview, trigger, 4s display and re-arm passed.');
 }
 run().catch(err=>{ console.error(err); process.exitCode=1; });
