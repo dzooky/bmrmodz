@@ -194,6 +194,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.63', 'Reliable oil temperature reached notification'],
                 ['0.2.61', 'Changed cluster notification preview from toggle to Run action'],
                 ['0.2.60', 'Migrated KOMBI oil notifications to the shared Notification Tool'],
                 ['0.2.52', 'Show cluster notification setting only when VO contains 6WB'],
