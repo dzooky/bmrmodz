@@ -7,6 +7,7 @@ const {READS,getRead}=require('./profiles');
 const signalEnvironment=require('./signal-environment');
 const diagnosticReport=require('./diagnostic-report');
 const configCheck=require('./config-check');
+const ccFeasibility=require('./cc-feasibility');
 const {createRunner}=require('./signal-isolate');
 const SOCKET=process.env.BMRMODZ_DATA_SOCKET||'/run/bmrmodz-data-tool/ctl.sock';
 const GAP_MS=200, CACHE_MS=500;
@@ -64,11 +65,12 @@ function serve(factory,socketPath,options){
         try{
           req=JSON.parse(raw);
           if(!req||typeof req!=='object')throw new Error('Invalid request');
-          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.3',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
+          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.4',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
           else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
           else if(req.op==='configCheck')reply=configCheck.inspect();
-          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.3',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
+          else if(req.op==='ccPlan')reply=ccFeasibility.plan();
+          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.4',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
           else if(req.op==='signalNative' && req.mode==='load')reply=await signalRunner.run('load');
           else if(req.op==='signalNative' && req.mode==='sample')reply=await signalRunner.run('sample',req.field);
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
