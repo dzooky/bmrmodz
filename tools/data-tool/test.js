@@ -20,16 +20,22 @@ async function run(){
  let sent=0;
  const mock={ready:true,async read(ecu,did){sent++;await new Promise(r=>setTimeout(r,30));return [0x62,did>>8,did&255,0x05];},close(){}};
  const socket=path.join(os.tmpdir(),'bmrmodz-data-test-'+process.pid+'.sock');
- const svc=serve(()=>mock,socket);
+ let signalTests=0;
+ const svc=serve(()=>mock,socket,{signalRunner:{run:async(mode,field)=>{signalTests++;return {ok:true,mode,field,isolated:true};}}});
  await new Promise((r,j)=>{svc.server.once('listening',r);svc.server.once('error',j);});
  try{
    const status=await call(socket,{op:'status'});
    assert.strictEqual(status.ok,true);assert.strictEqual(status.stats.sent,0);
-   assert.strictEqual(status.capabilities.signals.mode,'passive-environment-probe');
+   assert.strictEqual(status.capabilities.signals.mode,'isolated-on-demand-probe');
    const passive=await call(socket,{op:'signalEnvironment'});
    assert.strictEqual(passive.ok,true);
    assert.strictEqual(passive.mode,'passive-only');
    assert.ok(passive.limitations.includes('No SOME/IP subscription was attempted'));
+   assert.strictEqual(sent,0);
+   const native=await call(socket,{op:'signalNative',mode:'load'});
+   assert.strictEqual(native.ok,true);
+   assert.strictEqual(native.isolated,true);
+   assert.strictEqual(signalTests,1);
    assert.strictEqual(sent,0);
    const rejected=await call(socket,{op:'read',ecu:0x40,did:0x2E00});
    assert.strictEqual(rejected.ok,false);assert.strictEqual(sent,0);
