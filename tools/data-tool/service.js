@@ -4,6 +4,7 @@
 // presented as verified until vehicle testing confirms them.
 const fs=require('fs'), net=require('net'), path=require('path');
 const {READS,getRead}=require('./profiles');
+const signalEnvironment=require('./signal-environment');
 const SOCKET=process.env.BMRMODZ_DATA_SOCKET||'/run/bmrmodz-data-tool/ctl.sock';
 const GAP_MS=200, CACHE_MS=500;
 function serve(factory,socketPath){
@@ -43,7 +44,7 @@ function serve(factory,socketPath){
   }
   const capabilities=()=>({
     uds:{mode:'read-only-experimental',reads:READS,controls:'not implemented'},
-    signals:{mode:'not implemented',reason:'Standalone SOME/IP subscription requires vehicle proof'},
+    signals:{mode:'passive-environment-probe',reason:'Native subscription requires separate on-car verification'},
     background:{mode:'on-demand-only',reason:'No unattended ECU polling in feasibility build'}
   });
   try{fs.mkdirSync(path.dirname(socket),{recursive:true});}catch(e){if(e.code!=='EEXIST')throw e;}
@@ -61,6 +62,7 @@ function serve(factory,socketPath){
           if(!req||typeof req!=='object')throw new Error('Invalid request');
           if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.0',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
+          else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
           else reply={ok:false,error:'Unsupported request'};
         }catch(e){reply={ok:false,error:String(e.message||e)};}
