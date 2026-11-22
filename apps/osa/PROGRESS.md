@@ -5,7 +5,8 @@
 - Remove the redundant 6WB/6U3 gate from the automatic send condition only; vehicle equipment detection and Settings visibility stay unchanged.
 - Retry both returned errors and thrown failures, up to five total attempts spaced 500 ms apart. Log attempts and exhausted deliveries; avoid duplicate in-flight sends.
 - Keep manual preview and shared Notification Tool rendering unchanged. Tool acceptance does not prove physical KOMBI display.
-- Automated checks: pending. In-car verification: pending.
+- About / What's New: 0.2.63 release note localized across all 21 non-English catalogs.
+- Automated checks: standalone regression test added; execution and CI pending. In-car verification: pending.
 
 # Oil Service Assistant progress
 
