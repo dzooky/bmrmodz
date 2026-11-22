@@ -1,5 +1,16 @@
 # DPF Status progress
 
+## v0.1.64 — OSA-style language configuration (2026-11-22)
+
+- **User report:** the selected English language value in DPF's main Settings remained too small through the v0.1.63 revision. The full language picker and other language values were reported legible.
+- **Implemented:** DPF now mirrors OSA's language model: base `['en','English']` choice in `app.json`, dynamic `(auto)` suffix for detected iDrive language, and replacement of options on refresh. The old `['auto','English (auto)']` base value and special `englishAutoValueSize` workaround were removed.
+- **Implemented:** shared Settings typography is back to the uniform 32 px for selected languages; picker remains unchanged.
+- **Implemented:** visible v0.1.64 What's New note and matching translations across 21 non-English catalogs.
+- **Regression tests:** cover DPF/OSA language option parity, English auto text size in Settings, other language sizes, and translation coverage.
+- **Automated CI:** pending. **In-car verification:** pending. Previous vehicle report applies to v0.1.63, not 0.1.64.
+- No changes to DDE diagnostics, DPF regeneration logic, Notification Tool, or other screens.
+
+
 ## v0.1.63 — Main Settings English auto readability (2026-11-22)
 
 - **Reported in car** on v0.1.62: only the selected `English (auto)` value on the *main* Settings screen appears too small; English in the opened language list and all other selected languages look normal.
