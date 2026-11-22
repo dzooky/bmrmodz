@@ -83,7 +83,7 @@ async function run() {
     const testAction = app.settings.find(s=>s.key === 'clusterBcTest');
     assert.strictEqual(testAction.type, 'action');
     assert.strictEqual(testAction.label, 'Show notification message');
-    assert.strictEqual(testAction.actionLabel, 'Proceed');
+    assert.strictEqual(testAction.actionLabel, 'Run');
     assert(main.includes("ctx.settings.onAction('clusterBcTest'"));
     assert(!main.includes("ctx.settings.get('clusterBcTest')"));
     assert(!main.includes("ctx.settings.set('clusterBcTest'"));
