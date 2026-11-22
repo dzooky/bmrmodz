@@ -7,9 +7,10 @@ const G=require('./kit/gauges');
 const client=require('./client');
 const {createRunner,STEPS}=require('./test-runner');
 const {t}=require('./translations');
+const makeQr=require('./qrcode');
 const W=1600,H=520;
 const REPORT_NAME='data-tool-diagnostic-report.json';
-const pages=['Info','Diagnostics','Results'];
+const pages=['Info','Diagnostics','Results','Share'];
 const DEV_NOTICE=[
  'This application is still in development phase and not ready for public use.',
  'We still working on it and will be available soon.',
@@ -20,7 +21,7 @@ mgu.run({
  start(ctx){
   const {ui,log}=ctx;
   const runner=createRunner(client.request);
-  let page=0,running=false,report=null,progress=0,exportState='',lastResult=null;
+  let page=0,running=false,report=null,progress=0,exportState='',lastResult=null,reportQr=null;
   const currentLanguage=()=>ctx.settings.get('language')||'en';
   const word=key=>t(currentLanguage(),key);
   const reportFile=path.join(ctx.dataDir,REPORT_NAME);
@@ -38,7 +39,7 @@ mgu.run({
   ctx.settings.onChange(key=>{if(key==='language')refreshButtons();});
   async function runTest(){
    if(running)return;
-   page=1;running=true;progress=0;report=null;exportState='';lastResult=null;
+   page=1;running=true;progress=0;report=null;reportQr=null;exportState='';lastResult=null;
    try{
     const output=await runner.run((completed,total,item)=>{
      progress=Math.floor(100*completed/total);lastResult=item;
@@ -55,7 +56,12 @@ mgu.run({
    try{
     // Local export to OAP application data. Network sharing is NOT available.
     fs.writeFileSync(reportFile,JSON.stringify(report,null,2)+'\n',{encoding:'utf8',mode:0o600});
+    const compact='BMRMODZ DATA TOOL /1 | '+report.finishedAt+' | '+report.results.map(item=>
+       item.id+':'+item.status+(item.status==='FAIL'?':'+safeValue(item.detail).slice(0,50):'')).join(' | ');
+    const nextQr=makeQr(0,'M');
+    nextQr.addData(compact);nextQr.make();reportQr=nextQr;
     exportState=word('Exported to app data')+': '+REPORT_NAME;
+    page=3;
    }catch(error){
     exportState=word('Export failed')+': '+safeValue(error.message);
     log.warn('Data Tool export: '+error.message);
@@ -123,6 +129,18 @@ mgu.run({
       word('SKIP')+': '+totals.skip,800,506,18,theme.text,{align:'center'});
    if(exportState)label(cv,exportState,800,479,16,theme.warn,{align:'center'});
   }
+  function drawShare(cv,theme){
+   header(cv,theme,word('Share'),word('Read-only'));
+   G.panel(cv,theme,24,115,1552,380,null);
+   if(!reportQr){label(cv,word('No report yet'),800,265,30,theme.dim,{align:'center'});return;}
+   const count=reportQr.getModuleCount(),size=Math.min(5,Math.floor(350/(count+8)));
+   const grid=(count+8)*size,x=Math.floor((W-grid)/2),y=126;
+   cv.fillRect(x,y,grid,grid,'#ffffff');
+   for(let row=0;row<count;row++)for(let col=0;col<count;col++){
+    if(reportQr.isDark(row,col))cv.fillRect(x+(col+4)*size,y+(row+4)*size,size,size,'#000000');
+   }
+   label(cv,word('Exported to app data'),800,490,17,theme.dim,{align:'center'});
+  }
   async function render(){
    const theme=ctx.theme(),cv=ctx.canvas(W,H).clear(theme.bg);
    // Avoid retained Recorder instance overrides across frames.
@@ -130,6 +148,7 @@ mgu.run({
    if(page===0)drawInfo(cv,theme);
    if(page===1)drawDiagnostics(cv,theme);
    if(page===2)drawResults(cv,theme);
+   if(page===3)drawShare(cv,theme);
    G.frame(cv,theme,pages.map(word),page,[]);
    return ui.image('MAIN_GFX',cv);
   }
