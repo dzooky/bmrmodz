@@ -23,6 +23,7 @@ const required = [
   'Run',
   'Language selection aligned with OSA',
   'Language handling now uses the OSA controller',
+  'Correct Settings text after repeated page renders',
   'English (auto) language value readability',
   'Run button translated into all languages',
   'Additional translations and Detail text sizing'
@@ -126,4 +127,47 @@ test('DPF uses exactly the OSA language controller with app-specific references'
   assert.match(main, /Language\.start\(ctx\)/);
   assert.doesNotMatch(main, /function updateAutomaticLanguage\(/);
   assert.doesNotMatch(main, /function applyLanguage\(/);
+});
+
+test('reused DPF Recorder never stacks text auto-fit and Settings retains native font size', () => {
+  const main = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+  const start = main.indexOf('function render() {');
+  const end = main.indexOf("            if (page === 'detail') {", start);
+  assert.ok(start >= 0 && end > start, 'render prefix must be present');
+  const prefix = main.slice(start, end);
+  assert.match(prefix, /delete cv\.text;/);
+  assert.ok(prefix.indexOf('delete cv.text;') < prefix.indexOf("if (page === 'settings')"),
+    'must reset the reused Recorder before Settings renders');
+  const renderPrefix = new Function(
+    'ctx', 'settingsCanvas', 'G', 'ui', 'TABS', 'translate', 'page', 'W', 'H',
+    prefix + '\nreturn cv;\n}\nreturn render();'
+  );
+  const calls = [];
+  class FakeRecorder {
+    clear() { return this; }
+    text(value, x, y, size) { calls.push({ value, size }); return 200; }
+    textWidth() { return 200; }
+  }
+  const recorder = new FakeRecorder();
+  const nativeText = recorder.text;
+  const ctx = { canvas: () => recorder, theme: () => ({ bg: '#000' }) };
+  const settingsCanvas = {
+    draw(cv) { cv.text('English (auto)', 1500, 110, 32, '#fff', { align: 'right' }); }
+  };
+  const G = { frame() {} };
+  const ui = { image: () => recorder };
+  const args = [ctx, settingsCanvas, G, ui, ['Overview', 'Detail', 'Settings', 'About'], x => x];
+  renderPrefix(...args, 'overview', 1600, 520);
+  recorder.text('test', 1500, 110, 32, '#fff', { align: 'right' });
+  const firstSize = calls.at(-1).size;
+  assert.ok(firstSize < 32, 'non-Settings pages must retain width fitting');
+  renderPrefix(...args, 'overview', 1600, 520);
+  recorder.text('test', 1500, 110, 32, '#fff', { align: 'right' });
+  assert.equal(calls.at(-1).size, firstSize, 'auto-fit must not compound across frames');
+  renderPrefix(...args, 'settings', 1600, 520);
+  assert.equal(calls.at(-1).size, 32, 'Settings language must draw at native size');
+  assert.equal(recorder.text, nativeText, 'Settings must use the unmodified Recorder text method');
+  renderPrefix(...args, 'overview', 1600, 520);
+  renderPrefix(...args, 'settings', 1600, 520);
+  assert.equal(calls.at(-1).size, 32, 'font size must survive repeated tab switches');
 });
