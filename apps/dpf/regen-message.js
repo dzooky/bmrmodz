@@ -48,6 +48,7 @@ function createIndicator() {
 function start(log, getMessage) {
     let lastKey = null;
     let lastShownAt = -Infinity;
+    let sequence = 0;
     function poll() {
         const message = getMessage();
         // State machine still owns the event and recurrence decisions. The tool owns
@@ -59,13 +60,24 @@ function start(log, getMessage) {
         if (key === lastKey && now - lastShownAt < BLINK_MS - 100) return;
         lastKey = key;
         lastShownAt = now;
-        notification.show('dpf', [
+        const event = ++sequence;
+        const segments = [
             { text: t(PREFIX) + ' ', color: '#ffffff' },
             { text: translated, color: message.colour }
-        ], { durationMs: BLINK_MS, blinkMs: HALF_BLINK_MS, repeat: 1, repeatIntervalMs: 0 })
-            .then(result => {
-                if (!result || !result.ok) log.warn('DPF Notification Tool: ' + (result && result.error || 'no response'));
-            }).catch(error => log.warn('DPF Notification Tool: ' + error));
+        ];
+        function send(attempt) {
+            if (event !== sequence) return; // A newer regeneration event supersedes retries.
+            notification.show('dpf', segments,
+                { durationMs: BLINK_MS, blinkMs: HALF_BLINK_MS, repeat: 1, repeatIntervalMs: 0 })
+                .then(result => {
+                    if (result && result.ok) return;
+                    if (result && result.error === 'busy' && attempt < 5) {
+                        const timer = setTimeout(() => send(attempt + 1), 150);
+                        timer.unref();
+                    } else log.warn('DPF Notification Tool: ' + (result && result.error || 'no response'));
+                }).catch(error => log.warn('DPF Notification Tool: ' + error));
+        }
+        send(0);
     }
     poll();
     setInterval(poll, 250).unref();
