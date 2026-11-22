@@ -28,6 +28,7 @@ jobs:
           node --check tools/data-tool/signal-worker.js
           node --check tools/data-tool/signal-isolate.js
           node --check tools/data-tool/signal-isolate.test.js
+          node --check tools/data-tool/signal-worker.test.js
           node --check tools/data-tool/config-check.js
           node --check tools/data-tool/diagnostic-report.js
           node --check tools/data-tool/diagnostic-report.test.js
@@ -42,3 +43,4 @@ jobs:
           node tools/data-tool/diagnostic-report.test.js
           node tools/data-tool/cc-feasibility.test.js
           node tools/data-tool/signal-manifest.test.js
+          node tools/data-tool/signal-worker.test.js
