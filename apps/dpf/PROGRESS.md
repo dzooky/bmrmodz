@@ -1,5 +1,18 @@
 # DPF Status progress
 
+## v0.1.61 — DPF locale coverage and typography (2026-11-22)
+
+- Implemented: added 19 previously missing user-visible translation keys to each of 21 non-English locales (399 localized strings), covering B47 Detail guidance, average-regeneration text, historical release notes, and equipment reload status/action messages.
+- Implemented: B47 Detail guidance now uses normal translation lookup rather than literal rendering.
+- Implemented: right-column Detail measurements retain their normal 35 px nominal size (up to 700 px measured width) instead of shrinking to fit the distance to the right canvas edge.
+- Implemented: selected language in shared Settings list uses 32 px instead of 26 px; other setting values retain 26 px.
+- Added translation/typography regression test `apps/dpf/translations.test.js`.
+- Version bumped from 0.1.60 to 0.1.61. Preserve Notification Tool 0.1.1 and the DPF 0.1.60 timing changes.
+- Translation source audit: 21/21 non-English catalogs contain 87 aligned, nonempty entries; no untranslated identical long English strings detected.
+- Automated test execution/CI: pending after PR creation. In-car typography and translation verification: pending.
+- NOTE: PR #31 and #32 contain older parallel font fixes; this revision implements equivalent changes on current main. Avoid merging the old PRs without conflict review.
+
+
 ## v0.1.60 — Shorter In Progress notification (2026-11-22)
 
 - Changed **only** the `In Progress` message to two blinks, each 333 ms ON / 333 ms OFF (1,332 ms total).
