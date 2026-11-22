@@ -25,7 +25,12 @@ async function run(){
  try{
    const status=await call(socket,{op:'status'});
    assert.strictEqual(status.ok,true);assert.strictEqual(status.stats.sent,0);
-   assert.strictEqual(status.capabilities.signals.mode,'not implemented');
+   assert.strictEqual(status.capabilities.signals.mode,'passive-environment-probe');
+   const passive=await call(socket,{op:'signalEnvironment'});
+   assert.strictEqual(passive.ok,true);
+   assert.strictEqual(passive.mode,'passive-only');
+   assert.ok(passive.limitations.includes('No SOME/IP subscription was attempted'));
+   assert.strictEqual(sent,0);
    const rejected=await call(socket,{op:'read',ecu:0x40,did:0x2E00});
    assert.strictEqual(rejected.ok,false);assert.strictEqual(sent,0);
    const [a,b]=await Promise.all([call(socket,{op:'read',ecu:0x12,did:0x44BB}),call(socket,{op:'read',ecu:0x12,did:0x44BB})]);
