@@ -391,8 +391,8 @@ mgu.run({
         oilNotification.start(log, () => {
             const { demo, oil } = car.data();
             return {
-                enabled: !demo && ctx.settings.values.cluster6wbAvailable === true &&
-                    ctx.settings.get('oilCluster') === true,
+                enabled: !demo && ctx.settings.get('oilCluster') === true,
+                demo,
                 oil: G.isNum(oil) ? oil : null,
                 target: oilWarmTarget()
             };
