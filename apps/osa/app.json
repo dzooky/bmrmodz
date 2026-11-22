@@ -2,7 +2,7 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.60",
+  "version": "0.2.61",
   "config": {
     "customSettings": true
   },
@@ -204,9 +204,9 @@
     },
     {
       "key": "clusterBcTest",
-      "label": "Test cluster notification",
-      "type": "bool",
-      "default": false
+      "label": "Show notification message",
+      "actionLabel": "Proceed",
+      "type": "action"
     },
     {
       "key": "demo",
