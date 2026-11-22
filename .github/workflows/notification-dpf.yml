@@ -1,7 +1,7 @@
 name: Notification Tool and DPF integration
 on:
   push:
-    branches: [feature/notification-tool-dpf-0.1.56]
+    branches: [feature/notification-tool-dpf-0.1.57]
   pull_request:
     paths:
       - 'tools/notification/**'
