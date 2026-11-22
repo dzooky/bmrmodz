@@ -87,7 +87,8 @@ module.exports = {
     "Reloading...": "Načítava sa...",
     "Reload failed": "Načítanie zlyhalo",
     "Read vehicle equipment again": "Znova načítať výbavu vozidla",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štyri hlásenia: Vyžiadaná (žltá), Začatá a Prebieha (červená), Dokončená (zelená)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štyri hlásenia: Vyžiadaná (žltá), Začatá a Prebieha (červená), Dokončená (zelená)",
+    "Run": "Spustiť"
   },
   "cs": {
     "Overview": "Přehled",
@@ -176,7 +177,8 @@ module.exports = {
     "Reloading...": "Načítání...",
     "Reload failed": "Načtení selhalo",
     "Read vehicle equipment again": "Znovu načíst výbavu vozidla",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Čtyři upozornění: Vyžádána (žlutá), Zahájena a Probíhá (červená), Dokončena (zelená)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Čtyři upozornění: Vyžádána (žlutá), Zahájena a Probíhá (červená), Dokončena (zelená)",
+    "Run": "Spustit"
   },
   "de": {
     "Overview": "Übersicht",
@@ -265,7 +267,8 @@ module.exports = {
     "Reloading...": "Wird neu geladen...",
     "Reload failed": "Neuladen fehlgeschlagen",
     "Read vehicle equipment again": "Fahrzeugausstattung erneut lesen",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier Meldungen: Angefordert (gelb), Gestartet und Läuft (rot), Beendet (grün)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier Meldungen: Angefordert (gelb), Gestartet und Läuft (rot), Beendet (grün)",
+    "Run": "Ausführen"
   },
   "es": {
     "Overview": "Resumen",
@@ -354,7 +357,8 @@ module.exports = {
     "Reloading...": "Recargando...",
     "Reload failed": "Error al recargar",
     "Read vehicle equipment again": "Volver a leer el equipamiento del vehículo",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cuatro avisos: Solicitada (amarillo), Iniciada y En curso (rojo), Finalizada (verde)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cuatro avisos: Solicitada (amarillo), Iniciada y En curso (rojo), Finalizada (verde)",
+    "Run": "Ejecutar"
   },
   "fr": {
     "Overview": "Vue d'ensemble",
@@ -443,7 +447,8 @@ module.exports = {
     "Reloading...": "Rechargement...",
     "Reload failed": "Échec du rechargement",
     "Read vehicle equipment again": "Relire les équipements du véhicule",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatre alertes : Demandée (jaune), Démarrée et En cours (rouge), Terminée (vert)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatre alertes : Demandée (jaune), Démarrée et En cours (rouge), Terminée (vert)",
+    "Run": "Exécuter"
   },
   "it": {
     "Overview": "Panoramica",
@@ -532,7 +537,8 @@ module.exports = {
     "Reloading...": "Ricaricamento...",
     "Reload failed": "Ricaricamento non riuscito",
     "Read vehicle equipment again": "Rileggi dotazioni veicolo",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quattro avvisi: Richiesta (giallo), Avviata e In corso (rosso), Completata (verde)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quattro avvisi: Richiesta (giallo), Avviata e In corso (rosso), Completata (verde)",
+    "Run": "Esegui"
   },
   "hu": {
     "Overview": "Áttekintés",
@@ -621,7 +627,8 @@ module.exports = {
     "Reloading...": "Újratöltés...",
     "Reload failed": "Újratöltés sikertelen",
     "Read vehicle equipment again": "Járműfelszereltség újbóli beolvasása",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Négy jelzés: Kért (sárga), Elindult és Folyamatban (piros), Befejeződött (zöld)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Négy jelzés: Kért (sárga), Elindult és Folyamatban (piros), Befejeződött (zöld)",
+    "Run": "Futtatás"
   },
   "pl": {
     "Overview": "Przegląd",
@@ -710,7 +717,8 @@ module.exports = {
     "Reloading...": "Wczytywanie...",
     "Reload failed": "Wczytywanie nieudane",
     "Read vehicle equipment again": "Ponownie odczytaj wyposażenie pojazdu",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cztery komunikaty: Żądana (żółty), Rozpoczęta i W toku (czerwony), Zakończona (zielony)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cztery komunikaty: Żądana (żółty), Rozpoczęta i W toku (czerwony), Zakończona (zielony)",
+    "Run": "Uruchom"
   },
   "ru": {
     "Overview": "Обзор",
@@ -799,7 +807,8 @@ module.exports = {
     "Reloading...": "Обновление...",
     "Reload failed": "Ошибка обновления",
     "Read vehicle equipment again": "Повторно прочитать комплектацию автомобиля",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Четыре оповещения: Запрошена (жёлтый), Начата и Выполняется (красный), Завершена (зелёный)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Четыре оповещения: Запрошена (жёлтый), Начата и Выполняется (красный), Завершена (зелёный)",
+    "Run": "Запустить"
   },
   "da": {
     "Overview": "Oversigt",
@@ -888,7 +897,8 @@ module.exports = {
     "Reloading...": "Genindlæser...",
     "Reload failed": "Genindlæsning mislykkedes",
     "Read vehicle equipment again": "Læs bilens udstyr igen",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire beskeder: Anmodet (gul), Startet og I gang (rød), Afsluttet (grøn)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire beskeder: Anmodet (gul), Startet og I gang (rød), Afsluttet (grøn)",
+    "Run": "Kør"
   },
   "el": {
     "Overview": "Επισκόπηση",
@@ -977,7 +987,8 @@ module.exports = {
     "Reloading...": "Επαναφόρτωση...",
     "Reload failed": "Αποτυχία φόρτωσης",
     "Read vehicle equipment again": "Νέα ανάγνωση εξοπλισμού οχήματος",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Τέσσερις ειδοποιήσεις: Αίτημα (κίτρινο), Έναρξη και Σε εξέλιξη (κόκκινο), Ολοκλήρωση (πράσινο)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Τέσσερις ειδοποιήσεις: Αίτημα (κίτρινο), Έναρξη και Σε εξέλιξη (κόκκινο), Ολοκλήρωση (πράσινο)",
+    "Run": "Εκτέλεση"
   },
   "zh-CN": {
     "Overview": "概览",
@@ -1066,7 +1077,8 @@ module.exports = {
     "Reloading...": "正在重新加载...",
     "Reload failed": "加载失败",
     "Read vehicle equipment again": "重新读取车辆配置",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "四种提示：已请求（黄色）、已开始和进行中（红色）、已完成（绿色）"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "四种提示：已请求（黄色）、已开始和进行中（红色）、已完成（绿色）",
+    "Run": "运行"
   },
   "nl": {
     "Overview": "Overzicht",
@@ -1155,7 +1167,8 @@ module.exports = {
     "Reloading...": "Opnieuw laden...",
     "Reload failed": "Laden mislukt",
     "Read vehicle equipment again": "Lees voertuiguitrusting opnieuw",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier meldingen: Aangevraagd (geel), Gestart en Bezig (rood), Voltooid (groen)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier meldingen: Aangevraagd (geel), Gestart en Bezig (rood), Voltooid (groen)",
+    "Run": "Uitvoeren"
   },
   "nb": {
     "Overview": "Oversikt",
@@ -1244,7 +1257,8 @@ module.exports = {
     "Reloading...": "Laster inn...",
     "Reload failed": "Innlasting mislyktes",
     "Read vehicle equipment again": "Les bilutstyr på nytt",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire varsler: Forespurt (gul), Startet og Pågår (rød), Fullført (grønn)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire varsler: Forespurt (gul), Startet og Pågår (rød), Fullført (grønn)",
+    "Run": "Kjør"
   },
   "pt": {
     "Overview": "Resumo",
@@ -1333,7 +1347,8 @@ module.exports = {
     "Reloading...": "A recarregar...",
     "Reload failed": "Falha ao recarregar",
     "Read vehicle equipment again": "Ler novamente equipamento do veículo",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatro avisos: Solicitada (amarelo), Iniciada e Em curso (vermelho), Concluída (verde)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatro avisos: Solicitada (amarelo), Iniciada e Em curso (vermelho), Concluída (verde)",
+    "Run": "Executar"
   },
   "ro": {
     "Overview": "Prezentare",
@@ -1422,7 +1437,8 @@ module.exports = {
     "Reloading...": "Se reîncarcă...",
     "Reload failed": "Reîncărcare eșuată",
     "Read vehicle equipment again": "Recitește echiparea vehiculului",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Patru notificări: Solicitată (galben), Pornită și În curs (roșu), Finalizată (verde)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Patru notificări: Solicitată (galben), Pornită și În curs (roșu), Finalizată (verde)",
+    "Run": "Execută"
   },
   "sl": {
     "Overview": "Pregled",
@@ -1511,7 +1527,8 @@ module.exports = {
     "Reloading...": "Nalaganje...",
     "Reload failed": "Nalaganje ni uspelo",
     "Read vehicle equipment again": "Znova preberi opremo vozila",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štiri obvestila: Zahtevano (rumeno), Začeto in V teku (rdeče), Končano (zeleno)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štiri obvestila: Zahtevano (rumeno), Začeto in V teku (rdeče), Končano (zeleno)",
+    "Run": "Zaženi"
   },
   "fi": {
     "Overview": "Yleiskatsaus",
@@ -1600,7 +1617,8 @@ module.exports = {
     "Reloading...": "Ladataan uudelleen...",
     "Reload failed": "Lataus epäonnistui",
     "Read vehicle equipment again": "Lue auton varustelu uudelleen",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Neljä ilmoitusta: Pyydetty (keltainen), Aloitettu ja Käynnissä (punainen), Valmis (vihreä)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Neljä ilmoitusta: Pyydetty (keltainen), Aloitettu ja Käynnissä (punainen), Valmis (vihreä)",
+    "Run": "Suorita"
   },
   "sv": {
     "Overview": "Översikt",
@@ -1689,7 +1707,8 @@ module.exports = {
     "Reloading...": "Läser in igen...",
     "Reload failed": "Inläsning misslyckades",
     "Read vehicle equipment again": "Läs fordonsutrustningen igen",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fyra aviseringar: Begärd (gul), Startad och Pågår (röd), Slutförd (grön)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fyra aviseringar: Begärd (gul), Startad och Pågår (röd), Slutförd (grön)",
+    "Run": "Kör"
   },
   "tr": {
     "Overview": "Genel bakış",
@@ -1778,7 +1797,8 @@ module.exports = {
     "Reloading...": "Yeniden yükleniyor...",
     "Reload failed": "Yükleme başarısız",
     "Read vehicle equipment again": "Araç donanımını yeniden oku",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Dört bildirim: İstendi (sarı), Başladı ve Sürüyor (kırmızı), Tamamlandı (yeşil)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Dört bildirim: İstendi (sarı), Başladı ve Sürüyor (kırmızı), Tamamlandı (yeşil)",
+    "Run": "Çalıştır"
   },
   "uk": {
     "Overview": "Огляд",
@@ -1867,6 +1887,7 @@ module.exports = {
     "Reloading...": "Оновлення...",
     "Reload failed": "Помилка оновлення",
     "Read vehicle equipment again": "Повторно прочитати комплектацію автомобіля",
-    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Чотири сповіщення: Запитана (жовтий), Почалася і Триває (червоний), Завершена (зелений)"
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Чотири сповіщення: Запитана (жовтий), Почалася і Триває (червоний), Завершена (зелений)",
+    "Run": "Запустити"
   }
 };

@@ -450,6 +450,12 @@ mgu.run({
         function render() {
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
+            // Match OSA: Settings uses the shared sheet renderer without DPF's text auto-fit.
+            if (page === 'settings') {
+                settingsCanvas.draw(cv, t);
+                G.frame(cv, t, TABS.map(label => translate(label)), 2, []);
+                return ui.image('MAIN_GFX', cv);
+            }
             const drawText = cv.text.bind(cv);
             cv.text = (value, x, y, size, colour, options) => {
                 const opts = options || {};
@@ -466,11 +472,6 @@ mgu.run({
             if (page === 'detail') {
                 renderDetail(cv, t);
                 G.frame(cv, t, TABS.map(label => translate(label)), 1, []);
-                return ui.image('MAIN_GFX', cv);
-            }
-            if (page === 'settings') {
-                settingsCanvas.draw(cv, t);
-                G.frame(cv, t, TABS.map(label => translate(label)), 2, []);
                 return ui.image('MAIN_GFX', cv);
             }
             if (page === 'about') {
