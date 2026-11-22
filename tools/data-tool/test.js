@@ -37,6 +37,10 @@ async function run(){
    assert.strictEqual(native.isolated,true);
    assert.strictEqual(signalTests,1);
    assert.strictEqual(sent,0);
+   const report=await call(socket,{op:'report'});
+   assert.strictEqual(report.reportVersion,1);
+   assert.strictEqual(report.checks.udsVehicleVerified,false);
+   assert.strictEqual(sent,0);
    const rejected=await call(socket,{op:'read',ecu:0x40,did:0x2E00});
    assert.strictEqual(rejected.ok,false);assert.strictEqual(sent,0);
    const [a,b]=await Promise.all([call(socket,{op:'read',ecu:0x12,did:0x44BB}),call(socket,{op:'read',ecu:0x12,did:0x44BB})]);
