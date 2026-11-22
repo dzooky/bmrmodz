@@ -1,5 +1,15 @@
 # DPF Status progress
 
+## v0.1.63 — Main Settings English auto readability (2026-11-22)
+
+- **Reported in car** on v0.1.62: only the selected `English (auto)` value on the *main* Settings screen appears too small; English in the opened language list and all other selected languages look normal.
+- **Implemented:** DPF-only opt-in `englishAutoValueSize: 38` for this collapsed value. The shared sheet uses this only for the exact `English (auto)` string; the other collapsed languages remain 32 px, the opened language list remains 28 px, and unrelated apps are unchanged.
+- **Implemented:** visible About/What's New entries for v0.1.61, v0.1.62 and v0.1.63, with all three new entries translated in all 21 non-English DPF catalogs.
+- **Implemented:** project-wide AGENTS.md rule requiring translated What's New on every new app version.
+- **Automated tests:** expanded DPF translation tests to check 0.1.61-0.1.63 release-note coverage and recorder text-call sizes for English auto, another language and the opened picker. CI status: pending at writing.
+- **Vehicle verification:** new 0.1.63 typography still unverified in car; all diagnostic/regeneration/notification behavior unchanged.
+
+
 ## v0.1.62 — English language size and Run translation (2026-11-22)
 
 - In-car user report for v0.1.61: only the selected `English (auto)` language value in Settings remains too small; other languages appear correct.
