@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-data-tool",
   "kind": "tool",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "title": "Data Tool Feasibility",
-  "description": "Experimental read-only TASU gateway and passive SOME/IP environment survey; no actuator or live signal subscription",
+  "description": "Read-only TASU feasibility plus explicit isolated SOME/IP load and CDS signal probes; no automatic polling or actuator actions",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [
@@ -37,6 +37,16 @@
     {
       "path": "signal-environment.js",
       "from": "signal-environment.js",
+      "mode": "0644"
+    },
+    {
+      "path": "signal-isolate.js",
+      "from": "signal-isolate.js",
+      "mode": "0644"
+    },
+    {
+      "path": "signal-worker.js",
+      "from": "signal-worker.js",
       "mode": "0644"
     }
   ],
