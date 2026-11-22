@@ -1,0 +1,11 @@
+'use strict';
+const assert=require('assert');
+const manifest=require('./signal-manifest.json');
+assert.ok(manifest.proxies&&typeof manifest.proxies==='object');
+assert.ok(manifest.services&&typeof manifest.services==='object');
+assert.strictEqual(manifest.someip,undefined);
+const cds=manifest.proxies['de.bmw.infotainment.vehicle.CDS'];
+assert.strictEqual(cds.instances,'1');
+assert.strictEqual(cds.attributes.statusEngineTemperature,'rs');
+assert.strictEqual(cds.attributes.statusEngineSpeed2,'rs');
+console.log('Data Tool signal manifest: BMW generator schema verified');
