@@ -118,12 +118,12 @@ test('DPF uses exactly the OSA language controller with app-specific references'
   const osa = fs.readFileSync(path.join(__dirname, '../osa/language.js'), 'utf8');
   const expected = osa
     .replace("require('./locales')", "require('./translations')")
-    .replace("        BTN_PAGE: 'Next page',\\n        BTN_PREV: 'Previous page',\\n        BTN_SETTINGS: 'Settings',",
+    .replace("        BTN_PAGE: 'Next page',\n        BTN_PREV: 'Previous page',\n        BTN_SETTINGS: 'Settings',",
       "        BTN_SETTINGS: 'Settings',")
     .replace(/SID_OSA_SET_/g, 'SID_DPF_SET_')
     .replace(/OSA setting language/g, 'DPF setting language');
   assert.equal(dpf, expected, 'DPF language implementation must stay identical to OSA');
-  assert.match(main, /Language\\.start\\(ctx\\)/);
-  assert.doesNotMatch(main, /function updateAutomaticLanguage\\(/);
-  assert.doesNotMatch(main, /function applyLanguage\\(/);
+  assert.match(main, /Language\.start\(ctx\)/);
+  assert.doesNotMatch(main, /function updateAutomaticLanguage\(/);
+  assert.doesNotMatch(main, /function applyLanguage\(/);
 });
