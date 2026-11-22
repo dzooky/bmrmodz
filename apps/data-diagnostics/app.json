@@ -1,0 +1,165 @@
+{
+  "id": "data-diagnostics",
+  "title": "Data Tool Diagnostics",
+  "description": "Experimental read-only feasibility diagnostics for the BMRMODZ Data Tool",
+  "version": "0.1.0",
+  "vendor": "custom",
+  "loggingId": "DAT1",
+  "iconGlyph": "temp",
+  "config": {
+    "customSettings": false
+  },
+  "screens": [
+    {
+      "name": "MAIN",
+      "kind": "canvas",
+      "title": "Data Tool Diagnostics",
+      "buttons": [
+        [
+          "BTN_RUN",
+          "Run diagnostics"
+        ],
+        [
+          "BTN_EXPORT",
+          "Export report"
+        ],
+        [
+          "BTN_PREV",
+          "Previous page"
+        ],
+        [
+          "BTN_NEXT",
+          "Next page"
+        ]
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "choice",
+      "default": "en",
+      "options": [
+        [
+          "en",
+          "English"
+        ],
+        [
+          "de",
+          "Deutsch"
+        ],
+        [
+          "es",
+          "Español"
+        ],
+        [
+          "fr",
+          "Français"
+        ],
+        [
+          "hu",
+          "Magyar"
+        ],
+        [
+          "pl",
+          "Polski"
+        ],
+        [
+          "sk",
+          "Slovenčina"
+        ],
+        [
+          "cs",
+          "Čeština"
+        ],
+        [
+          "it",
+          "Italiano"
+        ],
+        [
+          "ru",
+          "Русский"
+        ],
+        [
+          "da",
+          "Dansk"
+        ],
+        [
+          "el",
+          "Ελληνικά"
+        ],
+        [
+          "zh-CN",
+          "简体中文"
+        ],
+        [
+          "nl",
+          "Nederlands"
+        ],
+        [
+          "nb",
+          "Norsk"
+        ],
+        [
+          "pt",
+          "Português"
+        ],
+        [
+          "ro",
+          "Română"
+        ],
+        [
+          "sl",
+          "Slovenščina"
+        ],
+        [
+          "fi",
+          "Suomi"
+        ],
+        [
+          "sv",
+          "Svenska"
+        ],
+        [
+          "tr",
+          "Türkçe"
+        ],
+        [
+          "uk",
+          "Українська"
+        ]
+      ]
+    },
+    {
+      "key": "theme",
+      "label": "Colour theme",
+      "type": "choice",
+      "default": "m_tricolour",
+      "options": [
+        [
+          "m_tricolour",
+          "M Tricolour"
+        ],
+        [
+          "m_red",
+          "M Red"
+        ],
+        [
+          "ice",
+          "Ice White"
+        ],
+        [
+          "amber",
+          "Night Amber"
+        ]
+      ]
+    }
+  ],
+  "signals": {},
+  "requires": {
+    "idrive7-renderd": "2.1.19",
+    "mgu-inputgate": "1.2.1",
+    "bmrmodz-data-tool": "0.1.5"
+  }
+}
