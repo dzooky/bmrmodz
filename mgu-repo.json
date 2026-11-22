@@ -29,6 +29,10 @@
     {
       "id": "bmrmodz-car-equipment",
       "path": "tools/car-equipment"
+    },
+    {
+      "id": "bmrmodz-notification",
+      "path": "tools/notification"
     }
   ]
 }

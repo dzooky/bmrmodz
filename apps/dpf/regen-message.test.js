@@ -9,8 +9,7 @@ vm.runInNewContext(source, {
     module: moduleMock,
     exports: moduleMock.exports,
     require: id => {
-        if (id === './kit/cluster-icon') return {};
-        if (id === './kit/canvas') return {Canvas: class {}};
+        if (id === './kit/notification-tool') return { show: () => Promise.resolve({ok:true}) };
         if (id === './kit/i18n') return {t: x => x};
         throw new Error(id);
     },
