@@ -25,7 +25,7 @@ assert.strictEqual(message('requested',3200),null);
 assert.strictEqual(message('active',4000).text,'Started');
 assert.strictEqual(message('active',4600).text,'');
 assert.strictEqual(message('active',7000).text,'In Progress');
-assert.strictEqual(message('active',7332).text,'');
+assert.strictEqual(message('active',7333).text,'');
 assert.strictEqual(message('active',7666).text,'In Progress');
 assert.strictEqual(message('active',7999).text,'');
 assert.strictEqual(message('active',8332),null);
