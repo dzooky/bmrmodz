@@ -81,7 +81,7 @@ class HmiTransport {
           if(response.error)return finish(reject,new Error(response.error));
           if(response.ecu!==ecu)return;
           const u=response.uds;
-          if(u[0]===0x7f&&u[1]===0x22&&u[2]===0x78){arm(10000);return;}
+          if(u[0]===0x7f&&u[1]===0x22&&u[2]===0x78){pending.sawPending=true;arm(10000);return;}
           if(u[0]===0x7f&&u[1]===0x22)return finish(resolve,u);
           if(u[0]===0x62&&u[1]===(did>>8)&&u[2]===(did&255))finish(resolve,u);
         },
@@ -92,7 +92,7 @@ class HmiTransport {
     try{
       const ack=await this.line(command(ecu,did),5000);
       if(!/^ok\b/.test(ack))throw new Error('TASU command rejected: '+ack);
-      if(this.pendingRead===pending)pending.arm(3500);
+      if(this.pendingRead===pending&&!pending.sawPending)pending.arm(3500);
       return await received;
     }catch(e){if(this.pendingRead===pending)pending.reject(e);received.catch(()=>{});throw e;}
   }
