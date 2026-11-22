@@ -1,7 +1,7 @@
 'use strict';
 // Passive, read-only capability survey. NEVER require/load the native module here:
 // a broken or incompatible binding must not crash the long-running data service.
-const fs=require('fs'),path=require('path'),Module=require('module');
+const fs=require('fs');
 const CATALOG='/etc/oap/someip/someip-interfaces.json';
 const NODE_CANDIDATES=[
   '/usr/lib/node_modules',
