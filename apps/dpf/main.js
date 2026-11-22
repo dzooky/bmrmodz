@@ -97,7 +97,7 @@ mgu.run({
         });
         refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
 
-        const getLanguage = Language.start(ctx);
+        Language.start(ctx);
 
         const link = new ReadOnlyDiag(ctx.signals, log, {
             gapMs: 50, busyMs: 500,
