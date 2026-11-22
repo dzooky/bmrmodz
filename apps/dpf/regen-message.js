@@ -1,14 +1,8 @@
 'use strict';
 
-const cluster = require('./kit/cluster-icon');
-const { Canvas } = require('./kit/canvas');
+const notification = require('./kit/notification-tool');
 const { t } = require('./kit/i18n');
-const WIDTH = 430;
-const HEIGHT = 76;
-const BASELINE = 47;
 const PREFIX = 'DPF Regeneration:';
-const FONT_SIZE = 28;
-const STATE_GAP = 8;
 const HALF_BLINK_MS = 500;
 const BLINK_MS = 6 * HALF_BLINK_MS;
 const ACTIVE_REPEAT_MS = 60000;
@@ -51,37 +45,30 @@ function createIndicator() {
     };
 }
 
-function draw(socket, message, frame) {
-    const canvas = new Canvas(WIDTH, HEIGHT);
-    if (message.text) {
-        const style = { font: 'bold', literal: true };
-        const prefix = t(PREFIX);
-        const status = t(message.text);
-        const longestState = Math.max(...[REQUESTED, STARTED, ACTIVE, COMPLETE]
-            .map(state => canvas.textWidth(t(state.text), FONT_SIZE, style)));
-        const maxTextWidth = canvas.textWidth(prefix, FONT_SIZE, style) + longestState;
-        const fontSize = maxTextWidth > WIDTH - STATE_GAP - 16
-            ? Math.floor(FONT_SIZE * (WIDTH - STATE_GAP - 16) / maxTextWidth) : FONT_SIZE;
-        const prefixWidth = canvas.textWidth(prefix, fontSize, style);
-        const stateWidth = canvas.textWidth(status, fontSize, style);
-        const x = Math.round((WIDTH - prefixWidth - STATE_GAP - stateWidth) / 2);
-        const stateX = x + prefixWidth + STATE_GAP;
-        const shadow = [0, 0, 0, 190];
-        canvas.text(prefix, x + 1, BASELINE + 2, fontSize, shadow, style);
-        canvas.text(status, stateX + 1, BASELINE + 2, fontSize, shadow, style);
-        canvas.text(prefix, x, BASELINE, fontSize, '#ffffff', style);
-        canvas.text(status, stateX, BASELINE, fontSize, message.colour, style);
-    }
-    const body = Buffer.alloc(14 + canvas.d.length);
-    body.writeUInt32LE(1, 0);
-    body.writeUInt32LE(frame, 4);
-    body.set(canvas.d, 14);
-    cluster.send(socket, 0x46, body);
-}
-
 function start(log, getMessage) {
-    cluster.start(log, getMessage, { app: 'dpf', x: 745, y: 539, width: WIDTH, height: HEIGHT,
-        key: message => t(PREFIX) + t(message.text), draw });
+    let lastKey = null;
+    let lastShownAt = -Infinity;
+    function poll() {
+        const message = getMessage();
+        // State machine still owns the event and recurrence decisions. The tool owns
+        // blink timing. Ignore the alternating empty 'blink off' states.
+        if (!message || !message.text) return;
+        const translated = t(message.text);
+        const key = translated + ':' + message.colour;
+        const now = Date.now();
+        if (key === lastKey && now - lastShownAt < BLINK_MS - 100) return;
+        lastKey = key;
+        lastShownAt = now;
+        notification.show('dpf', [
+            { text: t(PREFIX) + ' ', color: '#ffffff' },
+            { text: translated, color: message.colour }
+        ], { durationMs: BLINK_MS, blinkMs: HALF_BLINK_MS, repeat: 1, repeatIntervalMs: 0 })
+            .then(result => {
+                if (!result || !result.ok) log.warn('DPF Notification Tool: ' + (result && result.error || 'no response'));
+            }).catch(error => log.warn('DPF Notification Tool: ' + error));
+    }
+    poll();
+    setInterval(poll, 250).unref();
 }
 
 module.exports = { start, createIndicator, testMessage };
