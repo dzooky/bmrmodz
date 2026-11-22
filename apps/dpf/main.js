@@ -98,13 +98,12 @@ mgu.run({
         refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
 
         let idriveLanguage = 'en';
-        const languageOptions = ctx.settings.item('language').options.map(([code, label]) =>
-            [code === 'auto' ? 'en' : code, label.replace(/ \(auto\)$/, '')]);
+        const languageOptions = ctx.settings.item('language').options.map(option => option.slice());
         function updateAutomaticLanguage() {
             const setting = ctx.settings.item('language');
             const options = languageOptions.map(([code, label]) =>
                 code === idriveLanguage ? ['auto', label + ' (auto)'] : [code, label]);
-            setting.options.splice(0, setting.options.length, ...options);
+            setting.options = options;
             options.forEach(([, label], index) => ui.text('SET_LANGUAGE', label, index, 'ItemText'));
             const selected = ctx.settings.get('language');
             ui.selected('SET_LANGUAGE', Math.max(0, options.findIndex(([code]) => code === selected)));
@@ -379,6 +378,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.64', 'Language selection aligned with OSA'],
                 ['0.1.63', 'English (auto) language value readability'],
                 ['0.1.62', 'Run button translated into all languages'],
                 ['0.1.61', 'Additional translations and Detail text sizing'],
