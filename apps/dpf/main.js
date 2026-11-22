@@ -409,9 +409,9 @@ mgu.run({
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
             if (profile && !profile.detail.length) {
                 cv.text('Additional B47 measurements are not verified yet', 800, 245, 24, t.dim,
-                    { align: 'center', literal: true });
+                    { align: 'center' });
                 cv.text('Soot, ash and regeneration distances are available in Overview',
-                    800, 289, 19, t.dim, { align: 'center', literal: true });
+                    800, 289, 19, t.dim, { align: 'center' });
                 return;
             }
             if (!hasDetailMeasurements()) {
@@ -456,7 +456,7 @@ mgu.run({
                 const text = opts.literal ? String(value) : translate(value);
                 let available = opts.align === 'center' ? Math.min(x, W - x) * 2 - 32 : W - x - 24;
                 if (page === 'about') available = x >= 1120 ? W - x - 24 : x === 640 ? 880 : 150;
-                else if (page === 'detail' && size === 18) available = 700;
+                else if (page === 'detail' && (size === 18 || opts.align === 'right')) available = 700;
                 else if (page === 'overview' && x > 1200) available = W - x - 24;
                 const measured = cv.textWidth(text, size, { ...opts, literal: true });
                 const fitted = measured > available ? size * available / measured : size;
