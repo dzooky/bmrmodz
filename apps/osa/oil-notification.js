@@ -16,7 +16,7 @@ function createWarmupMessage() {
             armed = true; // An already warm engine is eligible for an immediate notification.
             reachedAt = null;
         }
-        if (reachedAt !== null && now - reachedAt < MESSAGE_MS) return target;
+        if (reachedAt !== null && now - reachedAt < MESSAGE_MS) return null;
         if (temperature <= target - 2) armed = true;
         if (!armed || temperature < target) return null;
         armed = false;
