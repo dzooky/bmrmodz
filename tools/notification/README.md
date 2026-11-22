@@ -1,4 +1,4 @@
-# BMRMODZ Notification Tool v0.2.0
+# BMRMODZ Notification Tool v0.1.1
 
 Central, experimental KOMBI notification display tool for iDrive 7 MGU. DPF and future apps call `require('./kit/notification-tool').show(app, segments, options)`. Text rasterization happens in the shared client (using MGU Canvas/font atlas); the HU tool receives only rendered RGBA and controls time, blink, repeat and cleanup. DPF no longer opens cluster-render itself.
 
@@ -15,6 +15,6 @@ App sends localized message segments, not locale keys. Inputs: durationMs 500–
 The tool returns `sent_to_renderer`, **not** a real car display acknowledgment. Socket permission matches Car Equipment for first integration, local clients must be trusted.
 
 ## Testing
-`node tools/notification/test.js` (mock renderer), `node apps/dpf/regen-message.test.js`. Install via MGU Store dependency `bmrmodz-notification >=0.2.0` in DPF v0.1.56. Test only while parked.
+`node tools/notification/test.js` (mock renderer), `node apps/dpf/regen-message.test.js`. Install via MGU Store dependency `bmrmodz-notification >=0.1.1` in DPF v0.1.56. Test only while parked.
 
 **Known blocker:** renderer can replace the BMW BC information slot. This change does not fix the BC conflict. No guarantee of BMW original content restoration; HUD output remains unsupported.
