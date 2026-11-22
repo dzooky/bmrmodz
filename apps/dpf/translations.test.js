@@ -49,7 +49,7 @@ test('new Detail B47 texts pass through localization', () => {
 
 test('selected Settings language uses readable type size', () => {
   const sheet = fs.readFileSync(path.join(__dirname, '../../kit/runtime/sheet.js'), 'utf8');
-  assert.match(sheet, /row\.key === 'language' \? 32 : 26/);
+  assert.match(sheet, /row\.value === 'English \(auto\)' && row\.englishAutoValueSize/);
   assert.match(sheet, /key: s\.key, label: s\.label/);
 });
 
