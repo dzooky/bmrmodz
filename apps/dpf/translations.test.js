@@ -20,7 +20,10 @@ const required = [
   'Check in progress', 'Reloading...', 'Reload failed',
   'Read vehicle equipment again',
   'Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)',
-  'Run'
+  'Run',
+  'English (auto) language value readability',
+  'Run button translated into all languages',
+  'Additional translations and Detail text sizing'
 ];
 
 test('all 21 non-English DPF locales have aligned nonempty translations', () => {
@@ -49,7 +52,7 @@ test('new Detail B47 texts pass through localization', () => {
 
 test('selected Settings language uses readable type size', () => {
   const sheet = fs.readFileSync(path.join(__dirname, '../../kit/runtime/sheet.js'), 'utf8');
-  assert.match(sheet, /row\.key === 'language' \? 32 : 26/);
+  assert.match(sheet, /row\.value === 'English \(auto\)' && row\.englishAutoValueSize/);
   assert.match(sheet, /key: s\.key, label: s\.label/);
 });
 
@@ -66,4 +69,41 @@ test('DPF Settings uses OSA sheet rendering for English auto language', () => {
   assert.match(settings, /return ui\.image\('MAIN_GFX', cv\)/);
   const app = JSON.parse(fs.readFileSync(path.join(__dirname, 'app.json'), 'utf8'));
   assert.equal(app.settings.find(s => s.key === 'language').options[0][1], 'English (auto)');
+});
+
+test('DPF main Settings renders English auto legibly without changing other language rows', () => {
+  const { listSheet } = require('../../kit/runtime/sheet');
+  const app = JSON.parse(fs.readFileSync(path.join(__dirname, 'app.json'), 'utf8'));
+  const language = app.settings.find(s => s.key === 'language');
+  const canvas = () => {
+    const calls = [];
+    const r = {
+      calls, extra: 0,
+      text(value, x, y, size) { calls.push({ value, size }); },
+      textWidth(value, size) { return String(value).length * size * 0.5; },
+      clear() {}, roundRect() {}, strokeRoundRect() {}, clip() {}, noclip() {},
+      circle() {}, line() {}
+    };
+    return r;
+  };
+  const theme = { bg: '#000000', text: '#ffffff', dim: '#cccccc', accent: '#4488ff' };
+  const current = { value: 'English (auto)' };
+  const settings = {
+    schema: [language], shown: () => true,
+    get: () => 'auto',
+    display: () => current.value,
+    set() {}, cycle() {}
+  };
+  const sheet = listSheet(settings, 'Settings', { version: app.version });
+  const english = canvas();
+  sheet.draw(english, theme);
+  assert.ok(english.calls.some(c => c.value === 'English (auto)' && c.size === 38));
+  current.value = 'Deutsch';
+  const german = canvas();
+  sheet.draw(german, theme);
+  assert.ok(german.calls.some(c => c.value === 'Deutsch' && c.size === 32));
+  sheet.choose(); // open the full language list; list item labels stay at their normal size
+  const opened = canvas();
+  sheet.draw(opened, theme);
+  assert.ok(opened.calls.some(c => c.value === 'English (auto)' && c.size === 28));
 });

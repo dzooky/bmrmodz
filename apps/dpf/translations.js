@@ -88,7 +88,10 @@ module.exports = {
     "Reload failed": "Načítanie zlyhalo",
     "Read vehicle equipment again": "Znova načítať výbavu vozidla",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štyri hlásenia: Vyžiadaná (žltá), Začatá a Prebieha (červená), Dokončená (zelená)",
-    "Run": "Spustiť"
+    "Run": "Spustiť",
+    "English (auto) language value readability": "Čitateľnejšia hodnota jazyka English (auto)",
+    "Run button translated into all languages": "Preklad tlačidla Run do všetkých jazykov",
+    "Additional translations and Detail text sizing": "Ďalšie preklady a úprava veľkosti textu v Detail"
   },
   "cs": {
     "Overview": "Přehled",
@@ -178,7 +181,10 @@ module.exports = {
     "Reload failed": "Načtení selhalo",
     "Read vehicle equipment again": "Znovu načíst výbavu vozidla",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Čtyři upozornění: Vyžádána (žlutá), Zahájena a Probíhá (červená), Dokončena (zelená)",
-    "Run": "Spustit"
+    "Run": "Spustit",
+    "English (auto) language value readability": "Čitelnější hodnota jazyka English (auto)",
+    "Run button translated into all languages": "Překlad tlačítka Run do všech jazyků",
+    "Additional translations and Detail text sizing": "Další překlady a úprava velikosti textu v Detail"
   },
   "de": {
     "Overview": "Übersicht",
@@ -268,7 +274,10 @@ module.exports = {
     "Reload failed": "Neuladen fehlgeschlagen",
     "Read vehicle equipment again": "Fahrzeugausstattung erneut lesen",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier Meldungen: Angefordert (gelb), Gestartet und Läuft (rot), Beendet (grün)",
-    "Run": "Ausführen"
+    "Run": "Ausführen",
+    "English (auto) language value readability": "Bessere Lesbarkeit von English (auto)",
+    "Run button translated into all languages": "Run-Schaltfläche in alle Sprachen übersetzt",
+    "Additional translations and Detail text sizing": "Weitere Übersetzungen und Schriftgröße in Detail"
   },
   "es": {
     "Overview": "Resumen",
@@ -358,7 +367,10 @@ module.exports = {
     "Reload failed": "Error al recargar",
     "Read vehicle equipment again": "Volver a leer el equipamiento del vehículo",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cuatro avisos: Solicitada (amarillo), Iniciada y En curso (rojo), Finalizada (verde)",
-    "Run": "Ejecutar"
+    "Run": "Ejecutar",
+    "English (auto) language value readability": "Mayor legibilidad de English (auto)",
+    "Run button translated into all languages": "Botón Run traducido a todos los idiomas",
+    "Additional translations and Detail text sizing": "Más traducciones y tamaño de texto en Detalle"
   },
   "fr": {
     "Overview": "Vue d'ensemble",
@@ -448,7 +460,10 @@ module.exports = {
     "Reload failed": "Échec du rechargement",
     "Read vehicle equipment again": "Relire les équipements du véhicule",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatre alertes : Demandée (jaune), Démarrée et En cours (rouge), Terminée (vert)",
-    "Run": "Exécuter"
+    "Run": "Exécuter",
+    "English (auto) language value readability": "Meilleure lisibilité de English (auto)",
+    "Run button translated into all languages": "Bouton Run traduit dans toutes les langues",
+    "Additional translations and Detail text sizing": "Traductions supplémentaires et taille du texte Détail"
   },
   "it": {
     "Overview": "Panoramica",
@@ -538,7 +553,10 @@ module.exports = {
     "Reload failed": "Ricaricamento non riuscito",
     "Read vehicle equipment again": "Rileggi dotazioni veicolo",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quattro avvisi: Richiesta (giallo), Avviata e In corso (rosso), Completata (verde)",
-    "Run": "Esegui"
+    "Run": "Esegui",
+    "English (auto) language value readability": "Migliore leggibilità di English (auto)",
+    "Run button translated into all languages": "Pulsante Run tradotto in tutte le lingue",
+    "Additional translations and Detail text sizing": "Altre traduzioni e dimensione del testo Dettagli"
   },
   "hu": {
     "Overview": "Áttekintés",
@@ -628,7 +646,10 @@ module.exports = {
     "Reload failed": "Újratöltés sikertelen",
     "Read vehicle equipment again": "Járműfelszereltség újbóli beolvasása",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Négy jelzés: Kért (sárga), Elindult és Folyamatban (piros), Befejeződött (zöld)",
-    "Run": "Futtatás"
+    "Run": "Futtatás",
+    "English (auto) language value readability": "Az English (auto) érték jobb olvashatósága",
+    "Run button translated into all languages": "A Run gomb fordítása minden nyelvre",
+    "Additional translations and Detail text sizing": "További fordítások és a részletek betűmérete"
   },
   "pl": {
     "Overview": "Przegląd",
@@ -718,7 +739,10 @@ module.exports = {
     "Reload failed": "Wczytywanie nieudane",
     "Read vehicle equipment again": "Ponownie odczytaj wyposażenie pojazdu",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cztery komunikaty: Żądana (żółty), Rozpoczęta i W toku (czerwony), Zakończona (zielony)",
-    "Run": "Uruchom"
+    "Run": "Uruchom",
+    "English (auto) language value readability": "Lepsza czytelność wartości English (auto)",
+    "Run button translated into all languages": "Przycisk Run przetłumaczony na wszystkie języki",
+    "Additional translations and Detail text sizing": "Dodatkowe tłumaczenia i wielkość tekstu w Szczegółach"
   },
   "ru": {
     "Overview": "Обзор",
@@ -808,7 +832,10 @@ module.exports = {
     "Reload failed": "Ошибка обновления",
     "Read vehicle equipment again": "Повторно прочитать комплектацию автомобиля",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Четыре оповещения: Запрошена (жёлтый), Начата и Выполняется (красный), Завершена (зелёный)",
-    "Run": "Запустить"
+    "Run": "Запустить",
+    "English (auto) language value readability": "Улучшена читаемость English (auto)",
+    "Run button translated into all languages": "Кнопка Run переведена на все языки",
+    "Additional translations and Detail text sizing": "Дополнительные переводы и размер текста в деталях"
   },
   "da": {
     "Overview": "Oversigt",
@@ -898,7 +925,10 @@ module.exports = {
     "Reload failed": "Genindlæsning mislykkedes",
     "Read vehicle equipment again": "Læs bilens udstyr igen",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire beskeder: Anmodet (gul), Startet og I gang (rød), Afsluttet (grøn)",
-    "Run": "Kør"
+    "Run": "Kør",
+    "English (auto) language value readability": "Bedre læsbarhed af English (auto)",
+    "Run button translated into all languages": "Run-knappen oversat til alle sprog",
+    "Additional translations and Detail text sizing": "Flere oversættelser og tekststørrelse i Detaljer"
   },
   "el": {
     "Overview": "Επισκόπηση",
@@ -988,7 +1018,10 @@ module.exports = {
     "Reload failed": "Αποτυχία φόρτωσης",
     "Read vehicle equipment again": "Νέα ανάγνωση εξοπλισμού οχήματος",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Τέσσερις ειδοποιήσεις: Αίτημα (κίτρινο), Έναρξη και Σε εξέλιξη (κόκκινο), Ολοκλήρωση (πράσινο)",
-    "Run": "Εκτέλεση"
+    "Run": "Εκτέλεση",
+    "English (auto) language value readability": "Βελτιωμένη αναγνωσιμότητα του English (auto)",
+    "Run button translated into all languages": "Το κουμπί Run μεταφράστηκε σε όλες τις γλώσσες",
+    "Additional translations and Detail text sizing": "Επιπλέον μεταφράσεις και μέγεθος κειμένου Λεπτομερειών"
   },
   "zh-CN": {
     "Overview": "概览",
@@ -1078,7 +1111,10 @@ module.exports = {
     "Reload failed": "加载失败",
     "Read vehicle equipment again": "重新读取车辆配置",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "四种提示：已请求（黄色）、已开始和进行中（红色）、已完成（绿色）",
-    "Run": "运行"
+    "Run": "运行",
+    "English (auto) language value readability": "提高 English (auto) 语言值的可读性",
+    "Run button translated into all languages": "Run 按钮已翻译成所有语言",
+    "Additional translations and Detail text sizing": "补充翻译并调整详细信息文字大小"
   },
   "nl": {
     "Overview": "Overzicht",
@@ -1168,7 +1204,10 @@ module.exports = {
     "Reload failed": "Laden mislukt",
     "Read vehicle equipment again": "Lees voertuiguitrusting opnieuw",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier meldingen: Aangevraagd (geel), Gestart en Bezig (rood), Voltooid (groen)",
-    "Run": "Uitvoeren"
+    "Run": "Uitvoeren",
+    "English (auto) language value readability": "Betere leesbaarheid van English (auto)",
+    "Run button translated into all languages": "Run-knop vertaald in alle talen",
+    "Additional translations and Detail text sizing": "Extra vertalingen en tekstgrootte in Details"
   },
   "nb": {
     "Overview": "Oversikt",
@@ -1258,7 +1297,10 @@ module.exports = {
     "Reload failed": "Innlasting mislyktes",
     "Read vehicle equipment again": "Les bilutstyr på nytt",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire varsler: Forespurt (gul), Startet og Pågår (rød), Fullført (grønn)",
-    "Run": "Kjør"
+    "Run": "Kjør",
+    "English (auto) language value readability": "Bedre lesbarhet for English (auto)",
+    "Run button translated into all languages": "Run-knappen oversatt til alle språk",
+    "Additional translations and Detail text sizing": "Flere oversettelser og tekststørrelse i Detaljer"
   },
   "pt": {
     "Overview": "Resumo",
@@ -1348,7 +1390,10 @@ module.exports = {
     "Reload failed": "Falha ao recarregar",
     "Read vehicle equipment again": "Ler novamente equipamento do veículo",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatro avisos: Solicitada (amarelo), Iniciada e Em curso (vermelho), Concluída (verde)",
-    "Run": "Executar"
+    "Run": "Executar",
+    "English (auto) language value readability": "Melhor legibilidade de English (auto)",
+    "Run button translated into all languages": "Botão Run traduzido para todos os idiomas",
+    "Additional translations and Detail text sizing": "Mais traduções e tamanho do texto em Detalhes"
   },
   "ro": {
     "Overview": "Prezentare",
@@ -1438,7 +1483,10 @@ module.exports = {
     "Reload failed": "Reîncărcare eșuată",
     "Read vehicle equipment again": "Recitește echiparea vehiculului",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Patru notificări: Solicitată (galben), Pornită și În curs (roșu), Finalizată (verde)",
-    "Run": "Execută"
+    "Run": "Execută",
+    "English (auto) language value readability": "Lizibilitate îmbunătățită pentru English (auto)",
+    "Run button translated into all languages": "Butonul Run tradus în toate limbile",
+    "Additional translations and Detail text sizing": "Traduceri suplimentare și dimensiunea textului în Detalii"
   },
   "sl": {
     "Overview": "Pregled",
@@ -1528,7 +1576,10 @@ module.exports = {
     "Reload failed": "Nalaganje ni uspelo",
     "Read vehicle equipment again": "Znova preberi opremo vozila",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štiri obvestila: Zahtevano (rumeno), Začeto in V teku (rdeče), Končano (zeleno)",
-    "Run": "Zaženi"
+    "Run": "Zaženi",
+    "English (auto) language value readability": "Boljša berljivost možnosti English (auto)",
+    "Run button translated into all languages": "Gumb Run preveden v vse jezike",
+    "Additional translations and Detail text sizing": "Dodatni prevodi in velikost besedila v Podrobnostih"
   },
   "fi": {
     "Overview": "Yleiskatsaus",
@@ -1618,7 +1669,10 @@ module.exports = {
     "Reload failed": "Lataus epäonnistui",
     "Read vehicle equipment again": "Lue auton varustelu uudelleen",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Neljä ilmoitusta: Pyydetty (keltainen), Aloitettu ja Käynnissä (punainen), Valmis (vihreä)",
-    "Run": "Suorita"
+    "Run": "Suorita",
+    "English (auto) language value readability": "English (auto) -arvon parempi luettavuus",
+    "Run button translated into all languages": "Run-painike käännetty kaikille kielille",
+    "Additional translations and Detail text sizing": "Lisää käännöksiä ja tietonäkymän tekstikoko"
   },
   "sv": {
     "Overview": "Översikt",
@@ -1708,7 +1762,10 @@ module.exports = {
     "Reload failed": "Inläsning misslyckades",
     "Read vehicle equipment again": "Läs fordonsutrustningen igen",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fyra aviseringar: Begärd (gul), Startad och Pågår (röd), Slutförd (grön)",
-    "Run": "Kör"
+    "Run": "Kör",
+    "English (auto) language value readability": "Bättre läsbarhet för English (auto)",
+    "Run button translated into all languages": "Run-knappen översatt till alla språk",
+    "Additional translations and Detail text sizing": "Fler översättningar och textstorlek i Detaljer"
   },
   "tr": {
     "Overview": "Genel bakış",
@@ -1798,7 +1855,10 @@ module.exports = {
     "Reload failed": "Yükleme başarısız",
     "Read vehicle equipment again": "Araç donanımını yeniden oku",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Dört bildirim: İstendi (sarı), Başladı ve Sürüyor (kırmızı), Tamamlandı (yeşil)",
-    "Run": "Çalıştır"
+    "Run": "Çalıştır",
+    "English (auto) language value readability": "English (auto) değerinin okunabilirliği artırıldı",
+    "Run button translated into all languages": "Run düğmesi tüm dillere çevrildi",
+    "Additional translations and Detail text sizing": "Ek çeviriler ve Ayrıntılar metin boyutu"
   },
   "uk": {
     "Overview": "Огляд",
@@ -1888,6 +1948,9 @@ module.exports = {
     "Reload failed": "Помилка оновлення",
     "Read vehicle equipment again": "Повторно прочитати комплектацію автомобіля",
     "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Чотири сповіщення: Запитана (жовтий), Почалася і Триває (червоний), Завершена (зелений)",
-    "Run": "Запустити"
+    "Run": "Запустити",
+    "English (auto) language value readability": "Покращена читабельність English (auto)",
+    "Run button translated into all languages": "Кнопку Run перекладено всіма мовами",
+    "Additional translations and Detail text sizing": "Додаткові переклади та розмір тексту в деталях"
   }
 };

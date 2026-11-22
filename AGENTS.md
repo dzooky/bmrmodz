@@ -7,9 +7,13 @@ At the start of development for each new app, make Info the first tab and the in
 > We still working on it and will be available soon.
 > Thank you
 
-## SP release notes
+## What's New release notes (all apps)
 
-Keep the What’s New section in Spritmonitor’s About tab up to date as user-visible changes are implemented. Assign entries to the corresponding version when preparing a release. Write entries in English.
+- Update the relevant application's visible **What's New** section for **every new app version**, including bug fixes, UI changes, translations and new features.
+- Add the entry in the same change as the version update; use the actual version number and accurately describe user-visible changes.
+- Translate each new user-visible release-note string into every language supported by that application, using its existing i18n catalog and keeping key sets aligned.
+- Keep older notes readable within the app's existing layout and do not claim unverified vehicle behavior as verified.
+- Apply these rules to Spritmonitor, DPF, OSA, Climate Comfort and future applications.
 
 ## Explicit implementation authorization ("priprav")
 

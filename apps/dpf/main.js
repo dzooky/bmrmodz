@@ -379,6 +379,9 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.63', 'English (auto) language value readability'],
+                ['0.1.62', 'Run button translated into all languages'],
+                ['0.1.61', 'Additional translations and Detail text sizing'],
                 ['0.1.38', 'B47 core gauges with automatic DDE detection'],
                 ['0.1.37', 'Started alert translated into all languages'],
                 ['0.1.36', 'New Started alert on regeneration begin'],

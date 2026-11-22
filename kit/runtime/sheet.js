@@ -85,7 +85,7 @@ function list(r, t, key, rows, focus, y0, controller) {
             r.circle(right - 15, cy, row.on ? 6 : 12, row.on ? '#ffffff' : t.bg);
             right -= 44;
         }
-        const valueSize = row.key === 'language' ? 32 : 26;
+        const valueSize = row.key === 'language' ? (row.value === 'English (auto)' && row.englishAutoValueSize || 32) : 26;
         const vw = row.value != null ? Math.min(560, r.textWidth(String(row.value), valueSize)) : 0;
         if (row.value != null) r.text(fit(r, row.value, valueSize, 560), right, cy + 10, valueSize, row.on && row.kind === 'radio' ? t.text : t.dim, { align: 'right' });
         r.text(fit(r, row.label, 28, right - vw - 40 - (x + 28)), x + 28, cy + 10, 28, t.text);
@@ -140,7 +140,7 @@ function listSheet(settings, title, opts) {
             return entries(this.group).map((s) => (s.group && !s.key ? { label: s.group, kind: 'more' }
                 : s.type === 'bool' ? { label: s.label, kind: 'toggle', on: !!settings.get(s.key) }
                     : s.type === 'action' ? { label: s.label, kind: 'action', actionLabel: s.actionLabel || 'Run', value: settings.actionStatus && settings.actionStatus[s.key] || null }
-                        : { key: s.key, label: s.label, value: settings.display(s.key), kind: values(s) ? 'more' : null }));
+                        : { key: s.key, label: s.label, value: settings.display(s.key), englishAutoValueSize: s.englishAutoValueSize, kind: values(s) ? 'more' : null }));
         },
         draw(r, t) {
             r.clear(t.bg);
