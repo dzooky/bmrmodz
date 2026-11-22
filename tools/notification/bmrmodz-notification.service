@@ -1,0 +1,13 @@
+[Unit]
+Description=BMRMODZ Notification Tool - central transient KOMBI output
+After=vsomeipd.service
+[Service]
+Type=simple
+RuntimeDirectory=bmrmodz-notification
+RuntimeDirectoryMode=0755
+ExecStart=/usr/bin/node /var/opt/bmrmodz-notification/current/service.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+[Install]
+WantedBy=multi-user.target
