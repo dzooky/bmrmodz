@@ -1,0 +1,38 @@
+'use strict';
+const assert=require('assert'),os=require('os'),path=require('path'),net=require('net');
+const {serve}=require('./service'),{getRead}=require('./profiles'),{command,decode}=require('./transport');
+function call(socket,request){
+  return new Promise((resolve,reject)=>{
+    const conn=net.createConnection(socket);let buffer='';
+    conn.on('connect',()=>conn.write(JSON.stringify(request)+'\n'));
+    conn.on('data',chunk=>{buffer+=chunk.toString();if(buffer.includes('\n')){conn.end();try{resolve(JSON.parse(buffer.split('\n')[0]));}catch(e){reject(e);}}});
+    conn.on('error',reject);
+  });
+}
+async function run(){
+ assert.strictEqual(getRead(0x12,0x44BB),'dde');
+ assert.strictEqual(getRead(0x40,0xD074),'bdc');
+ assert.strictEqual(getRead(0x12,0x2E00),null);
+ assert.ok(command(0x10,0x3f06).endsWith('f21022000002000000023f0600'));
+ const uds=[0x62,0x44,0xbb,0x05],frame=[0xf0,0xf2,0x71,1,15,11,0x12,0,uds.length].concat(uds);
+ const hex=frame.length.toString(16).padStart(8,'0')+Buffer.from(frame).toString('hex');
+ assert.deepStrictEqual(decode(hex).uds,uds);
+ let sent=0;
+ const mock={ready:true,async read(ecu,did){sent++;await new Promise(r=>setTimeout(r,30));return [0x62,did>>8,did&255,0x05];},close(){}};
+ const socket=path.join(os.tmpdir(),'bmrmodz-data-test-'+process.pid+'.sock');
+ const svc=serve(()=>mock,socket);
+ await new Promise((r,j)=>{svc.server.once('listening',r);svc.server.once('error',j);});
+ try{
+   const status=await call(socket,{op:'status'});
+   assert.strictEqual(status.ok,true);assert.strictEqual(status.stats.sent,0);
+   assert.strictEqual(status.capabilities.signals.mode,'not implemented');
+   const rejected=await call(socket,{op:'read',ecu:0x40,did:0x2E00});
+   assert.strictEqual(rejected.ok,false);assert.strictEqual(sent,0);
+   const [a,b]=await Promise.all([call(socket,{op:'read',ecu:0x12,did:0x44BB}),call(socket,{op:'read',ecu:0x12,did:0x44BB})]);
+   assert.strictEqual(a.ok,true);assert.strictEqual(b.ok,true);assert.strictEqual(sent,1);
+   assert.strictEqual((await call(socket,{op:'read',ecu:0x12,did:0x44BB})).cached,true);
+   assert.strictEqual(sent,1);
+ }finally{svc.close();}
+ console.log('Data Tool: allowlist, framing, socket, on-demand, coalescing and cache tests passed');
+}
+run().catch(e=>{console.error(e);process.exitCode=1;});
