@@ -5,11 +5,13 @@
 const fs=require('fs'), net=require('net'), path=require('path');
 const {READS,getRead}=require('./profiles');
 const signalEnvironment=require('./signal-environment');
+const {createRunner}=require('./signal-isolate');
 const SOCKET=process.env.BMRMODZ_DATA_SOCKET||'/run/bmrmodz-data-tool/ctl.sock';
 const GAP_MS=200, CACHE_MS=500;
-function serve(factory,socketPath){
+function serve(factory,socketPath,options){
   const socket=socketPath||SOCKET;
   let transport=null,queue=Promise.resolve(),lastRequest=0;
+  const signalRunner=options&&options.signalRunner||createRunner();
   const inflight=new Map(),cache=new Map();
   const stats={sent:0,ok:0,timeout:0,error:0,coalesced:0,cacheHits:0};
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -44,7 +46,7 @@ function serve(factory,socketPath){
   }
   const capabilities=()=>({
     uds:{mode:'read-only-experimental',reads:READS,controls:'not implemented'},
-    signals:{mode:'passive-environment-probe',reason:'Native subscription requires separate on-car verification'},
+    signals:{mode:'isolated-on-demand-probe',reason:'Native SOME/IP and ACL still require on-car verification'},
     background:{mode:'on-demand-only',reason:'No unattended ECU polling in feasibility build'}
   });
   try{fs.mkdirSync(path.dirname(socket),{recursive:true});}catch(e){if(e.code!=='EEXIST')throw e;}
@@ -60,9 +62,11 @@ function serve(factory,socketPath){
         try{
           req=JSON.parse(raw);
           if(!req||typeof req!=='object')throw new Error('Invalid request');
-          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.1',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
+          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.2',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
           else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
+          else if(req.op==='signalNative' && req.mode==='load')reply=await signalRunner.run('load');
+          else if(req.op==='signalNative' && req.mode==='sample')reply=await signalRunner.run('sample',req.field);
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
           else reply={ok:false,error:'Unsupported request'};
         }catch(e){reply={ok:false,error:String(e.message||e)};}
