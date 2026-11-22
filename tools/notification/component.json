@@ -1,0 +1,40 @@
+{
+  "id": "bmrmodz-notification",
+  "kind": "tool",
+  "version": "0.2.0",
+  "title": "Notification Tool",
+  "description": "Central transient KOMBI notifications for BMRMODZ apps. Multi-color text rendered by shared client; blink and repeats managed by HU service. BC coexistence unverified.",
+  "optional": true,
+  "uninstallable": true,
+  "mguHmi": [
+    "ID7"
+  ],
+  "requires": {
+    "mgu-deploy": "0.7.11"
+  },
+  "files": [
+    {
+      "path": "service.js",
+      "from": "service.js",
+      "mode": "0644"
+    }
+  ],
+  "units": [
+    {
+      "name": "bmrmodz-notification.service",
+      "from": "bmrmodz-notification.service"
+    }
+  ],
+  "enable": [
+    {
+      "unit": "bmrmodz-notification.service",
+      "target": "multi-user.target"
+    }
+  ],
+  "restart": [
+    "bmrmodz-notification.service"
+  ],
+  "recmgr": [
+    "bmrmodz-notification"
+  ]
+}
