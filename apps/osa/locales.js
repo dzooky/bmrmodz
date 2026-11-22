@@ -146,7 +146,11 @@ module.exports = {
     "Waiting for data": "Warten auf Daten",
     "What's New": "Neuerungen",
     "Engine oil": "Motoröl",
-    "Settings tab in Standard layout": "Einstellungen im Standardlayout"
+    "Settings tab in Standard layout": "Einstellungen im Standardlayout",
+    "Show notification message": "Benachrichtigung anzeigen",
+    "Run": "Ausführen",
+    "Changed cluster notification preview from toggle to Run action": "Clustermeldungstest von Schalter auf Ausführen-Schaltfläche umgestellt",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-Ölbenachrichtigungen auf das gemeinsame Benachrichtigungstool umgestellt"
   },
   "es": {
     "ATF COOL-DOWN · TO 30°C": "Enfriamiento del ATF · a 30°c",
@@ -292,7 +296,11 @@ module.exports = {
     "Waiting for data": "esperando datos",
     "What's New": "Qué hay de nuevo",
     "Engine oil": "Aceite del motor",
-    "Settings tab in Standard layout": "Ajustes en el diseño estándar"
+    "Settings tab in Standard layout": "Ajustes en el diseño estándar",
+    "Show notification message": "Mostrar mensaje de notificación",
+    "Run": "Ejecutar",
+    "Changed cluster notification preview from toggle to Run action": "La prueba de notificación del cuadro pasó de interruptor a botón Ejecutar",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificaciones de aceite del cuadro migradas a la herramienta compartida"
   },
   "fr": {
     "ATF COOL-DOWN · TO 30°C": "Refroidissement de l'ATF · à 30°c",
@@ -438,7 +446,11 @@ module.exports = {
     "Waiting for data": "En attente de données",
     "What's New": "Quoi de neuf",
     "Engine oil": "Huile moteur",
-    "Settings tab in Standard layout": "Réglages dans la disposition standard"
+    "Settings tab in Standard layout": "Réglages dans la disposition standard",
+    "Show notification message": "Afficher un message de notification",
+    "Run": "Exécuter",
+    "Changed cluster notification preview from toggle to Run action": "Test de notification du combiné remplacé par un bouton Exécuter",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifications d'huile du combiné migrées vers l'outil partagé"
   },
   "hu": {
     "ATF COOL-DOWN · TO 30°C": "ATF lehűtés · 30°C-ra",
@@ -584,7 +596,11 @@ module.exports = {
     "Waiting for data": "Várakozás az adatokra",
     "What's New": "Újdonságok",
     "Engine oil": "Motorolaj",
-    "Settings tab in Standard layout": "Beállítások normál nézetben"
+    "Settings tab in Standard layout": "Beállítások normál nézetben",
+    "Show notification message": "Értesítési üzenet megjelenítése",
+    "Run": "Futtatás",
+    "Changed cluster notification preview from toggle to Run action": "A műszeregység értesítési tesztje kapcsolóról Futtatás gombra változott",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "A KOMBI olajértesítései átkerültek a közös értesítési eszközbe"
   },
   "pl": {
     "ATF COOL-DOWN · TO 30°C": "Schładzanie ATF · do 30°c",
@@ -730,7 +746,11 @@ module.exports = {
     "Waiting for data": "Czekam na dane",
     "What's New": "Co nowego",
     "Engine oil": "Olej silnikowy",
-    "Settings tab in Standard layout": "Ustawienia w układzie standardowym"
+    "Settings tab in Standard layout": "Ustawienia w układzie standardowym",
+    "Show notification message": "Pokaż powiadomienie",
+    "Run": "Uruchom",
+    "Changed cluster notification preview from toggle to Run action": "Test powiadomienia zestawu wskaźników zmieniono z przełącznika na przycisk Uruchom",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Powiadomienia o oleju w zestawie wskaźników przeniesiono do wspólnego narzędzia"
   },
   "sk": {
     "ATF COOL-DOWN · TO 30°C": "Chladnutie ATF na 30 °C",
@@ -876,7 +896,11 @@ module.exports = {
     "Waiting for data": "Čaká sa na dáta",
     "What's New": "Čo je nové",
     "Engine oil": "Motorový olej",
-    "Settings tab in Standard layout": "Nastavenia v štandardnom rozložení"
+    "Settings tab in Standard layout": "Nastavenia v štandardnom rozložení",
+    "Show notification message": "Zobraziť notifikačnú správu",
+    "Run": "Spustiť",
+    "Changed cluster notification preview from toggle to Run action": "Test notifikácie na prístrojovom paneli zmenený z prepínača na tlačidlo Spustiť",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifikácie teploty oleja v KOMBI presunuté do spoločného nástroja"
   },
   "cs": {
     "ATF COOL-DOWN · TO 30°C": "Chlazení ATF · na 30°C",
@@ -1022,7 +1046,11 @@ module.exports = {
     "Waiting for data": "Čekání na data",
     "What's New": "Co je nového",
     "Engine oil": "Motorový olej",
-    "Settings tab in Standard layout": "Nastavení ve standardním rozložení"
+    "Settings tab in Standard layout": "Nastavení ve standardním rozložení",
+    "Show notification message": "Zobrazit oznámení",
+    "Run": "Spustit",
+    "Changed cluster notification preview from toggle to Run action": "Test oznámení na přístrojovém panelu změněn z přepínače na tlačítko Spustit",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oznámení o teplotě oleje v KOMBI přesunuta do sdíleného nástroje"
   },
   "it": {
     "ATF COOL-DOWN · TO 30°C": "Raffreddamento ATF · a 30°C",
@@ -1168,7 +1196,11 @@ module.exports = {
     "Waiting for data": "In attesa dei dati",
     "What's New": "Cosa c'è di nuovo",
     "Engine oil": "Olio motore",
-    "Settings tab in Standard layout": "Impostazioni nella vista standard"
+    "Settings tab in Standard layout": "Impostazioni nella vista standard",
+    "Show notification message": "Mostra messaggio di notifica",
+    "Run": "Esegui",
+    "Changed cluster notification preview from toggle to Run action": "Test della notifica sul quadro strumenti modificato da interruttore a pulsante Esegui",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifiche dell'olio sul quadro strumenti migrate allo strumento condiviso"
   },
   "ru": {
     "ATF COOL-DOWN · TO 30°C": "Охлаждение ATF · до 30°c",
@@ -1314,7 +1346,11 @@ module.exports = {
     "Waiting for data": "Ожидание данных",
     "What's New": "Что нового",
     "Engine oil": "Моторное масло",
-    "Settings tab in Standard layout": "Настройки в стандартном режиме"
+    "Settings tab in Standard layout": "Настройки в стандартном режиме",
+    "Show notification message": "Показать уведомление",
+    "Run": "Запустить",
+    "Changed cluster notification preview from toggle to Run action": "Тест уведомления приборной панели заменён с переключателя на кнопку запуска",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Уведомления о температуре масла в KOMBI перенесены в общий инструмент"
   },
   "da": {
     "ATF COOL-DOWN · TO 30°C": "ATF-afkøling · til 30°c",
@@ -1460,7 +1496,11 @@ module.exports = {
     "Waiting for data": "Venter på data",
     "What's New": "Hvad er nyt",
     "Engine oil": "Motorolie",
-    "Settings tab in Standard layout": "Indstillinger i standardvisning"
+    "Settings tab in Standard layout": "Indstillinger i standardvisning",
+    "Show notification message": "Vis notifikationsmeddelelse",
+    "Run": "Kør",
+    "Changed cluster notification preview from toggle to Run action": "Test af instrumentmeddelelse ændret fra kontakt til Kør-knap",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oliemeddelelser i KOMBI flyttet til det fælles notifikationsværktøj"
   },
   "el": {
     "ATF COOL-DOWN · TO 30°C": "ATF ψύξη · στους 30°c",
@@ -1606,7 +1646,11 @@ module.exports = {
     "Waiting for data": "Αναμονή για δεδομένα",
     "What's New": "Τι νέο υπάρχει",
     "Engine oil": "Λάδι κινητήρα",
-    "Settings tab in Standard layout": "Ρυθμίσεις στην τυπική διάταξη"
+    "Settings tab in Standard layout": "Ρυθμίσεις στην τυπική διάταξη",
+    "Show notification message": "Εμφάνιση ειδοποίησης",
+    "Run": "Εκτέλεση",
+    "Changed cluster notification preview from toggle to Run action": "Η δοκιμή ειδοποίησης οργάνων άλλαξε από διακόπτη σε κουμπί Εκτέλεση",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Οι ειδοποιήσεις λαδιού KOMBI μεταφέρθηκαν στο κοινό εργαλείο ειδοποιήσεων"
   },
   "zh-CN": {
     "ATF COOL-DOWN · TO 30°C": "ATF 冷却至 30°c",
@@ -1752,7 +1796,11 @@ module.exports = {
     "Waiting for data": "等待数据",
     "What's New": "更新内容",
     "Engine oil": "机油",
-    "Settings tab in Standard layout": "标准布局中的设置选项卡"
+    "Settings tab in Standard layout": "标准布局中的设置选项卡",
+    "Show notification message": "显示通知消息",
+    "Run": "运行",
+    "Changed cluster notification preview from toggle to Run action": "仪表通知测试由开关改为运行按钮",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI 机油通知已迁移至共享通知工具"
   },
   "nl": {
     "ATF COOL-DOWN · TO 30°C": "ATF-afkoeling · tot 30°C",
@@ -1898,7 +1946,11 @@ module.exports = {
     "Waiting for data": "Wachten op gegevens",
     "What's New": "Wat is er nieuw",
     "Engine oil": "Motorolie",
-    "Settings tab in Standard layout": "Instellingen in de standaardindeling"
+    "Settings tab in Standard layout": "Instellingen in de standaardindeling",
+    "Show notification message": "Melding weergeven",
+    "Run": "Uitvoeren",
+    "Changed cluster notification preview from toggle to Run action": "Test van instrumentenmelding gewijzigd van schakelaar naar knop Uitvoeren",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oliemeldingen in KOMBI overgezet naar de gedeelde meldingentool"
   },
   "nb": {
     "ATF COOL-DOWN · TO 30°C": "ATF nedkjøling · til 30°c",
@@ -2044,7 +2096,11 @@ module.exports = {
     "Waiting for data": "Venter på data",
     "What's New": "Hva er nytt",
     "Engine oil": "Motorolje",
-    "Settings tab in Standard layout": "Innstillinger i standardvisning"
+    "Settings tab in Standard layout": "Innstillinger i standardvisning",
+    "Show notification message": "Vis varselmelding",
+    "Run": "Kjør",
+    "Changed cluster notification preview from toggle to Run action": "Test av instrumentvarsel endret fra bryter til Kjør-knapp",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oljevarsler i KOMBI flyttet til det delte varslingsverktøyet"
   },
   "pt": {
     "ATF COOL-DOWN · TO 30°C": "Resfriamento do ATF · até 30°c",
@@ -2190,7 +2246,11 @@ module.exports = {
     "Waiting for data": "Aguardando dados",
     "What's New": "O que há de novo",
     "Engine oil": "Óleo do motor",
-    "Settings tab in Standard layout": "Definições na vista padrão"
+    "Settings tab in Standard layout": "Definições na vista padrão",
+    "Show notification message": "Mostrar mensagem de notificação",
+    "Run": "Executar",
+    "Changed cluster notification preview from toggle to Run action": "Teste de notificação do painel alterado de interruptor para botão Executar",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificações de óleo do KOMBI migradas para a ferramenta partilhada"
   },
   "ro": {
     "ATF COOL-DOWN · TO 30°C": "Răcire ATF · la 30°c",
@@ -2336,7 +2396,11 @@ module.exports = {
     "Waiting for data": "În așteptarea datelor",
     "What's New": "Ce este nou",
     "Engine oil": "Ulei de motor",
-    "Settings tab in Standard layout": "Setări în aspectul standard"
+    "Settings tab in Standard layout": "Setări în aspectul standard",
+    "Show notification message": "Afișează mesaj de notificare",
+    "Run": "Execută",
+    "Changed cluster notification preview from toggle to Run action": "Testul notificării din bord a fost schimbat din comutator în buton Execută",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificările de ulei KOMBI au fost migrate în instrumentul comun"
   },
   "sl": {
     "ATF COOL-DOWN · TO 30°C": "Hlajenje ATF · na 30°c",
@@ -2482,7 +2546,11 @@ module.exports = {
     "Waiting for data": "Čakanje na podatke",
     "What's New": "Kaj je novega",
     "Engine oil": "Motorno olje",
-    "Settings tab in Standard layout": "Nastavitve v standardni postavitvi"
+    "Settings tab in Standard layout": "Nastavitve v standardni postavitvi",
+    "Show notification message": "Prikaži obvestilo",
+    "Run": "Zaženi",
+    "Changed cluster notification preview from toggle to Run action": "Preskus obvestila na instrumentni plošči spremenjen iz stikala v gumb Zaženi",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Obvestila o olju KOMBI prenesena v skupno orodje"
   },
   "fi": {
     "ATF COOL-DOWN · TO 30°C": "ATF-jäähdytys · 30°c:een",
@@ -2628,7 +2696,11 @@ module.exports = {
     "Waiting for data": "Dataa odotellessa",
     "What's New": "Mitä uutta",
     "Engine oil": "Moottoriöljy",
-    "Settings tab in Standard layout": "Asetukset vakionäkymässä"
+    "Settings tab in Standard layout": "Asetukset vakionäkymässä",
+    "Show notification message": "Näytä ilmoitusviesti",
+    "Run": "Suorita",
+    "Changed cluster notification preview from toggle to Run action": "Mittariston ilmoitustesti vaihdettiin kytkimestä Suorita-painikkeeksi",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-öljyilmoitukset siirrettiin yhteiseen ilmoitustyökaluun"
   },
   "sv": {
     "ATF COOL-DOWN · TO 30°C": "ATF nedkylning · till 30°c",
@@ -2774,7 +2846,11 @@ module.exports = {
     "Waiting for data": "Väntar på data",
     "What's New": "Vad är nytt",
     "Engine oil": "Motorolja",
-    "Settings tab in Standard layout": "Inställningar i standardvyn"
+    "Settings tab in Standard layout": "Inställningar i standardvyn",
+    "Show notification message": "Visa aviseringsmeddelande",
+    "Run": "Kör",
+    "Changed cluster notification preview from toggle to Run action": "Test av instrumentavisering ändrades från reglage till Kör-knapp",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-oljeaviseringar flyttades till det gemensamma aviseringsverktyget"
   },
   "tr": {
     "ATF COOL-DOWN · TO 30°C": "ATF soğuması · 30°c'ye kadar",
@@ -2920,7 +2996,11 @@ module.exports = {
     "Waiting for data": "Veri bekleniyor",
     "What's New": "Ne var ne yok",
     "Engine oil": "Motor yağı",
-    "Settings tab in Standard layout": "Standart görünümde ayarlar"
+    "Settings tab in Standard layout": "Standart görünümde ayarlar",
+    "Show notification message": "Bildirim mesajını göster",
+    "Run": "Çalıştır",
+    "Changed cluster notification preview from toggle to Run action": "Gösterge bildirimi testi anahtardan Çalıştır düğmesine dönüştürüldü",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI yağ bildirimleri ortak bildirim aracına taşındı"
   },
   "uk": {
     "ATF COOL-DOWN · TO 30°C": "Охолодження ATF · до 30°c",
@@ -3066,6 +3146,10 @@ module.exports = {
     "Waiting for data": "Очікування даних",
     "What's New": "Що нового",
     "Engine oil": "Моторна олива",
-    "Settings tab in Standard layout": "Налаштування у стандартному вигляді"
+    "Settings tab in Standard layout": "Налаштування у стандартному вигляді",
+    "Show notification message": "Показати сповіщення",
+    "Run": "Запустити",
+    "Changed cluster notification preview from toggle to Run action": "Тест сповіщень панелі приладів змінено з перемикача на кнопку запуску",
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Сповіщення про температуру оливи в KOMBI перенесено до спільного інструмента"
   }
 };
