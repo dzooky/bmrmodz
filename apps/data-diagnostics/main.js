@@ -55,7 +55,7 @@ mgu.run({
    page=2;
    if(!report){exportState=word('No report yet');return;}
    try{
-    // Local export to OAP application data. Network sharing is NOT available.
+    // Local export to OAP application data; HTTP sending is a separate manual action.
     fs.writeFileSync(reportFile,JSON.stringify(report,null,2)+'\n',{encoding:'utf8',mode:0o600});
     reportQr=qrReport.create(report);
     exportState=word('Exported to app data')+': '+REPORT_NAME;
@@ -98,9 +98,9 @@ mgu.run({
    if(item&&item.detail)label(cv,safeValue(item.detail),x,y+24,14,theme.dim);
   }
   function drawInfo(cv,theme){
-   header(cv,theme,'BMRMODZ DATA TOOL','0.1.1 / '+word('Read-only'));
+   header(cv,theme,'BMRMODZ DATA TOOL','0.1.2 / '+word('Read-only'));
    G.panel(cv,theme,24,115,1552,380,null);
-   label(cv,word("What's New")+' 0.1.1 — '+word('Secure upload'),800,155,16,theme.dim,{align:'center'});
+   label(cv,word("What's New")+' 0.1.2 — '+word('LAN report upload'),800,155,16,theme.dim,{align:'center'});
    // Exact required development notice on three lines.
    DEV_NOTICE.forEach((line,i)=>label(cv,line,800,190+i*40,i===0?22:23,theme.text,{align:'center'}));
    label(cv,word('Read-only diagnostic test'),800,365,27,theme.accent2,{align:'center',font:'bold'});
