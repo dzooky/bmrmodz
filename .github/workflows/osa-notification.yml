@@ -36,7 +36,7 @@ jobs:
           assert(!fs.existsSync('apps/osa/turbo-icon-preview.js'));
           assert(!/cluster-render|turboIconPreview/.test(main));
           assert(!app.settings.some(x=>['clusterLowerTest','clusterPassiveTest'].includes(x.key)));
-          assert(app.settings.some(x=>x.key==='clusterBcTest'&&x.type==='action'&&x.actionLabel==='Proceed'));
+          assert(app.settings.some(x=>x.key==='clusterBcTest'&&x.type==='action'&&x.actionLabel==='Run'));
           assert(main.includes("oilNotification.start(log"));
           console.log('OSA Notification Tool 0.2.61 package check: passed');
           NODE
