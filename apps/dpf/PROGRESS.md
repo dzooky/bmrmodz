@@ -1,5 +1,16 @@
 # DPF Status progress
 
+## v0.1.65 — Direct OSA language controller reuse (2026-11-22)
+
+- **In-car user report:** DPF v0.1.64 still shows a too-small selected English value on the main Settings page, despite the prior option-parity and font changes. The language picker and other languages are legible.
+- **Implemented:** replaced DPF's complete hand-written language/update/watch implementation with an `apps/dpf/language.js` copy of the working OSA controller. Only the translation catalog, DPF native button list, log prefix and string-bundle ID prefix differ.
+- The DPF page continues to use the same shared Settings canvas as OSA. No new font-size workaround was added.
+- **Implemented:** v0.1.65 English What's New entry, plus translations for each of the 21 non-English DPF locale catalogs.
+- **Automated verification:** tests compare the complete language controller against the OSA implementation after the four DPF-specific substitutions, check no former inline logic remains, and retain 32px Settings / 28px picker text checks. CI pending at time of writing.
+- **In-car verification:** pending for v0.1.65. Do not claim the English typography is fixed until a real-MGU test confirms it.
+- No changes to DDE diagnostics, regeneration logic, notification transport, or other layouts.
+
+
 ## v0.1.64 — OSA-style language configuration (2026-11-22)
 
 - **User report:** the selected English language value in DPF's main Settings remained too small through the v0.1.63 revision. The full language picker and other language values were reported legible.
