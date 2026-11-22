@@ -28,6 +28,11 @@
       "path": "profiles.js",
       "from": "profiles.js",
       "mode": "0644"
+    },
+    {
+      "path": "probe.js",
+      "from": "probe.js",
+      "mode": "0644"
     }
   ],
   "units": [
