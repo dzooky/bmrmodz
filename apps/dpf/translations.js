@@ -91,7 +91,8 @@ module.exports = {
     "Run": "Spustiť",
     "English (auto) language value readability": "Čitateľnejšia hodnota jazyka English (auto)",
     "Run button translated into all languages": "Preklad tlačidla Run do všetkých jazykov",
-    "Additional translations and Detail text sizing": "Ďalšie preklady a úprava veľkosti textu v Detail"
+    "Additional translations and Detail text sizing": "Ďalšie preklady a úprava veľkosti textu v Detail",
+    "Language selection aligned with OSA": "Výber jazyka zjednotený s OSA"
   },
   "cs": {
     "Overview": "Přehled",
@@ -184,7 +185,8 @@ module.exports = {
     "Run": "Spustit",
     "English (auto) language value readability": "Čitelnější hodnota jazyka English (auto)",
     "Run button translated into all languages": "Překlad tlačítka Run do všech jazyků",
-    "Additional translations and Detail text sizing": "Další překlady a úprava velikosti textu v Detail"
+    "Additional translations and Detail text sizing": "Další překlady a úprava velikosti textu v Detail",
+    "Language selection aligned with OSA": "Výběr jazyka sjednocen s OSA"
   },
   "de": {
     "Overview": "Übersicht",
@@ -277,7 +279,8 @@ module.exports = {
     "Run": "Ausführen",
     "English (auto) language value readability": "Bessere Lesbarkeit von English (auto)",
     "Run button translated into all languages": "Run-Schaltfläche in alle Sprachen übersetzt",
-    "Additional translations and Detail text sizing": "Weitere Übersetzungen und Schriftgröße in Detail"
+    "Additional translations and Detail text sizing": "Weitere Übersetzungen und Schriftgröße in Detail",
+    "Language selection aligned with OSA": "Sprachauswahl an OSA angeglichen"
   },
   "es": {
     "Overview": "Resumen",
@@ -370,7 +373,8 @@ module.exports = {
     "Run": "Ejecutar",
     "English (auto) language value readability": "Mayor legibilidad de English (auto)",
     "Run button translated into all languages": "Botón Run traducido a todos los idiomas",
-    "Additional translations and Detail text sizing": "Más traducciones y tamaño de texto en Detalle"
+    "Additional translations and Detail text sizing": "Más traducciones y tamaño de texto en Detalle",
+    "Language selection aligned with OSA": "Selección de idioma igualada a OSA"
   },
   "fr": {
     "Overview": "Vue d'ensemble",
@@ -463,7 +467,8 @@ module.exports = {
     "Run": "Exécuter",
     "English (auto) language value readability": "Meilleure lisibilité de English (auto)",
     "Run button translated into all languages": "Bouton Run traduit dans toutes les langues",
-    "Additional translations and Detail text sizing": "Traductions supplémentaires et taille du texte Détail"
+    "Additional translations and Detail text sizing": "Traductions supplémentaires et taille du texte Détail",
+    "Language selection aligned with OSA": "Sélection de langue alignée sur OSA"
   },
   "it": {
     "Overview": "Panoramica",
@@ -556,7 +561,8 @@ module.exports = {
     "Run": "Esegui",
     "English (auto) language value readability": "Migliore leggibilità di English (auto)",
     "Run button translated into all languages": "Pulsante Run tradotto in tutte le lingue",
-    "Additional translations and Detail text sizing": "Altre traduzioni e dimensione del testo Dettagli"
+    "Additional translations and Detail text sizing": "Altre traduzioni e dimensione del testo Dettagli",
+    "Language selection aligned with OSA": "Selezione lingua allineata a OSA"
   },
   "hu": {
     "Overview": "Áttekintés",
@@ -649,7 +655,8 @@ module.exports = {
     "Run": "Futtatás",
     "English (auto) language value readability": "Az English (auto) érték jobb olvashatósága",
     "Run button translated into all languages": "A Run gomb fordítása minden nyelvre",
-    "Additional translations and Detail text sizing": "További fordítások és a részletek betűmérete"
+    "Additional translations and Detail text sizing": "További fordítások és a részletek betűmérete",
+    "Language selection aligned with OSA": "Nyelvválasztás az OSA-val egységesítve"
   },
   "pl": {
     "Overview": "Przegląd",
@@ -742,7 +749,8 @@ module.exports = {
     "Run": "Uruchom",
     "English (auto) language value readability": "Lepsza czytelność wartości English (auto)",
     "Run button translated into all languages": "Przycisk Run przetłumaczony na wszystkie języki",
-    "Additional translations and Detail text sizing": "Dodatkowe tłumaczenia i wielkość tekstu w Szczegółach"
+    "Additional translations and Detail text sizing": "Dodatkowe tłumaczenia i wielkość tekstu w Szczegółach",
+    "Language selection aligned with OSA": "Wybór języka ujednolicony z OSA"
   },
   "ru": {
     "Overview": "Обзор",
@@ -835,7 +843,8 @@ module.exports = {
     "Run": "Запустить",
     "English (auto) language value readability": "Улучшена читаемость English (auto)",
     "Run button translated into all languages": "Кнопка Run переведена на все языки",
-    "Additional translations and Detail text sizing": "Дополнительные переводы и размер текста в деталях"
+    "Additional translations and Detail text sizing": "Дополнительные переводы и размер текста в деталях",
+    "Language selection aligned with OSA": "Выбор языка приведён к OSA"
   },
   "da": {
     "Overview": "Oversigt",
@@ -928,7 +937,8 @@ module.exports = {
     "Run": "Kør",
     "English (auto) language value readability": "Bedre læsbarhed af English (auto)",
     "Run button translated into all languages": "Run-knappen oversat til alle sprog",
-    "Additional translations and Detail text sizing": "Flere oversættelser og tekststørrelse i Detaljer"
+    "Additional translations and Detail text sizing": "Flere oversættelser og tekststørrelse i Detaljer",
+    "Language selection aligned with OSA": "Sprogvalg tilpasset OSA"
   },
   "el": {
     "Overview": "Επισκόπηση",
@@ -1021,7 +1031,8 @@ module.exports = {
     "Run": "Εκτέλεση",
     "English (auto) language value readability": "Βελτιωμένη αναγνωσιμότητα του English (auto)",
     "Run button translated into all languages": "Το κουμπί Run μεταφράστηκε σε όλες τις γλώσσες",
-    "Additional translations and Detail text sizing": "Επιπλέον μεταφράσεις και μέγεθος κειμένου Λεπτομερειών"
+    "Additional translations and Detail text sizing": "Επιπλέον μεταφράσεις και μέγεθος κειμένου Λεπτομερειών",
+    "Language selection aligned with OSA": "Επιλογή γλώσσας εναρμονισμένη με το OSA"
   },
   "zh-CN": {
     "Overview": "概览",
@@ -1114,7 +1125,8 @@ module.exports = {
     "Run": "运行",
     "English (auto) language value readability": "提高 English (auto) 语言值的可读性",
     "Run button translated into all languages": "Run 按钮已翻译成所有语言",
-    "Additional translations and Detail text sizing": "补充翻译并调整详细信息文字大小"
+    "Additional translations and Detail text sizing": "补充翻译并调整详细信息文字大小",
+    "Language selection aligned with OSA": "语言选择与 OSA 保持一致"
   },
   "nl": {
     "Overview": "Overzicht",
@@ -1207,7 +1219,8 @@ module.exports = {
     "Run": "Uitvoeren",
     "English (auto) language value readability": "Betere leesbaarheid van English (auto)",
     "Run button translated into all languages": "Run-knop vertaald in alle talen",
-    "Additional translations and Detail text sizing": "Extra vertalingen en tekstgrootte in Details"
+    "Additional translations and Detail text sizing": "Extra vertalingen en tekstgrootte in Details",
+    "Language selection aligned with OSA": "Taalkeuze gelijkgetrokken met OSA"
   },
   "nb": {
     "Overview": "Oversikt",
@@ -1300,7 +1313,8 @@ module.exports = {
     "Run": "Kjør",
     "English (auto) language value readability": "Bedre lesbarhet for English (auto)",
     "Run button translated into all languages": "Run-knappen oversatt til alle språk",
-    "Additional translations and Detail text sizing": "Flere oversettelser og tekststørrelse i Detaljer"
+    "Additional translations and Detail text sizing": "Flere oversettelser og tekststørrelse i Detaljer",
+    "Language selection aligned with OSA": "Språkvalg tilpasset OSA"
   },
   "pt": {
     "Overview": "Resumo",
@@ -1393,7 +1407,8 @@ module.exports = {
     "Run": "Executar",
     "English (auto) language value readability": "Melhor legibilidade de English (auto)",
     "Run button translated into all languages": "Botão Run traduzido para todos os idiomas",
-    "Additional translations and Detail text sizing": "Mais traduções e tamanho do texto em Detalhes"
+    "Additional translations and Detail text sizing": "Mais traduções e tamanho do texto em Detalhes",
+    "Language selection aligned with OSA": "Seleção de idioma alinhada com OSA"
   },
   "ro": {
     "Overview": "Prezentare",
@@ -1486,7 +1501,8 @@ module.exports = {
     "Run": "Execută",
     "English (auto) language value readability": "Lizibilitate îmbunătățită pentru English (auto)",
     "Run button translated into all languages": "Butonul Run tradus în toate limbile",
-    "Additional translations and Detail text sizing": "Traduceri suplimentare și dimensiunea textului în Detalii"
+    "Additional translations and Detail text sizing": "Traduceri suplimentare și dimensiunea textului în Detalii",
+    "Language selection aligned with OSA": "Selectarea limbii aliniată cu OSA"
   },
   "sl": {
     "Overview": "Pregled",
@@ -1579,7 +1595,8 @@ module.exports = {
     "Run": "Zaženi",
     "English (auto) language value readability": "Boljša berljivost možnosti English (auto)",
     "Run button translated into all languages": "Gumb Run preveden v vse jezike",
-    "Additional translations and Detail text sizing": "Dodatni prevodi in velikost besedila v Podrobnostih"
+    "Additional translations and Detail text sizing": "Dodatni prevodi in velikost besedila v Podrobnostih",
+    "Language selection aligned with OSA": "Izbira jezika usklajena z OSA"
   },
   "fi": {
     "Overview": "Yleiskatsaus",
@@ -1672,7 +1689,8 @@ module.exports = {
     "Run": "Suorita",
     "English (auto) language value readability": "English (auto) -arvon parempi luettavuus",
     "Run button translated into all languages": "Run-painike käännetty kaikille kielille",
-    "Additional translations and Detail text sizing": "Lisää käännöksiä ja tietonäkymän tekstikoko"
+    "Additional translations and Detail text sizing": "Lisää käännöksiä ja tietonäkymän tekstikoko",
+    "Language selection aligned with OSA": "Kielivalinta yhdenmukaistettu OSA:n kanssa"
   },
   "sv": {
     "Overview": "Översikt",
@@ -1765,7 +1783,8 @@ module.exports = {
     "Run": "Kör",
     "English (auto) language value readability": "Bättre läsbarhet för English (auto)",
     "Run button translated into all languages": "Run-knappen översatt till alla språk",
-    "Additional translations and Detail text sizing": "Fler översättningar och textstorlek i Detaljer"
+    "Additional translations and Detail text sizing": "Fler översättningar och textstorlek i Detaljer",
+    "Language selection aligned with OSA": "Språkval anpassat till OSA"
   },
   "tr": {
     "Overview": "Genel bakış",
@@ -1858,7 +1877,8 @@ module.exports = {
     "Run": "Çalıştır",
     "English (auto) language value readability": "English (auto) değerinin okunabilirliği artırıldı",
     "Run button translated into all languages": "Run düğmesi tüm dillere çevrildi",
-    "Additional translations and Detail text sizing": "Ek çeviriler ve Ayrıntılar metin boyutu"
+    "Additional translations and Detail text sizing": "Ek çeviriler ve Ayrıntılar metin boyutu",
+    "Language selection aligned with OSA": "Dil seçimi OSA ile uyumlu"
   },
   "uk": {
     "Overview": "Огляд",
@@ -1951,6 +1971,7 @@ module.exports = {
     "Run": "Запустити",
     "English (auto) language value readability": "Покращена читабельність English (auto)",
     "Run button translated into all languages": "Кнопку Run перекладено всіма мовами",
-    "Additional translations and Detail text sizing": "Додаткові переклади та розмір тексту в деталях"
+    "Additional translations and Detail text sizing": "Додаткові переклади та розмір тексту в деталях",
+    "Language selection aligned with OSA": "Вибір мови узгоджено з OSA"
   }
 };
