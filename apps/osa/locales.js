@@ -150,7 +150,8 @@ module.exports = {
     "Show notification message": "Benachrichtigung anzeigen",
     "Run": "Ausführen",
     "Changed cluster notification preview from toggle to Run action": "Clustermeldungstest von Schalter auf Ausführen-Schaltfläche umgestellt",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-Ölbenachrichtigungen auf das gemeinsame Benachrichtigungstool umgestellt"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-Ölbenachrichtigungen auf das gemeinsame Benachrichtigungstool umgestellt",
+    "Reliable oil temperature reached notification": "Zuverlässige Benachrichtigung bei erreichter Öltemperatur"
   },
   "es": {
     "ATF COOL-DOWN · TO 30°C": "Enfriamiento del ATF · a 30°c",
@@ -300,7 +301,8 @@ module.exports = {
     "Show notification message": "Mostrar mensaje de notificación",
     "Run": "Ejecutar",
     "Changed cluster notification preview from toggle to Run action": "La prueba de notificación del cuadro pasó de interruptor a botón Ejecutar",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificaciones de aceite del cuadro migradas a la herramienta compartida"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificaciones de aceite del cuadro migradas a la herramienta compartida",
+    "Reliable oil temperature reached notification": "Notificación fiable al alcanzar la temperatura del aceite"
   },
   "fr": {
     "ATF COOL-DOWN · TO 30°C": "Refroidissement de l'ATF · à 30°c",
@@ -450,7 +452,8 @@ module.exports = {
     "Show notification message": "Afficher un message de notification",
     "Run": "Exécuter",
     "Changed cluster notification preview from toggle to Run action": "Test de notification du combiné remplacé par un bouton Exécuter",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifications d'huile du combiné migrées vers l'outil partagé"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifications d'huile du combiné migrées vers l'outil partagé",
+    "Reliable oil temperature reached notification": "Notification fiable lorsque l’huile atteint sa température"
   },
   "hu": {
     "ATF COOL-DOWN · TO 30°C": "ATF lehűtés · 30°C-ra",
@@ -600,7 +603,8 @@ module.exports = {
     "Show notification message": "Értesítési üzenet megjelenítése",
     "Run": "Futtatás",
     "Changed cluster notification preview from toggle to Run action": "A műszeregység értesítési tesztje kapcsolóról Futtatás gombra változott",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "A KOMBI olajértesítései átkerültek a közös értesítési eszközbe"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "A KOMBI olajértesítései átkerültek a közös értesítési eszközbe",
+    "Reliable oil temperature reached notification": "Megbízható értesítés az olaj célhőmérsékletének elérésekor"
   },
   "pl": {
     "ATF COOL-DOWN · TO 30°C": "Schładzanie ATF · do 30°c",
@@ -750,7 +754,8 @@ module.exports = {
     "Show notification message": "Pokaż powiadomienie",
     "Run": "Uruchom",
     "Changed cluster notification preview from toggle to Run action": "Test powiadomienia zestawu wskaźników zmieniono z przełącznika na przycisk Uruchom",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Powiadomienia o oleju w zestawie wskaźników przeniesiono do wspólnego narzędzia"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Powiadomienia o oleju w zestawie wskaźników przeniesiono do wspólnego narzędzia",
+    "Reliable oil temperature reached notification": "Niezawodne powiadomienie po osiągnięciu temperatury oleju"
   },
   "sk": {
     "ATF COOL-DOWN · TO 30°C": "Chladnutie ATF na 30 °C",
@@ -900,7 +905,8 @@ module.exports = {
     "Show notification message": "Zobraziť notifikačnú správu",
     "Run": "Spustiť",
     "Changed cluster notification preview from toggle to Run action": "Test notifikácie na prístrojovom paneli zmenený z prepínača na tlačidlo Spustiť",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifikácie teploty oleja v KOMBI presunuté do spoločného nástroja"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifikácie teploty oleja v KOMBI presunuté do spoločného nástroja",
+    "Reliable oil temperature reached notification": "Spoľahlivé upozornenie pri dosiahnutí teploty oleja"
   },
   "cs": {
     "ATF COOL-DOWN · TO 30°C": "Chlazení ATF · na 30°C",
@@ -1050,7 +1056,8 @@ module.exports = {
     "Show notification message": "Zobrazit oznámení",
     "Run": "Spustit",
     "Changed cluster notification preview from toggle to Run action": "Test oznámení na přístrojovém panelu změněn z přepínače na tlačítko Spustit",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oznámení o teplotě oleje v KOMBI přesunuta do sdíleného nástroje"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oznámení o teplotě oleje v KOMBI přesunuta do sdíleného nástroje",
+    "Reliable oil temperature reached notification": "Spolehlivé upozornění při dosažení teploty oleje"
   },
   "it": {
     "ATF COOL-DOWN · TO 30°C": "Raffreddamento ATF · a 30°C",
@@ -1200,7 +1207,8 @@ module.exports = {
     "Show notification message": "Mostra messaggio di notifica",
     "Run": "Esegui",
     "Changed cluster notification preview from toggle to Run action": "Test della notifica sul quadro strumenti modificato da interruttore a pulsante Esegui",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifiche dell'olio sul quadro strumenti migrate allo strumento condiviso"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notifiche dell'olio sul quadro strumenti migrate allo strumento condiviso",
+    "Reliable oil temperature reached notification": "Notifica affidabile al raggiungimento della temperatura dell’olio"
   },
   "ru": {
     "ATF COOL-DOWN · TO 30°C": "Охлаждение ATF · до 30°c",
@@ -1350,7 +1358,8 @@ module.exports = {
     "Show notification message": "Показать уведомление",
     "Run": "Запустить",
     "Changed cluster notification preview from toggle to Run action": "Тест уведомления приборной панели заменён с переключателя на кнопку запуска",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Уведомления о температуре масла в KOMBI перенесены в общий инструмент"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Уведомления о температуре масла в KOMBI перенесены в общий инструмент",
+    "Reliable oil temperature reached notification": "Надёжное уведомление при достижении температуры масла"
   },
   "da": {
     "ATF COOL-DOWN · TO 30°C": "ATF-afkøling · til 30°c",
@@ -1500,7 +1509,8 @@ module.exports = {
     "Show notification message": "Vis notifikationsmeddelelse",
     "Run": "Kør",
     "Changed cluster notification preview from toggle to Run action": "Test af instrumentmeddelelse ændret fra kontakt til Kør-knap",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oliemeddelelser i KOMBI flyttet til det fælles notifikationsværktøj"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oliemeddelelser i KOMBI flyttet til det fælles notifikationsværktøj",
+    "Reliable oil temperature reached notification": "Pålidelig besked, når olietemperaturen er nået"
   },
   "el": {
     "ATF COOL-DOWN · TO 30°C": "ATF ψύξη · στους 30°c",
@@ -1650,7 +1660,8 @@ module.exports = {
     "Show notification message": "Εμφάνιση ειδοποίησης",
     "Run": "Εκτέλεση",
     "Changed cluster notification preview from toggle to Run action": "Η δοκιμή ειδοποίησης οργάνων άλλαξε από διακόπτη σε κουμπί Εκτέλεση",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Οι ειδοποιήσεις λαδιού KOMBI μεταφέρθηκαν στο κοινό εργαλείο ειδοποιήσεων"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Οι ειδοποιήσεις λαδιού KOMBI μεταφέρθηκαν στο κοινό εργαλείο ειδοποιήσεων",
+    "Reliable oil temperature reached notification": "Αξιόπιστη ειδοποίηση όταν το λάδι φτάσει στη θερμοκρασία στόχο"
   },
   "zh-CN": {
     "ATF COOL-DOWN · TO 30°C": "ATF 冷却至 30°c",
@@ -1800,7 +1811,8 @@ module.exports = {
     "Show notification message": "显示通知消息",
     "Run": "运行",
     "Changed cluster notification preview from toggle to Run action": "仪表通知测试由开关改为运行按钮",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI 机油通知已迁移至共享通知工具"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI 机油通知已迁移至共享通知工具",
+    "Reliable oil temperature reached notification": "可靠的机油温度达标通知"
   },
   "nl": {
     "ATF COOL-DOWN · TO 30°C": "ATF-afkoeling · tot 30°C",
@@ -1950,7 +1962,8 @@ module.exports = {
     "Show notification message": "Melding weergeven",
     "Run": "Uitvoeren",
     "Changed cluster notification preview from toggle to Run action": "Test van instrumentenmelding gewijzigd van schakelaar naar knop Uitvoeren",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oliemeldingen in KOMBI overgezet naar de gedeelde meldingentool"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oliemeldingen in KOMBI overgezet naar de gedeelde meldingentool",
+    "Reliable oil temperature reached notification": "Betrouwbare melding bij het bereiken van de olietemperatuur"
   },
   "nb": {
     "ATF COOL-DOWN · TO 30°C": "ATF nedkjøling · til 30°c",
@@ -2100,7 +2113,8 @@ module.exports = {
     "Show notification message": "Vis varselmelding",
     "Run": "Kjør",
     "Changed cluster notification preview from toggle to Run action": "Test av instrumentvarsel endret fra bryter til Kjør-knapp",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oljevarsler i KOMBI flyttet til det delte varslingsverktøyet"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Oljevarsler i KOMBI flyttet til det delte varslingsverktøyet",
+    "Reliable oil temperature reached notification": "Pålitelig varsel når oljen når måltemperaturen"
   },
   "pt": {
     "ATF COOL-DOWN · TO 30°C": "Resfriamento do ATF · até 30°c",
@@ -2250,7 +2264,8 @@ module.exports = {
     "Show notification message": "Mostrar mensagem de notificação",
     "Run": "Executar",
     "Changed cluster notification preview from toggle to Run action": "Teste de notificação do painel alterado de interruptor para botão Executar",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificações de óleo do KOMBI migradas para a ferramenta partilhada"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificações de óleo do KOMBI migradas para a ferramenta partilhada",
+    "Reliable oil temperature reached notification": "Notificação fiável ao atingir a temperatura do óleo"
   },
   "ro": {
     "ATF COOL-DOWN · TO 30°C": "Răcire ATF · la 30°c",
@@ -2400,7 +2415,8 @@ module.exports = {
     "Show notification message": "Afișează mesaj de notificare",
     "Run": "Execută",
     "Changed cluster notification preview from toggle to Run action": "Testul notificării din bord a fost schimbat din comutator în buton Execută",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificările de ulei KOMBI au fost migrate în instrumentul comun"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Notificările de ulei KOMBI au fost migrate în instrumentul comun",
+    "Reliable oil temperature reached notification": "Notificare fiabilă la atingerea temperaturii uleiului"
   },
   "sl": {
     "ATF COOL-DOWN · TO 30°C": "Hlajenje ATF · na 30°c",
@@ -2550,7 +2566,8 @@ module.exports = {
     "Show notification message": "Prikaži obvestilo",
     "Run": "Zaženi",
     "Changed cluster notification preview from toggle to Run action": "Preskus obvestila na instrumentni plošči spremenjen iz stikala v gumb Zaženi",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Obvestila o olju KOMBI prenesena v skupno orodje"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Obvestila o olju KOMBI prenesena v skupno orodje",
+    "Reliable oil temperature reached notification": "Zanesljivo obvestilo ob doseženi temperaturi olja"
   },
   "fi": {
     "ATF COOL-DOWN · TO 30°C": "ATF-jäähdytys · 30°c:een",
@@ -2700,7 +2717,8 @@ module.exports = {
     "Show notification message": "Näytä ilmoitusviesti",
     "Run": "Suorita",
     "Changed cluster notification preview from toggle to Run action": "Mittariston ilmoitustesti vaihdettiin kytkimestä Suorita-painikkeeksi",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-öljyilmoitukset siirrettiin yhteiseen ilmoitustyökaluun"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-öljyilmoitukset siirrettiin yhteiseen ilmoitustyökaluun",
+    "Reliable oil temperature reached notification": "Luotettava ilmoitus öljyn tavoitelämpötilan saavuttamisesta"
   },
   "sv": {
     "ATF COOL-DOWN · TO 30°C": "ATF nedkylning · till 30°c",
@@ -2850,7 +2868,8 @@ module.exports = {
     "Show notification message": "Visa aviseringsmeddelande",
     "Run": "Kör",
     "Changed cluster notification preview from toggle to Run action": "Test av instrumentavisering ändrades från reglage till Kör-knapp",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-oljeaviseringar flyttades till det gemensamma aviseringsverktyget"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI-oljeaviseringar flyttades till det gemensamma aviseringsverktyget",
+    "Reliable oil temperature reached notification": "Tillförlitligt meddelande när oljan når måltemperaturen"
   },
   "tr": {
     "ATF COOL-DOWN · TO 30°C": "ATF soğuması · 30°c'ye kadar",
@@ -3000,7 +3019,8 @@ module.exports = {
     "Show notification message": "Bildirim mesajını göster",
     "Run": "Çalıştır",
     "Changed cluster notification preview from toggle to Run action": "Gösterge bildirimi testi anahtardan Çalıştır düğmesine dönüştürüldü",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI yağ bildirimleri ortak bildirim aracına taşındı"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "KOMBI yağ bildirimleri ortak bildirim aracına taşındı",
+    "Reliable oil temperature reached notification": "Yağ hedef sıcaklığına ulaştığında güvenilir bildirim"
   },
   "uk": {
     "ATF COOL-DOWN · TO 30°C": "Охолодження ATF · до 30°c",
@@ -3150,6 +3170,7 @@ module.exports = {
     "Show notification message": "Показати сповіщення",
     "Run": "Запустити",
     "Changed cluster notification preview from toggle to Run action": "Тест сповіщень панелі приладів змінено з перемикача на кнопку запуску",
-    "Migrated KOMBI oil notifications to the shared Notification Tool": "Сповіщення про температуру оливи в KOMBI перенесено до спільного інструмента"
+    "Migrated KOMBI oil notifications to the shared Notification Tool": "Сповіщення про температуру оливи в KOMBI перенесено до спільного інструмента",
+    "Reliable oil temperature reached notification": "Надійне сповіщення про досягнення температури оливи"
   }
 };
