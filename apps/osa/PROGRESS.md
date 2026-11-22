@@ -1,3 +1,13 @@
+## v0.2.63 — Reliable oil warm-up notification trigger (2026-11-22)
+
+- Trigger the oil warm-up notification immediately when OSA first observes live oil at or above the configured target; preserve 2 °C re-arm hysteresis.
+- Track threshold detection independently of notification output availability and preserve the pending event until Notification Tool accepts it or the delivery attempt budget is exhausted.
+- Remove the redundant 6WB/6U3 gate from the automatic send condition only; vehicle equipment detection and Settings visibility stay unchanged.
+- Retry both returned errors and thrown failures, up to five total attempts spaced 500 ms apart. Log attempts and exhausted deliveries; avoid duplicate in-flight sends.
+- Keep manual preview and shared Notification Tool rendering unchanged. Tool acceptance does not prove physical KOMBI display.
+- About / What's New: 0.2.63 release note localized across all 21 non-English catalogs.
+- Automated checks: standalone regression test added; execution and CI pending. In-car verification: pending.
+
 # Oil Service Assistant progress
 
 ## v0.2.62 — Notification text translations (2026-11-22)
