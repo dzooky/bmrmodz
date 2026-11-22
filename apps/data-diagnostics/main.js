@@ -7,7 +7,7 @@ const G=require('./kit/gauges');
 const client=require('./client');
 const {createRunner,STEPS}=require('./test-runner');
 const {t}=require('./translations');
-const makeQr=require('./qrcode');
+const qrReport=require('./qr-report');
 const W=1600,H=520;
 const REPORT_NAME='data-tool-diagnostic-report.json';
 const pages=['Info','Diagnostics','Results','Share'];
@@ -56,10 +56,7 @@ mgu.run({
    try{
     // Local export to OAP application data. Network sharing is NOT available.
     fs.writeFileSync(reportFile,JSON.stringify(report,null,2)+'\n',{encoding:'utf8',mode:0o600});
-    const compact='BMRMODZ DATA TOOL /1 | '+report.finishedAt+' | '+report.results.map(item=>
-       item.id+':'+item.status+(item.status==='FAIL'?':'+safeValue(item.detail).slice(0,50):'')).join(' | ');
-    const nextQr=makeQr(0,'M');
-    nextQr.addData(compact);nextQr.make();reportQr=nextQr;
+    reportQr=qrReport.create(report);
     exportState=word('Exported to app data')+': '+REPORT_NAME;
     page=3;
    }catch(error){
