@@ -2,7 +2,8 @@
 // Isolated process: native SOME/IP binding can deadlock or abort without
 // taking down the main Data Tool. This worker is never started on boot.
 // Only approved read-only CDS fields may be sampled.
-const fs=require('fs'),path=require('path');
+const fs=require('fs');
+const {DEFAULT}=require('./config-check');
 const {SIGNALS}=require('./signal-environment');
 const CDS='de.bmw.infotainment.vehicle.CDS';
 const ALLOWED=['statusEngineTemperature','statusEngineSpeed2'];
@@ -30,8 +31,7 @@ async function main(){
   }catch(e){return error('module-load',e);}
   if(!someip||typeof someip.buildProxy!=='function')return error('module-api',new Error('buildProxy not available'));
   if(mode==='load')return finish({ok:true,stage:'module-load',hasBuildProxy:true});
-  const cfgPath=process.env.BMRMODZ_CDS_CONFIG;
-  if(!cfgPath)return error('config',new Error('BMRMODZ_CDS_CONFIG is required; tool does not borrow another app configuration'));
+  const cfgPath=process.env.BMRMODZ_CDS_CONFIG||DEFAULT;
   let cfg;
   try{
     const stat=fs.statSync(cfgPath);
