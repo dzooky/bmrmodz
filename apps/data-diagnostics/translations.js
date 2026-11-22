@@ -2,6 +2,7 @@
 // Localized UI and release notes for all 22 supported languages.
 const catalogs={
   "en": {
+    "Share": "Share",
     "Info": "Info",
     "Diagnostics": "Diagnostics",
     "Results": "Results",
@@ -27,6 +28,7 @@ const catalogs={
     "SKIP": "SKIP"
   },
   "sk": {
+    "Share": "Zdieľať",
     "Info": "Informácie",
     "Diagnostics": "Diagnostika",
     "Results": "Výsledky",
@@ -52,6 +54,7 @@ const catalogs={
     "SKIP": "VYNECH."
   },
   "de": {
+    "Share": "Teilen",
     "Info": "Info",
     "Diagnostics": "Diagnose",
     "Results": "Ergebnisse",
@@ -77,6 +80,7 @@ const catalogs={
     "SKIP": "ÜBERSPR."
   },
   "cs": {
+    "Share": "Zdieľať",
     "Info": "Informace",
     "Diagnostics": "Diagnostika",
     "Results": "Výsledky",
@@ -102,6 +106,7 @@ const catalogs={
     "SKIP": "PŘESKOČ."
   },
   "pl": {
+    "Share": "Udostępnij",
     "Info": "Informacje",
     "Diagnostics": "Diagnostyka",
     "Results": "Wyniki",
@@ -127,6 +132,7 @@ const catalogs={
     "SKIP": "POMINIĘTO"
   },
   "fr": {
+    "Share": "Partager",
     "Info": "Infos",
     "Diagnostics": "Diagnostic",
     "Results": "Résultats",
@@ -152,6 +158,7 @@ const catalogs={
     "SKIP": "IGNORÉ"
   },
   "es": {
+    "Share": "Compartir",
     "Info": "Información",
     "Diagnostics": "Diagnóstico",
     "Results": "Resultados",
@@ -177,6 +184,7 @@ const catalogs={
     "SKIP": "OMITIDO"
   },
   "it": {
+    "Share": "Condividi",
     "Info": "Info",
     "Diagnostics": "Diagnostica",
     "Results": "Risultati",
@@ -202,6 +210,7 @@ const catalogs={
     "SKIP": "SALTATO"
   },
   "hu": {
+    "Share": "Megosztás",
     "Info": "Információ",
     "Diagnostics": "Diagnosztika",
     "Results": "Eredmények",
@@ -227,6 +236,7 @@ const catalogs={
     "SKIP": "KIHAGYVA"
   },
   "ru": {
+    "Share": "Поделиться",
     "Info": "Информация",
     "Diagnostics": "Диагностика",
     "Results": "Результаты",
@@ -252,6 +262,7 @@ const catalogs={
     "SKIP": "ПРОПУСК"
   },
   "da": {
+    "Share": "Del",
     "Info": "Info",
     "Diagnostics": "Diagnostik",
     "Results": "Resultater",
@@ -277,6 +288,7 @@ const catalogs={
     "SKIP": "SPRING OVER"
   },
   "el": {
+    "Share": "Κοινοποίηση",
     "Info": "Πληροφορίες",
     "Diagnostics": "Διαγνωστικά",
     "Results": "Αποτελέσματα",
@@ -302,6 +314,7 @@ const catalogs={
     "SKIP": "ΠΑΡΑΛ."
   },
   "zh-CN": {
+    "Share": "分享",
     "Info": "信息",
     "Diagnostics": "诊断",
     "Results": "结果",
@@ -327,6 +340,7 @@ const catalogs={
     "SKIP": "跳过"
   },
   "nl": {
+    "Share": "Delen",
     "Info": "Info",
     "Diagnostics": "Diagnostiek",
     "Results": "Resultaten",
@@ -352,6 +366,7 @@ const catalogs={
     "SKIP": "OVERGESLAGEN"
   },
   "nb": {
+    "Share": "Del",
     "Info": "Info",
     "Diagnostics": "Diagnostikk",
     "Results": "Resultater",
@@ -377,6 +392,7 @@ const catalogs={
     "SKIP": "HOPPET OVER"
   },
   "pt": {
+    "Share": "Partilhar",
     "Info": "Informações",
     "Diagnostics": "Diagnóstico",
     "Results": "Resultados",
@@ -402,6 +418,7 @@ const catalogs={
     "SKIP": "IGNORADO"
   },
   "ro": {
+    "Share": "Partajează",
     "Info": "Informații",
     "Diagnostics": "Diagnosticare",
     "Results": "Rezultate",
@@ -427,6 +444,7 @@ const catalogs={
     "SKIP": "OMIS"
   },
   "sl": {
+    "Share": "Deli",
     "Info": "Informacije",
     "Diagnostics": "Diagnostika",
     "Results": "Rezultati",
@@ -452,6 +470,7 @@ const catalogs={
     "SKIP": "PRESKOČENO"
   },
   "fi": {
+    "Share": "Jaa",
     "Info": "Tiedot",
     "Diagnostics": "Diagnostiikka",
     "Results": "Tulokset",
@@ -477,6 +496,7 @@ const catalogs={
     "SKIP": "OHITETTU"
   },
   "sv": {
+    "Share": "Dela",
     "Info": "Info",
     "Diagnostics": "Diagnostik",
     "Results": "Resultat",
@@ -502,6 +522,7 @@ const catalogs={
     "SKIP": "HOPPAD ÖVER"
   },
   "tr": {
+    "Share": "Paylaş",
     "Info": "Bilgi",
     "Diagnostics": "Tanılama",
     "Results": "Sonuçlar",
@@ -527,6 +548,7 @@ const catalogs={
     "SKIP": "ATLANDI"
   },
   "uk": {
+    "Share": "Поділитися",
     "Info": "Інформація",
     "Diagnostics": "Діагностика",
     "Results": "Результати",
