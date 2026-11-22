@@ -17,8 +17,8 @@ const { decode: decodePng } = require('./png');
 const regenMessage = require('./regen-message');
 const ddeProfiles = require('./dde-profiles');
 const distanceRecord = require('./distance-record');
-const { t: translate, setRuntimeTranslations } = require('./kit/i18n');
-const locales = require('./translations');
+const { t: translate } = require('./kit/i18n');
+const Language = require('./language');
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 const CarEquipment = require('./kit/car-equipment');
 const createSettingsCanvas = require('./kit/settings-canvas');
@@ -97,39 +97,7 @@ mgu.run({
         });
         refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
 
-        let idriveLanguage = 'en';
-        const languageOptions = ctx.settings.item('language').options.map(option => option.slice());
-        function updateAutomaticLanguage() {
-            const setting = ctx.settings.item('language');
-            const options = languageOptions.map(([code, label]) =>
-                code === idriveLanguage ? ['auto', label + ' (auto)'] : [code, label]);
-            setting.options = options;
-            options.forEach(([, label], index) => ui.text('SET_LANGUAGE', label, index, 'ItemText'));
-            const selected = ctx.settings.get('language');
-            ui.selected('SET_LANGUAGE', Math.max(0, options.findIndex(([code]) => code === selected)));
-        }
-        function applyLanguage() {
-            if (ctx.settings.get('language') === idriveLanguage) {
-                ctx.settings.set('language', 'auto');
-            }
-            const selected = ctx.settings.get('language');
-            const language = selected === 'auto' ? idriveLanguage : selected;
-            setRuntimeTranslations(locales[language] || null);
-            updateAutomaticLanguage();
-            ui.text('BTN_SETTINGS', translate('Settings'));
-            const component = ui.comp('SET_LANGUAGE');
-            if (component && typeof component.getStringBundle === 'function') {
-                component.getStringBundle().setStrings({ SID_DPF_SET_LANGUAGE: translate('Language') })
-                    .catch(error => log.warn('DPF language label: ' + error.message));
-            }
-
-        }
-        applyLanguage();
-        ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
-        require('./idrive-language').watch(ctx, language => {
-            idriveLanguage = language;
-            applyLanguage();
-        });
+        const getLanguage = Language.start(ctx);
 
         const link = new ReadOnlyDiag(ctx.signals, log, {
             gapMs: 50, busyMs: 500,
@@ -378,6 +346,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.65', 'Language handling now uses the OSA controller'],
                 ['0.1.64', 'Language selection aligned with OSA'],
                 ['0.1.63', 'English (auto) language value readability'],
                 ['0.1.62', 'Run button translated into all languages'],
