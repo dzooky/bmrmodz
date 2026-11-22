@@ -4,7 +4,7 @@
 // Only approved read-only CDS fields may be sampled.
 const fs=require('fs');
 const {DEFAULT}=require('./config-check');
-const {SIGNALS}=require('./signal-environment');
+const {SIGNALS,NODE_CANDIDATES}=require('./signal-environment');
 const CDS='de.bmw.infotainment.vehicle.CDS';
 const ALLOWED=['statusEngineTemperature','statusEngineSpeed2'];
 let sent=false,proxy=null,finishTimer=null;
@@ -27,7 +27,11 @@ async function main(){
   try{
     // Caller can opt into a specific installation path; no binary is bundled.
     const modulePath=process.env.BMRMODZ_SOMEIP_MODULE;
-    someip=modulePath?require(modulePath):require('someip');
+    if(modulePath)someip=require(modulePath);
+    else {
+      try{someip=require('someip');}
+      catch(primary){someip=require(require.resolve('someip',{paths:NODE_CANDIDATES}));}
+    }
   }catch(e){return error('module-load',e);}
   if(!someip||typeof someip.buildProxy!=='function')return error('module-api',new Error('buildProxy not available'));
   if(mode==='load')return finish({ok:true,stage:'module-load',hasBuildProxy:true});
