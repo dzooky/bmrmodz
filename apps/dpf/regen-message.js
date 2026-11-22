@@ -67,15 +67,20 @@ function start(log, getMessage) {
         ];
         function send(attempt) {
             if (event !== sequence) return; // A newer regeneration event supersedes retries.
-            notification.show('dpf', segments,
-                { durationMs: BLINK_MS, blinkMs: HALF_BLINK_MS, repeat: 1, repeatIntervalMs: 0 })
+            // Catch synchronous rendering exceptions as well as transport failures.
+            Promise.resolve().then(() => notification.show('dpf', segments,
+                { durationMs: BLINK_MS, blinkMs: HALF_BLINK_MS, repeat: 1, repeatIntervalMs: 0 }))
                 .then(result => {
-                    if (result && result.ok) return;
+                    if (result && result.ok) {
+                        if (attempt === 0) log.info('DPF Notification Tool accepted: ' + translated);
+                        return;
+                    }
                     if (result && result.error === 'busy' && attempt < 5) {
                         const timer = setTimeout(() => send(attempt + 1), 150);
                         timer.unref();
                     } else log.warn('DPF Notification Tool: ' + (result && result.error || 'no response'));
-                }).catch(error => log.warn('DPF Notification Tool: ' + error));
+                }).catch(error => log.warn('DPF Notification Tool send/render failed: ' +
+                    String(error && error.message || error)));
         }
         send(0);
     }
