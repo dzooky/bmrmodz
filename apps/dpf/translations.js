@@ -93,7 +93,8 @@ module.exports = {
     "Run button translated into all languages": "Preklad tlačidla Run do všetkých jazykov",
     "Additional translations and Detail text sizing": "Ďalšie preklady a úprava veľkosti textu v Detail",
     "Language selection aligned with OSA": "Výber jazyka zjednotený s OSA",
-    "Language handling now uses the OSA controller": "Správa jazykov teraz používa riešenie z OSA"
+    "Language handling now uses the OSA controller": "Správa jazykov teraz používa riešenie z OSA",
+    "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
     "Overview": "Přehled",
@@ -188,7 +189,8 @@ module.exports = {
     "Run button translated into all languages": "Překlad tlačítka Run do všech jazyků",
     "Additional translations and Detail text sizing": "Další překlady a úprava velikosti textu v Detail",
     "Language selection aligned with OSA": "Výběr jazyka sjednocen s OSA",
-    "Language handling now uses the OSA controller": "Správa jazyků nyní používá řešení z OSA"
+    "Language handling now uses the OSA controller": "Správa jazyků nyní používá řešení z OSA",
+    "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
     "Overview": "Übersicht",
@@ -283,7 +285,8 @@ module.exports = {
     "Run button translated into all languages": "Run-Schaltfläche in alle Sprachen übersetzt",
     "Additional translations and Detail text sizing": "Weitere Übersetzungen und Schriftgröße in Detail",
     "Language selection aligned with OSA": "Sprachauswahl an OSA angeglichen",
-    "Language handling now uses the OSA controller": "Sprachverwaltung verwendet nun die OSA-Steuerung"
+    "Language handling now uses the OSA controller": "Sprachverwaltung verwendet nun die OSA-Steuerung",
+    "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
     "Overview": "Resumen",
@@ -378,7 +381,8 @@ module.exports = {
     "Run button translated into all languages": "Botón Run traducido a todos los idiomas",
     "Additional translations and Detail text sizing": "Más traducciones y tamaño de texto en Detalle",
     "Language selection aligned with OSA": "Selección de idioma igualada a OSA",
-    "Language handling now uses the OSA controller": "La gestión de idiomas ahora utiliza el controlador de OSA"
+    "Language handling now uses the OSA controller": "La gestión de idiomas ahora utiliza el controlador de OSA",
+    "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
     "Overview": "Vue d'ensemble",
@@ -473,7 +477,8 @@ module.exports = {
     "Run button translated into all languages": "Bouton Run traduit dans toutes les langues",
     "Additional translations and Detail text sizing": "Traductions supplémentaires et taille du texte Détail",
     "Language selection aligned with OSA": "Sélection de langue alignée sur OSA",
-    "Language handling now uses the OSA controller": "La gestion des langues utilise désormais le contrôleur OSA"
+    "Language handling now uses the OSA controller": "La gestion des langues utilise désormais le contrôleur OSA",
+    "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
     "Overview": "Panoramica",
@@ -568,7 +573,8 @@ module.exports = {
     "Run button translated into all languages": "Pulsante Run tradotto in tutte le lingue",
     "Additional translations and Detail text sizing": "Altre traduzioni e dimensione del testo Dettagli",
     "Language selection aligned with OSA": "Selezione lingua allineata a OSA",
-    "Language handling now uses the OSA controller": "La gestione delle lingue ora usa il controller OSA"
+    "Language handling now uses the OSA controller": "La gestione delle lingue ora usa il controller OSA",
+    "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
     "Overview": "Áttekintés",
@@ -663,7 +669,8 @@ module.exports = {
     "Run button translated into all languages": "A Run gomb fordítása minden nyelvre",
     "Additional translations and Detail text sizing": "További fordítások és a részletek betűmérete",
     "Language selection aligned with OSA": "Nyelvválasztás az OSA-val egységesítve",
-    "Language handling now uses the OSA controller": "A nyelvkezelés most az OSA vezérlőjét használja"
+    "Language handling now uses the OSA controller": "A nyelvkezelés most az OSA vezérlőjét használja",
+    "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
     "Overview": "Przegląd",
@@ -758,7 +765,8 @@ module.exports = {
     "Run button translated into all languages": "Przycisk Run przetłumaczony na wszystkie języki",
     "Additional translations and Detail text sizing": "Dodatkowe tłumaczenia i wielkość tekstu w Szczegółach",
     "Language selection aligned with OSA": "Wybór języka ujednolicony z OSA",
-    "Language handling now uses the OSA controller": "Obsługa języków korzysta teraz z kontrolera OSA"
+    "Language handling now uses the OSA controller": "Obsługa języków korzysta teraz z kontrolera OSA",
+    "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
     "Overview": "Обзор",
@@ -853,7 +861,8 @@ module.exports = {
     "Run button translated into all languages": "Кнопка Run переведена на все языки",
     "Additional translations and Detail text sizing": "Дополнительные переводы и размер текста в деталях",
     "Language selection aligned with OSA": "Выбор языка приведён к OSA",
-    "Language handling now uses the OSA controller": "Управление языками теперь использует контроллер OSA"
+    "Language handling now uses the OSA controller": "Управление языками теперь использует контроллер OSA",
+    "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
     "Overview": "Oversigt",
@@ -948,7 +957,8 @@ module.exports = {
     "Run button translated into all languages": "Run-knappen oversat til alle sprog",
     "Additional translations and Detail text sizing": "Flere oversættelser og tekststørrelse i Detaljer",
     "Language selection aligned with OSA": "Sprogvalg tilpasset OSA",
-    "Language handling now uses the OSA controller": "Sproghåndtering bruger nu OSA-styringen"
+    "Language handling now uses the OSA controller": "Sproghåndtering bruger nu OSA-styringen",
+    "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
     "Overview": "Επισκόπηση",
@@ -1043,7 +1053,8 @@ module.exports = {
     "Run button translated into all languages": "Το κουμπί Run μεταφράστηκε σε όλες τις γλώσσες",
     "Additional translations and Detail text sizing": "Επιπλέον μεταφράσεις και μέγεθος κειμένου Λεπτομερειών",
     "Language selection aligned with OSA": "Επιλογή γλώσσας εναρμονισμένη με το OSA",
-    "Language handling now uses the OSA controller": "Η διαχείριση γλωσσών χρησιμοποιεί πλέον τον ελεγκτή OSA"
+    "Language handling now uses the OSA controller": "Η διαχείριση γλωσσών χρησιμοποιεί πλέον τον ελεγκτή OSA",
+    "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
     "Overview": "概览",
@@ -1138,7 +1149,8 @@ module.exports = {
     "Run button translated into all languages": "Run 按钮已翻译成所有语言",
     "Additional translations and Detail text sizing": "补充翻译并调整详细信息文字大小",
     "Language selection aligned with OSA": "语言选择与 OSA 保持一致",
-    "Language handling now uses the OSA controller": "语言处理现在使用 OSA 控制器"
+    "Language handling now uses the OSA controller": "语言处理现在使用 OSA 控制器",
+    "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
     "Overview": "Overzicht",
@@ -1233,7 +1245,8 @@ module.exports = {
     "Run button translated into all languages": "Run-knop vertaald in alle talen",
     "Additional translations and Detail text sizing": "Extra vertalingen en tekstgrootte in Details",
     "Language selection aligned with OSA": "Taalkeuze gelijkgetrokken met OSA",
-    "Language handling now uses the OSA controller": "Taalbeheer gebruikt nu de OSA-controller"
+    "Language handling now uses the OSA controller": "Taalbeheer gebruikt nu de OSA-controller",
+    "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
     "Overview": "Oversikt",
@@ -1328,7 +1341,8 @@ module.exports = {
     "Run button translated into all languages": "Run-knappen oversatt til alle språk",
     "Additional translations and Detail text sizing": "Flere oversettelser og tekststørrelse i Detaljer",
     "Language selection aligned with OSA": "Språkvalg tilpasset OSA",
-    "Language handling now uses the OSA controller": "Språkhåndteringen bruker nå OSA-kontrolleren"
+    "Language handling now uses the OSA controller": "Språkhåndteringen bruker nå OSA-kontrolleren",
+    "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
     "Overview": "Resumo",
@@ -1423,7 +1437,8 @@ module.exports = {
     "Run button translated into all languages": "Botão Run traduzido para todos os idiomas",
     "Additional translations and Detail text sizing": "Mais traduções e tamanho do texto em Detalhes",
     "Language selection aligned with OSA": "Seleção de idioma alinhada com OSA",
-    "Language handling now uses the OSA controller": "A gestão de idiomas agora usa o controlador OSA"
+    "Language handling now uses the OSA controller": "A gestão de idiomas agora usa o controlador OSA",
+    "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
     "Overview": "Prezentare",
@@ -1518,7 +1533,8 @@ module.exports = {
     "Run button translated into all languages": "Butonul Run tradus în toate limbile",
     "Additional translations and Detail text sizing": "Traduceri suplimentare și dimensiunea textului în Detalii",
     "Language selection aligned with OSA": "Selectarea limbii aliniată cu OSA",
-    "Language handling now uses the OSA controller": "Gestionarea limbii folosește acum controlerul OSA"
+    "Language handling now uses the OSA controller": "Gestionarea limbii folosește acum controlerul OSA",
+    "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
     "Overview": "Pregled",
@@ -1613,7 +1629,8 @@ module.exports = {
     "Run button translated into all languages": "Gumb Run preveden v vse jezike",
     "Additional translations and Detail text sizing": "Dodatni prevodi in velikost besedila v Podrobnostih",
     "Language selection aligned with OSA": "Izbira jezika usklajena z OSA",
-    "Language handling now uses the OSA controller": "Upravljanje jezikov zdaj uporablja krmilnik OSA"
+    "Language handling now uses the OSA controller": "Upravljanje jezikov zdaj uporablja krmilnik OSA",
+    "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
     "Overview": "Yleiskatsaus",
@@ -1708,7 +1725,8 @@ module.exports = {
     "Run button translated into all languages": "Run-painike käännetty kaikille kielille",
     "Additional translations and Detail text sizing": "Lisää käännöksiä ja tietonäkymän tekstikoko",
     "Language selection aligned with OSA": "Kielivalinta yhdenmukaistettu OSA:n kanssa",
-    "Language handling now uses the OSA controller": "Kielenhallinta käyttää nyt OSA-ohjainta"
+    "Language handling now uses the OSA controller": "Kielenhallinta käyttää nyt OSA-ohjainta",
+    "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
     "Overview": "Översikt",
@@ -1803,7 +1821,8 @@ module.exports = {
     "Run button translated into all languages": "Run-knappen översatt till alla språk",
     "Additional translations and Detail text sizing": "Fler översättningar och textstorlek i Detaljer",
     "Language selection aligned with OSA": "Språkval anpassat till OSA",
-    "Language handling now uses the OSA controller": "Språkhanteringen använder nu OSA-styrenheten"
+    "Language handling now uses the OSA controller": "Språkhanteringen använder nu OSA-styrenheten",
+    "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
     "Overview": "Genel bakış",
@@ -1898,7 +1917,8 @@ module.exports = {
     "Run button translated into all languages": "Run düğmesi tüm dillere çevrildi",
     "Additional translations and Detail text sizing": "Ek çeviriler ve Ayrıntılar metin boyutu",
     "Language selection aligned with OSA": "Dil seçimi OSA ile uyumlu",
-    "Language handling now uses the OSA controller": "Dil yönetimi artık OSA denetleyicisini kullanıyor"
+    "Language handling now uses the OSA controller": "Dil yönetimi artık OSA denetleyicisini kullanıyor",
+    "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
     "Overview": "Огляд",
@@ -1993,6 +2013,7 @@ module.exports = {
     "Run button translated into all languages": "Кнопку Run перекладено всіма мовами",
     "Additional translations and Detail text sizing": "Додаткові переклади та розмір тексту в деталях",
     "Language selection aligned with OSA": "Вибір мови узгоджено з OSA",
-    "Language handling now uses the OSA controller": "Керування мовами тепер використовує контролер OSA"
+    "Language handling now uses the OSA controller": "Керування мовами тепер використовує контролер OSA",
+    "Correct Settings text after repeated page renders": "Правильний текст налаштувань після повторного відображення"
   }
 };

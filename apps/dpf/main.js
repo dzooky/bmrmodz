@@ -346,6 +346,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.66', 'Correct Settings text after repeated page renders'],
                 ['0.1.65', 'Language handling now uses the OSA controller'],
                 ['0.1.64', 'Language selection aligned with OSA'],
                 ['0.1.63', 'English (auto) language value readability'],
@@ -422,6 +423,9 @@ mgu.run({
         function render() {
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
+            // Recorder instances are reused across frames. Remove any text auto-fit
+            // installed on a prior DPF frame so Settings uses the native OSA renderer.
+            delete cv.text;
             // Match OSA: Settings uses the shared sheet renderer without DPF's text auto-fit.
             if (page === 'settings') {
                 settingsCanvas.draw(cv, t);
