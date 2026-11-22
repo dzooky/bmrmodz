@@ -1,0 +1,48 @@
+name: Notification Tool and DPF integration
+on:
+  push:
+    branches: [feature/notification-tool-dpf-0.1.56]
+  pull_request:
+    paths:
+      - 'tools/notification/**'
+      - 'kit/runtime/notification-tool.js'
+      - 'apps/dpf/regen-message.js'
+      - 'apps/dpf/regen-message.test.js'
+      - 'apps/dpf/app.json'
+      - 'mgu-repo.json'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Check syntax
+        run: |
+          node --check tools/notification/service.js
+          node --check tools/notification/test.js
+          node --check kit/runtime/notification-tool.js
+          node --check apps/dpf/regen-message.js
+          node --check apps/dpf/main.js
+      - name: Test Notification Tool mock renderer
+        run: node tools/notification/test.js
+      - name: Test original DPF regeneration state machine
+        run: node apps/dpf/regen-message.test.js
+      - name: Check package registration, dependency and separation
+        run: |
+          node - <<'NODE'
+          const assert=require('assert'),fs=require('fs');
+          const repo=JSON.parse(fs.readFileSync('mgu-repo.json'));
+          const tool=JSON.parse(fs.readFileSync('tools/notification/component.json'));
+          const app=JSON.parse(fs.readFileSync('apps/dpf/app.json'));
+          const src=fs.readFileSync('apps/dpf/regen-message.js','utf8');
+          assert(repo.tools.some(x=>x.id==='bmrmodz-notification'&&x.path==='tools/notification'));
+          assert.strictEqual(tool.version,'0.2.0');
+          assert.strictEqual(app.version,'0.1.56');
+          assert.strictEqual(app.requires['bmrmodz-notification'],tool.version);
+          assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.5');
+          assert(src.includes("require('./kit/notification-tool')"));
+          assert(!src.includes('cluster-render'));
+          assert(!src.includes("require('./kit/canvas')"));
+          NODE
