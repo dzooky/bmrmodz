@@ -22,7 +22,7 @@ The example reads DDE 0x12, DID 0x44BB (decimal 17595). `status` never opens dia
 
 ## Test sequence
 1. Run `node tools/data-tool/test.js` for offline safety/queue/transport checks.
-2. Install only on a review vehicle, with helper dependency available. Verify systemd active before requesting.
+2. Install only on a review vehicle, with helper dependency available. Verify systemd active before requesting. Execute `node /var/opt/bmrmodz-data-tool/current/probe.js status` and explicit `read 0x12 0x44BB` to collect one DDE sample. The Unix socket is accessible to local processes; keep it strictly read-only until access controls are defined.
 3. With vehicle parked, compare single DDE/EGS/IHKA/BDC/ACSM reads to existing apps one by one; preserve a log of positive/negative/timeout, latency and VIN-free vehicle configuration.
 4. Repeat on several sessions, then concurrency testing with one other app at a time, then controlled driving tests by a passenger.
 5. Only after read verification, develop a **separate** authorized CC actuator test and signal provider experiment. No actuator operation can be performed by this version.
