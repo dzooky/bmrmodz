@@ -19,7 +19,8 @@ const required = [
   'Equipment reload failed', 'Equipment read error',
   'Check in progress', 'Reloading...', 'Reload failed',
   'Read vehicle equipment again',
-  'Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)'
+  'Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)',
+  'Run'
 ];
 
 test('all 21 non-English DPF locales have aligned nonempty translations', () => {
@@ -50,4 +51,19 @@ test('selected Settings language uses readable type size', () => {
   const sheet = fs.readFileSync(path.join(__dirname, '../../kit/runtime/sheet.js'), 'utf8');
   assert.match(sheet, /row\.key === 'language' \? 32 : 26/);
   assert.match(sheet, /key: s\.key, label: s\.label/);
+});
+
+test('DPF Settings uses OSA sheet rendering for English auto language', () => {
+  const main = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+  const start = main.indexOf("function render() {");
+  const canvas = main.indexOf("const cv = ctx.canvas(W, H).clear(t.bg);", start);
+  const sheet = main.indexOf("settingsCanvas.draw(cv, t);", canvas);
+  const override = main.indexOf("cv.text = (value, x, y, size, colour, options) =>", canvas);
+  assert.ok(canvas >= 0 && sheet > canvas && override > sheet,
+    'Settings must render before the DPF-specific auto-fit override');
+  const settings = main.slice(canvas, override);
+  assert.match(settings, /if \(page === 'settings'\)/);
+  assert.match(settings, /return ui\.image\('MAIN_GFX', cv\)/);
+  const app = JSON.parse(fs.readFileSync(path.join(__dirname, 'app.json'), 'utf8'));
+  assert.equal(app.settings.find(s => s.key === 'language').options[0][1], 'English (auto)');
 });
