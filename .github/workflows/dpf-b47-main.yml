@@ -22,6 +22,7 @@ jobs:
           node apps/dpf/distance-record.test.js
           node apps/dpf/dde-profiles.test.js
           node apps/dpf/regen-message.test.js
+          node --test apps/dpf/translations.test.js
       - name: Version and regen-guard checks
         run: |
           node - <<'NODE'
