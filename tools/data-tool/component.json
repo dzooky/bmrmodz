@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-data-tool",
   "kind": "tool",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "title": "Data Tool Feasibility",
-  "description": "Read-only experimental diagnostic tool with inert CC command coverage plan and SOME/IP feasibility probes",
+  "description": "Read-only BMRMODZ Data Tool diagnostic feasibility service, supporting the separate diagnostic MGU app",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [
