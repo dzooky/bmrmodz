@@ -25,8 +25,12 @@ jobs:
           node --check tools/data-tool/test.js
           node --check tools/data-tool/signal-environment.js
           node --check tools/data-tool/signal-environment.test.js
+          node --check tools/data-tool/signal-worker.js
+          node --check tools/data-tool/signal-isolate.js
+          node --check tools/data-tool/signal-isolate.test.js
           node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('mgu-repo.json'));const c=JSON.parse(fs.readFileSync('tools/data-tool/component.json'));if(!m.tools.some(x=>x.id===c.id))process.exit(1)"
       - name: Offline service regression
         run: |
           node tools/data-tool/test.js
           node tools/data-tool/signal-environment.test.js
+          node tools/data-tool/signal-isolate.test.js
