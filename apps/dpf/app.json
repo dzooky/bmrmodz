@@ -43,6 +43,7 @@
     {
       "key": "language",
       "label": "Language",
+      "englishAutoValueSize": 38,
       "type": "choice",
       "default": "auto",
       "options": [
