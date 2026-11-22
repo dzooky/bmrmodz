@@ -14,7 +14,6 @@ const STEPS=[
   {id:'cdsTemp',label:'CDS / temperatures',request:{op:'signalNative',mode:'sample',field:'statusEngineTemperature'},kind:'signal'},
   {id:'cdsRpm',label:'CDS / engine speed',request:{op:'signalNative',mode:'sample',field:'statusEngineSpeed2'},kind:'signal'}
 ];
-const expectedLength=600;
 function cleanError(value){return String(value||'Unknown error').replace(/[\r\n]/g,' ').slice(0,140);}
 function resultFor(step,reply,duration){
   const base={id:step.id,label:step.label,status:'FAIL',durationMs:duration};
