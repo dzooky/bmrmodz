@@ -41,3 +41,4 @@ jobs:
           node tools/data-tool/signal-isolate.test.js
           node tools/data-tool/diagnostic-report.test.js
           node tools/data-tool/cc-feasibility.test.js
+          node tools/data-tool/signal-manifest.test.js
