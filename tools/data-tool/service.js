@@ -60,7 +60,7 @@ function serve(factory,socketPath){
         try{
           req=JSON.parse(raw);
           if(!req||typeof req!=='object')throw new Error('Invalid request');
-          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.0',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
+          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.1',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
           else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
