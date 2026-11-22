@@ -1,7 +1,7 @@
 {
   "id": "bmrmodz-notification",
   "kind": "tool",
-  "version": "0.2.0",
+  "version": "0.1.1",
   "title": "Notification Tool",
   "description": "Central transient KOMBI notifications for BMRMODZ apps. Multi-color text rendered by shared client; blink and repeats managed by HU service. BC coexistence unverified.",
   "optional": true,
