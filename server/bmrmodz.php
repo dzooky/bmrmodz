@@ -1,8 +1,8 @@
 <?php
 declare(strict_types=1);
-// Upload to https://dzooky.eu/bmrmodz.php.
-// Set BMRMODZ_REPORT_TOKEN and BMRMODZ_REPORT_DIR in the PHP environment.
-// The destination directory MUST exist and MUST be outside the web root.
+// LAN-only receiver at http://192.168.0.10/bmrmodz.php.
+// No token. Firewall must block the webserver from the public Internet.
+// Create ../bmrmodz_reports beside the web root; PHP needs write access.
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
@@ -15,18 +15,24 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');
     answer(405, ['ok' => false, 'error' => 'Method not allowed']);
 }
-if (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] === 'off') {
-    answer(403, ['ok' => false, 'error' => 'HTTPS required']);
+// Trust only the actual TCP peer, never proxy-provided X-Forwarded-For headers.
+$remote = $_SERVER['REMOTE_ADDR'] ?? '';
+$ip = filter_var($remote, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4);
+if ($ip === false || !preg_match('/^192\\.168\\.0\\.(?:[0-9]{1,3})$/D', $ip)) {
+    answer(403, ['ok' => false, 'error' => 'LAN access only']);
 }
-$expected = getenv('BMRMODZ_REPORT_TOKEN');
-$directory = getenv('BMRMODZ_REPORT_DIR');
-if (!is_string($expected) || strlen($expected) < 32 || !is_string($directory)
-    || $directory === '' || !is_dir($directory) || !is_writable($directory)) {
-    answer(503, ['ok' => false, 'error' => 'Receiver not configured']);
+// Avoid writes to web-exposed storage, even if configuration is incorrect.
+$webRoot = realpath($_SERVER['DOCUMENT_ROOT'] ?? __DIR__);
+$storage = getenv('BMRMODZ_REPORT_DIR');
+if (!is_string($storage) || $storage === '') {
+    $storage = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'bmrmodz_reports';
 }
-$given = $_SERVER['HTTP_X_BMRMODZ_TOKEN'] ?? '';
-if (!is_string($given) || !hash_equals($expected, $given)) {
-    answer(401, ['ok' => false, 'error' => 'Unauthorized']);
+$directory = realpath($storage);
+if ($directory === false || $webRoot === false || !is_dir($directory)
+    || !is_writable($directory)
+    || $directory === $webRoot
+    || strpos($directory . DIRECTORY_SEPARATOR, rtrim($webRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR) === 0) {
+    answer(503, ['ok' => false, 'error' => 'Private storage not configured']);
 }
 if (isset($_SERVER['CONTENT_TYPE']) && stripos($_SERVER['CONTENT_TYPE'], 'application/json') !== 0) {
     answer(415, ['ok' => false, 'error' => 'JSON required']);
