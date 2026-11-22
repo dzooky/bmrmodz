@@ -2,7 +2,7 @@
   "id": "data-diagnostics",
   "title": "Data Tool Diagnostics",
   "description": "Experimental read-only feasibility diagnostics for the BMRMODZ Data Tool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "vendor": "custom",
   "loggingId": "DAT1",
   "iconGlyph": "temp",
@@ -22,6 +22,10 @@
         [
           "BTN_EXPORT",
           "Export report"
+        ],
+        [
+          "BTN_SEND",
+          "Send report"
         ],
         [
           "BTN_PREV",
@@ -44,90 +48,6 @@
         [
           "en",
           "English"
-        ],
-        [
-          "de",
-          "Deutsch"
-        ],
-        [
-          "es",
-          "Español"
-        ],
-        [
-          "fr",
-          "Français"
-        ],
-        [
-          "hu",
-          "Magyar"
-        ],
-        [
-          "pl",
-          "Polski"
-        ],
-        [
-          "sk",
-          "Slovenčina"
-        ],
-        [
-          "cs",
-          "Čeština"
-        ],
-        [
-          "it",
-          "Italiano"
-        ],
-        [
-          "ru",
-          "Русский"
-        ],
-        [
-          "da",
-          "Dansk"
-        ],
-        [
-          "el",
-          "Ελληνικά"
-        ],
-        [
-          "zh-CN",
-          "简体中文"
-        ],
-        [
-          "nl",
-          "Nederlands"
-        ],
-        [
-          "nb",
-          "Norsk"
-        ],
-        [
-          "pt",
-          "Português"
-        ],
-        [
-          "ro",
-          "Română"
-        ],
-        [
-          "sl",
-          "Slovenščina"
-        ],
-        [
-          "fi",
-          "Suomi"
-        ],
-        [
-          "sv",
-          "Svenska"
-        ],
-        [
-          "tr",
-          "Türkçe"
-        ],
-        [
-          "uk",
-          "Українська"
         ]
       ]
     },
