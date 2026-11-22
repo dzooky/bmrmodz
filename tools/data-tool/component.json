@@ -1,0 +1,51 @@
+{
+  "id": "bmrmodz-data-tool",
+  "kind": "tool",
+  "version": "0.1.0",
+  "title": "Data Tool Feasibility",
+  "description": "Experimental allowlisted read-only TASU diagnostic gateway. No autopolled data or actuator commands; CDS/SOME-IP capability unverified.",
+  "optional": true,
+  "uninstallable": true,
+  "mguHmi": [
+    "ID7"
+  ],
+  "requires": {
+    "iteriodev-comfort": "0.6.3",
+    "mgu-deploy": "0.7.11"
+  },
+  "files": [
+    {
+      "path": "service.js",
+      "from": "service.js",
+      "mode": "0644"
+    },
+    {
+      "path": "transport.js",
+      "from": "transport.js",
+      "mode": "0644"
+    },
+    {
+      "path": "profiles.js",
+      "from": "profiles.js",
+      "mode": "0644"
+    }
+  ],
+  "units": [
+    {
+      "name": "bmrmodz-data-tool.service",
+      "from": "bmrmodz-data-tool.service"
+    }
+  ],
+  "enable": [
+    {
+      "unit": "bmrmodz-data-tool.service",
+      "target": "multi-user.target"
+    }
+  ],
+  "restart": [
+    "bmrmodz-data-tool.service"
+  ],
+  "recmgr": [
+    "bmrmodz-data-tool"
+  ]
+}
