@@ -8,6 +8,7 @@ on:
       - 'kit/runtime/notification-tool.js'
       - 'apps/dpf/regen-message.js'
       - 'apps/dpf/regen-message.test.js'
+      - 'apps/dpf/notification-preview.test.js'
       - 'apps/dpf/app.json'
       - 'mgu-repo.json'
 jobs:
@@ -27,8 +28,10 @@ jobs:
           node --check apps/dpf/main.js
       - name: Test Notification Tool mock renderer
         run: node tools/notification/test.js
-      - name: Test original DPF regeneration state machine
-        run: node apps/dpf/regen-message.test.js
+      - name: Test DPF regeneration state machine and DDE-independent preview
+        run: |
+          node apps/dpf/regen-message.test.js
+          node apps/dpf/notification-preview.test.js
       - name: Check package registration, dependency and separation
         run: |
           node - <<'NODE'
