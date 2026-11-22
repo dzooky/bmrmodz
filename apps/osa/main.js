@@ -194,6 +194,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.61', 'Changed cluster notification preview from toggle to Proceed action'],
                 ['0.2.60', 'Migrated KOMBI oil notifications to the shared Notification Tool'],
                 ['0.2.52', 'Show cluster notification setting only when VO contains 6WB'],
                 ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
@@ -381,11 +382,9 @@ mgu.run({
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
         const oilWarmTarget = () => Number(ctx.settings.get('warmOil')) || 80;
         // Preview is a user-requested display sample; no oil temperature or DDE is needed.
-        if (ctx.settings.get('clusterBcTest')) ctx.settings.set('clusterBcTest', false);
-        ctx.settings.onChange((key, value) => {
-            if (key !== 'clusterBcTest' || !value) return;
+        ctx.settings.onAction('clusterBcTest', () => {
+            // Manual preview is independent of live engine temperature.
             oilNotification.show(log, getLanguage(), oilWarmTarget(), 'preview');
-            ctx.settings.set('clusterBcTest', false);
         });
         // The warm-up state machine runs only with output enabled and available data.
         // The tool handles rendering without waiting for an OSA-owned renderer socket.
