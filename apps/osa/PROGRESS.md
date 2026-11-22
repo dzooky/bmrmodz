@@ -1,5 +1,13 @@
 # Oil Service Assistant progress
 
+## v0.2.62 — Notification text translations (2026-11-22)
+
+- Added complete translations across all 21 non-English OSA catalogs for the new `Show notification message` setting, its `Run` action and the 0.2.60/0.2.61 About release-note strings.
+- Existing oil-warm-up message translations, behavior, UI layout and notification routing are unchanged.
+- Added regression assertions for translation key presence, nonempty localized values, and language coverage.
+- Automated checks: pending CI verification; in-car verification: not yet reported for 0.2.62.
+
+
 ## v0.2.61 — Manual notification preview button (2026-11-22)
 
 - Changed the Settings `clusterBcTest` notification preview from a boolean toggle to an `action` button.
