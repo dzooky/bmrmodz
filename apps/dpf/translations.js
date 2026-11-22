@@ -80,7 +80,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nové hlásenie začiatku regenerácie",
     "Cluster notification settings require detected 6WB": "Nastavenia hlásení vyžadujú rozpoznaný 6WB",
     "Reload Equipment": "Znova načítať výbavu",
-    "Reload": "Načítať"
+    "Reload": "Načítať",
+    "Equipment reload failed": "Opätovné načítanie výbavy zlyhalo",
+    "Equipment read error": "Chyba pri čítaní výbavy",
+    "Check in progress": "Prebieha kontrola",
+    "Reloading...": "Načítava sa...",
+    "Reload failed": "Načítanie zlyhalo",
+    "Read vehicle equipment again": "Znova načítať výbavu vozidla",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štyri hlásenia: Vyžiadaná (žltá), Začatá a Prebieha (červená), Dokončená (zelená)"
   },
   "cs": {
     "Overview": "Přehled",
@@ -162,7 +169,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nová zpráva o zahájení regenerace",
     "Cluster notification settings require detected 6WB": "Nastavení oznámení vyžaduje rozpoznaný 6WB",
     "Reload Equipment": "Znovu načíst výbavu",
-    "Reload": "Načíst"
+    "Reload": "Načíst",
+    "Equipment reload failed": "Opětovné načtení výbavy selhalo",
+    "Equipment read error": "Chyba čtení výbavy",
+    "Check in progress": "Probíhá kontrola",
+    "Reloading...": "Načítání...",
+    "Reload failed": "Načtení selhalo",
+    "Read vehicle equipment again": "Znovu načíst výbavu vozidla",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Čtyři upozornění: Vyžádána (žlutá), Zahájena a Probíhá (červená), Dokončena (zelená)"
   },
   "de": {
     "Overview": "Übersicht",
@@ -244,7 +258,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Neue Startmeldung bei Regenerationsbeginn",
     "Cluster notification settings require detected 6WB": "Benachrichtigungen erfordern erkannten 6WB",
     "Reload Equipment": "Fahrzeugausstattung neu laden",
-    "Reload": "Neu laden"
+    "Reload": "Neu laden",
+    "Equipment reload failed": "Ausstattung konnte nicht neu geladen werden",
+    "Equipment read error": "Fehler beim Lesen der Ausstattung",
+    "Check in progress": "Prüfung läuft",
+    "Reloading...": "Wird neu geladen...",
+    "Reload failed": "Neuladen fehlgeschlagen",
+    "Read vehicle equipment again": "Fahrzeugausstattung erneut lesen",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier Meldungen: Angefordert (gelb), Gestartet und Läuft (rot), Beendet (grün)"
   },
   "es": {
     "Overview": "Resumen",
@@ -326,7 +347,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nuevo aviso al comenzar la regeneración",
     "Cluster notification settings require detected 6WB": "Las notificaciones requieren detectar 6WB",
     "Reload Equipment": "Recargar equipamiento del vehículo",
-    "Reload": "Recargar"
+    "Reload": "Recargar",
+    "Equipment reload failed": "Error al recargar el equipamiento",
+    "Equipment read error": "Error al leer el equipamiento",
+    "Check in progress": "Comprobación en curso",
+    "Reloading...": "Recargando...",
+    "Reload failed": "Error al recargar",
+    "Read vehicle equipment again": "Volver a leer el equipamiento del vehículo",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cuatro avisos: Solicitada (amarillo), Iniciada y En curso (rojo), Finalizada (verde)"
   },
   "fr": {
     "Overview": "Vue d'ensemble",
@@ -408,7 +436,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nouvelle alerte au début de la régénération",
     "Cluster notification settings require detected 6WB": "Notifications disponibles si 6WB détecté",
     "Reload Equipment": "Recharger les équipements du véhicule",
-    "Reload": "Recharger"
+    "Reload": "Recharger",
+    "Equipment reload failed": "Échec du rechargement des équipements",
+    "Equipment read error": "Erreur de lecture des équipements",
+    "Check in progress": "Vérification en cours",
+    "Reloading...": "Rechargement...",
+    "Reload failed": "Échec du rechargement",
+    "Read vehicle equipment again": "Relire les équipements du véhicule",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatre alertes : Demandée (jaune), Démarrée et En cours (rouge), Terminée (vert)"
   },
   "it": {
     "Overview": "Panoramica",
@@ -490,7 +525,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nuovo avviso all’avvio della rigenerazione",
     "Cluster notification settings require detected 6WB": "Le notifiche richiedono il rilevamento di 6WB",
     "Reload Equipment": "Ricarica dotazioni veicolo",
-    "Reload": "Ricarica"
+    "Reload": "Ricarica",
+    "Equipment reload failed": "Ricaricamento dotazioni non riuscito",
+    "Equipment read error": "Errore lettura dotazioni",
+    "Check in progress": "Controllo in corso",
+    "Reloading...": "Ricaricamento...",
+    "Reload failed": "Ricaricamento non riuscito",
+    "Read vehicle equipment again": "Rileggi dotazioni veicolo",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quattro avvisi: Richiesta (giallo), Avviata e In corso (rosso), Completata (verde)"
   },
   "hu": {
     "Overview": "Áttekintés",
@@ -572,7 +614,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Új értesítés a regenerálás kezdetén",
     "Cluster notification settings require detected 6WB": "Az értesítésekhez felismert 6WB szükséges",
     "Reload Equipment": "Járműfelszereltség újratöltése",
-    "Reload": "Újratöltés"
+    "Reload": "Újratöltés",
+    "Equipment reload failed": "Felszereltség újratöltése sikertelen",
+    "Equipment read error": "Felszereltség olvasási hiba",
+    "Check in progress": "Ellenőrzés folyamatban",
+    "Reloading...": "Újratöltés...",
+    "Reload failed": "Újratöltés sikertelen",
+    "Read vehicle equipment again": "Járműfelszereltség újbóli beolvasása",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Négy jelzés: Kért (sárga), Elindult és Folyamatban (piros), Befejeződött (zöld)"
   },
   "pl": {
     "Overview": "Przegląd",
@@ -654,7 +703,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nowy komunikat przy rozpoczęciu regeneracji",
     "Cluster notification settings require detected 6WB": "Powiadomienia wymagają wykrycia 6WB",
     "Reload Equipment": "Wczytaj ponownie wyposażenie pojazdu",
-    "Reload": "Wczytaj"
+    "Reload": "Wczytaj",
+    "Equipment reload failed": "Nie udało się ponownie wczytać wyposażenia",
+    "Equipment read error": "Błąd odczytu wyposażenia",
+    "Check in progress": "Trwa sprawdzanie",
+    "Reloading...": "Wczytywanie...",
+    "Reload failed": "Wczytywanie nieudane",
+    "Read vehicle equipment again": "Ponownie odczytaj wyposażenie pojazdu",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Cztery komunikaty: Żądana (żółty), Rozpoczęta i W toku (czerwony), Zakończona (zielony)"
   },
   "ru": {
     "Overview": "Обзор",
@@ -736,7 +792,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Новое уведомление о начале регенерации",
     "Cluster notification settings require detected 6WB": "Для уведомлений необходимо обнаружение 6WB",
     "Reload Equipment": "Обновить комплектацию автомобиля",
-    "Reload": "Обновить"
+    "Reload": "Обновить",
+    "Equipment reload failed": "Не удалось обновить комплектацию",
+    "Equipment read error": "Ошибка чтения комплектации",
+    "Check in progress": "Идёт проверка",
+    "Reloading...": "Обновление...",
+    "Reload failed": "Ошибка обновления",
+    "Read vehicle equipment again": "Повторно прочитать комплектацию автомобиля",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Четыре оповещения: Запрошена (жёлтый), Начата и Выполняется (красный), Завершена (зелёный)"
   },
   "da": {
     "Overview": "Oversigt",
@@ -818,7 +881,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Ny startbesked ved regenereringens start",
     "Cluster notification settings require detected 6WB": "Notifikationer kræver registreret 6WB",
     "Reload Equipment": "Genindlæs bilens udstyr",
-    "Reload": "Genindlæs"
+    "Reload": "Genindlæs",
+    "Equipment reload failed": "Kunne ikke genindlæse udstyr",
+    "Equipment read error": "Fejl ved læsning af udstyr",
+    "Check in progress": "Kontrol i gang",
+    "Reloading...": "Genindlæser...",
+    "Reload failed": "Genindlæsning mislykkedes",
+    "Read vehicle equipment again": "Læs bilens udstyr igen",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire beskeder: Anmodet (gul), Startet og I gang (rød), Afsluttet (grøn)"
   },
   "el": {
     "Overview": "Επισκόπηση",
@@ -900,7 +970,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Νέα ειδοποίηση στην έναρξη αναγέννησης",
     "Cluster notification settings require detected 6WB": "Οι ειδοποιήσεις απαιτούν ανίχνευση 6WB",
     "Reload Equipment": "Επαναφόρτωση εξοπλισμού οχήματος",
-    "Reload": "Επαναφόρτωση"
+    "Reload": "Επαναφόρτωση",
+    "Equipment reload failed": "Αποτυχία επαναφόρτωσης εξοπλισμού",
+    "Equipment read error": "Σφάλμα ανάγνωσης εξοπλισμού",
+    "Check in progress": "Έλεγχος σε εξέλιξη",
+    "Reloading...": "Επαναφόρτωση...",
+    "Reload failed": "Αποτυχία φόρτωσης",
+    "Read vehicle equipment again": "Νέα ανάγνωση εξοπλισμού οχήματος",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Τέσσερις ειδοποιήσεις: Αίτημα (κίτρινο), Έναρξη και Σε εξέλιξη (κόκκινο), Ολοκλήρωση (πράσινο)"
   },
   "zh-CN": {
     "Overview": "概览",
@@ -982,7 +1059,14 @@ module.exports = {
     "New Started alert on regeneration begin": "再生开始时的新提示",
     "Cluster notification settings require detected 6WB": "通知设置需要检测到 6WB",
     "Reload Equipment": "重新加载车辆配置",
-    "Reload": "重新加载"
+    "Reload": "重新加载",
+    "Equipment reload failed": "重新加载配置失败",
+    "Equipment read error": "读取配置错误",
+    "Check in progress": "正在检查",
+    "Reloading...": "正在重新加载...",
+    "Reload failed": "加载失败",
+    "Read vehicle equipment again": "重新读取车辆配置",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "四种提示：已请求（黄色）、已开始和进行中（红色）、已完成（绿色）"
   },
   "nl": {
     "Overview": "Overzicht",
@@ -1064,7 +1148,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nieuwe startmelding bij begin regeneratie",
     "Cluster notification settings require detected 6WB": "Meldingen vereisen gedetecteerde 6WB",
     "Reload Equipment": "Voertuiguitrusting opnieuw laden",
-    "Reload": "Opnieuw laden"
+    "Reload": "Opnieuw laden",
+    "Equipment reload failed": "Opnieuw laden van uitrusting mislukt",
+    "Equipment read error": "Fout bij lezen van uitrusting",
+    "Check in progress": "Controle bezig",
+    "Reloading...": "Opnieuw laden...",
+    "Reload failed": "Laden mislukt",
+    "Read vehicle equipment again": "Lees voertuiguitrusting opnieuw",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Vier meldingen: Aangevraagd (geel), Gestart en Bezig (rood), Voltooid (groen)"
   },
   "nb": {
     "Overview": "Oversikt",
@@ -1146,7 +1237,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nytt varsel ved start av regenerering",
     "Cluster notification settings require detected 6WB": "Varsler krever oppdaget 6WB",
     "Reload Equipment": "Last inn bilutstyr på nytt",
-    "Reload": "Last inn på nytt"
+    "Reload": "Last inn på nytt",
+    "Equipment reload failed": "Kunne ikke laste inn utstyr på nytt",
+    "Equipment read error": "Feil ved lesing av utstyr",
+    "Check in progress": "Kontroll pågår",
+    "Reloading...": "Laster inn...",
+    "Reload failed": "Innlasting mislyktes",
+    "Read vehicle equipment again": "Les bilutstyr på nytt",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fire varsler: Forespurt (gul), Startet og Pågår (rød), Fullført (grønn)"
   },
   "pt": {
     "Overview": "Resumo",
@@ -1228,7 +1326,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Novo aviso no início da regeneração",
     "Cluster notification settings require detected 6WB": "Notificações exigem deteção de 6WB",
     "Reload Equipment": "Recarregar equipamento do veículo",
-    "Reload": "Recarregar"
+    "Reload": "Recarregar",
+    "Equipment reload failed": "Falha ao recarregar equipamento",
+    "Equipment read error": "Erro ao ler equipamento",
+    "Check in progress": "Verificação em curso",
+    "Reloading...": "A recarregar...",
+    "Reload failed": "Falha ao recarregar",
+    "Read vehicle equipment again": "Ler novamente equipamento do veículo",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Quatro avisos: Solicitada (amarelo), Iniciada e Em curso (vermelho), Concluída (verde)"
   },
   "ro": {
     "Overview": "Prezentare",
@@ -1310,7 +1415,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Notificare nouă la începerea regenerării",
     "Cluster notification settings require detected 6WB": "Notificările necesită detectarea 6WB",
     "Reload Equipment": "Reîncarcă echiparea vehiculului",
-    "Reload": "Reîncarcă"
+    "Reload": "Reîncarcă",
+    "Equipment reload failed": "Reîncărcarea echipării a eșuat",
+    "Equipment read error": "Eroare la citirea echipării",
+    "Check in progress": "Verificare în curs",
+    "Reloading...": "Se reîncarcă...",
+    "Reload failed": "Reîncărcare eșuată",
+    "Read vehicle equipment again": "Recitește echiparea vehiculului",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Patru notificări: Solicitată (galben), Pornită și În curs (roșu), Finalizată (verde)"
   },
   "sl": {
     "Overview": "Pregled",
@@ -1392,7 +1504,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Novo obvestilo ob začetku regeneracije",
     "Cluster notification settings require detected 6WB": "Obvestila zahtevajo zaznan 6WB",
     "Reload Equipment": "Znova naloži opremo vozila",
-    "Reload": "Znova naloži"
+    "Reload": "Znova naloži",
+    "Equipment reload failed": "Ponovno nalaganje opreme ni uspelo",
+    "Equipment read error": "Napaka pri branju opreme",
+    "Check in progress": "Preverjanje poteka",
+    "Reloading...": "Nalaganje...",
+    "Reload failed": "Nalaganje ni uspelo",
+    "Read vehicle equipment again": "Znova preberi opremo vozila",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Štiri obvestila: Zahtevano (rumeno), Začeto in V teku (rdeče), Končano (zeleno)"
   },
   "fi": {
     "Overview": "Yleiskatsaus",
@@ -1474,7 +1593,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Uusi ilmoitus regeneroinnin alkaessa",
     "Cluster notification settings require detected 6WB": "Ilmoitukset edellyttävät tunnistettua 6WB:tä",
     "Reload Equipment": "Lataa auton varustelu uudelleen",
-    "Reload": "Lataa uudelleen"
+    "Reload": "Lataa uudelleen",
+    "Equipment reload failed": "Varustelun uudelleenlataus epäonnistui",
+    "Equipment read error": "Virhe varustelun lukemisessa",
+    "Check in progress": "Tarkistus käynnissä",
+    "Reloading...": "Ladataan uudelleen...",
+    "Reload failed": "Lataus epäonnistui",
+    "Read vehicle equipment again": "Lue auton varustelu uudelleen",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Neljä ilmoitusta: Pyydetty (keltainen), Aloitettu ja Käynnissä (punainen), Valmis (vihreä)"
   },
   "sv": {
     "Overview": "Översikt",
@@ -1556,7 +1682,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Nytt startmeddelande vid regenereringens början",
     "Cluster notification settings require detected 6WB": "Aviseringar kräver upptäckt 6WB",
     "Reload Equipment": "Läs in fordonsutrustning igen",
-    "Reload": "Läs in igen"
+    "Reload": "Läs in igen",
+    "Equipment reload failed": "Kunde inte läsa in utrustningen igen",
+    "Equipment read error": "Fel vid läsning av utrustning",
+    "Check in progress": "Kontroll pågår",
+    "Reloading...": "Läser in igen...",
+    "Reload failed": "Inläsning misslyckades",
+    "Read vehicle equipment again": "Läs fordonsutrustningen igen",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Fyra aviseringar: Begärd (gul), Startad och Pågår (röd), Slutförd (grön)"
   },
   "tr": {
     "Overview": "Genel bakış",
@@ -1638,7 +1771,14 @@ module.exports = {
     "New Started alert on regeneration begin": "Rejenerasyon başlangıcında yeni bildirim",
     "Cluster notification settings require detected 6WB": "Bildirimler için 6WB algılanmalı",
     "Reload Equipment": "Araç donanımını yeniden yükle",
-    "Reload": "Yeniden yükle"
+    "Reload": "Yeniden yükle",
+    "Equipment reload failed": "Donanım yeniden yüklenemedi",
+    "Equipment read error": "Donanım okuma hatası",
+    "Check in progress": "Kontrol sürüyor",
+    "Reloading...": "Yeniden yükleniyor...",
+    "Reload failed": "Yükleme başarısız",
+    "Read vehicle equipment again": "Araç donanımını yeniden oku",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Dört bildirim: İstendi (sarı), Başladı ve Sürüyor (kırmızı), Tamamlandı (yeşil)"
   },
   "uk": {
     "Overview": "Огляд",
@@ -1720,6 +1860,13 @@ module.exports = {
     "New Started alert on regeneration begin": "Нове повідомлення на початку регенерації",
     "Cluster notification settings require detected 6WB": "Для сповіщень потрібен виявлений 6WB",
     "Reload Equipment": "Оновити комплектацію автомобіля",
-    "Reload": "Оновити"
+    "Reload": "Оновити",
+    "Equipment reload failed": "Не вдалося оновити комплектацію",
+    "Equipment read error": "Помилка читання комплектації",
+    "Check in progress": "Триває перевірка",
+    "Reloading...": "Оновлення...",
+    "Reload failed": "Помилка оновлення",
+    "Read vehicle equipment again": "Повторно прочитати комплектацію автомобіля",
+    "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)": "Чотири сповіщення: Запитана (жовтий), Почалася і Триває (червоний), Завершена (зелений)"
   }
 };
