@@ -64,8 +64,8 @@ mgu.run({
                 const supported = sixWb === true || sixU3 === true;
                 const confirmed = [sixWb, sixU3].every(value => value === true || value === false);
                 ctx.settings.set('cluster6wbAvailable', supported);
-                const found = [sixWb === true ? '6WB' : null, sixU3 === true ? '6U3' : null].filter(Boolean).join('+');
-                ctx.settings.actionStatus.reloadEquipment = force && !reloadOk ? '6WB/6U3: stale cache' : found ? found + ': detected' + (force ? ' (fresh)' : '') : confirmed ? '6WB/6U3: not found' + (force ? ' (fresh)' : '') : '6WB/6U3: unknown';
+                // Keep automatic equipment detection silent in Settings.
+                if (force) ctx.settings.actionStatus.reloadEquipment = reloadOk ? '' : 'Equipment reload failed';
                 log.info('DPF Car Equipment VO: 6WB=' + sixWb + ', 6U3=' + sixU3);
                 if (!confirmed) scheduleEquipmentCheck();
                 else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
@@ -73,22 +73,22 @@ mgu.run({
             } catch (error) {
                 ctx.settings.set('cluster6wbAvailable', false);
                 log.warn('DPF Car Equipment 6WB: ' + String(error && error.message || error));
-                ctx.settings.actionStatus.reloadEquipment = '6WB/6U3: read error';
+                if (force) ctx.settings.actionStatus.reloadEquipment = 'Equipment read error';
                 scheduleEquipmentCheck();
                 return false;
             } finally { equipmentChecking = false; }
         }
-        ctx.settings.actionStatus = { reloadEquipment: '6WB/6U3: checking...' };
+        ctx.settings.actionStatus = {};
         ctx.settings.onAction('reloadEquipment', () => {
             if (equipmentChecking) {
                 ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
                 return;
             }
-            ctx.settings.actionStatus.reloadEquipment = '6WB/6U3: checking...';
+            ctx.settings.actionStatus.reloadEquipment = 'Reloading...';
             log.info('DPF manual equipment reload pressed');
             refreshClusterEquipment(true).then(success => {
-                if (!success && ctx.settings.actionStatus.reloadEquipment === '6WB/6U3: checking...')
-                    ctx.settings.actionStatus.reloadEquipment = '6WB/6U3: reload failed';
+                if (!success && ctx.settings.actionStatus.reloadEquipment === 'Reloading...')
+                    ctx.settings.actionStatus.reloadEquipment = 'Equipment reload failed';
                 log.info('DPF manual equipment reload finished: ' + (success ? 'success' : 'failed'));
             }).catch(error => {
                 ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
@@ -270,8 +270,9 @@ mgu.run({
         const indicator = regenMessage.createIndicator();
         let clusterTestStartedAt = null;
         ctx.settings.onAction('regenClusterTest', () => {
-            if (profile && profile.regeneration && ctx.settings.values.cluster6wbAvailable === true)
-                clusterTestStartedAt = Date.now();
+            // A visual preview must not depend on the DDE profile or regeneration state.
+            clusterTestStartedAt = Date.now();
+            log.info('DPF notification preview requested (DDE-independent)');
         });
         regenMessage.start(log, () => {
             const now = Date.now();
