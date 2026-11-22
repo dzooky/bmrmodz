@@ -8,6 +8,7 @@ const client=require('./client');
 const {createRunner,STEPS}=require('./test-runner');
 const {t}=require('./translations');
 const qrReport=require('./qr-report');
+const uploader=require('./upload');
 const W=1600,H=520;
 const REPORT_NAME='data-tool-diagnostic-report.json';
 const pages=['Info','Diagnostics','Results','Share'];
@@ -21,7 +22,7 @@ mgu.run({
  start(ctx){
   const {ui,log}=ctx;
   const runner=createRunner(client.request);
-  let page=0,running=false,report=null,progress=0,exportState='',lastResult=null,reportQr=null;
+  let page=0,running=false,sending=false,report=null,progress=0,exportState='',sendStatus='',lastResult=null,reportQr=null;
   const currentLanguage=()=>ctx.settings.get('language')||'en';
   const word=key=>t(currentLanguage(),key);
   const reportFile=path.join(ctx.dataDir,REPORT_NAME);
@@ -31,7 +32,7 @@ mgu.run({
   }catch(_){}
   function refreshButtons(){
    for(const [button,key] of [['BTN_RUN','Run diagnostics'],['BTN_EXPORT','Export report'],
-     ['BTN_PREV','Previous page'],['BTN_NEXT','Next page']]){
+     ['BTN_SEND','Send report'],['BTN_PREV','Previous page'],['BTN_NEXT','Next page']]){
     try{ui.text(button,word(key));}catch(_){}
    }
   }
@@ -39,7 +40,7 @@ mgu.run({
   ctx.settings.onChange(key=>{if(key==='language')refreshButtons();});
   async function runTest(){
    if(running)return;
-   page=1;running=true;progress=0;report=null;reportQr=null;exportState='';lastResult=null;
+   page=1;running=true;progress=0;report=null;reportQr=null;exportState='';sendStatus='';lastResult=null;
    try{
     const output=await runner.run((completed,total,item)=>{
      progress=Math.floor(100*completed/total);lastResult=item;
@@ -64,7 +65,19 @@ mgu.run({
     log.warn('Data Tool export: '+error.message);
    }
   }
+  async function sendReport(){
+   if(running||sending||!report)return;
+   sending=true;page=2;sendStatus=word('Sending report');
+   try{
+    const received=await uploader.upload(report,ctx.dataDir);
+    sendStatus=word('Report sent')+': '+received.id;
+   }catch(error){
+    sendStatus=word('Send failed')+': '+safeValue(error.message);
+    log.warn('Data Tool report upload: '+error.message);
+   }finally{sending=false;}
+  }
   ui.onClick('BTN_RUN',()=>{runTest().catch(error=>log.warn('Run: '+error));});
+  ui.onClick('BTN_SEND',()=>{sendReport().catch(error=>log.warn('Send: '+error));});
   ui.onClick('BTN_EXPORT',exportReport);
   ui.onClick('BTN_PREV',()=>{page=(page+pages.length-1)%pages.length;});
   ui.onClick('BTN_NEXT',()=>{page=(page+1)%pages.length;});
@@ -85,9 +98,9 @@ mgu.run({
    if(item&&item.detail)label(cv,safeValue(item.detail),x,y+24,14,theme.dim);
   }
   function drawInfo(cv,theme){
-   header(cv,theme,'BMRMODZ DATA TOOL','0.1.0 / '+word('Read-only'));
+   header(cv,theme,'BMRMODZ DATA TOOL','0.1.1 / '+word('Read-only'));
    G.panel(cv,theme,24,115,1552,380,null);
-   label(cv,word("What's New")+' 0.1.0 — '+word('Initial read-only feasibility test application'),800,155,16,theme.dim,{align:'center'});
+   label(cv,word("What's New")+' 0.1.1 — '+word('Secure upload'),800,155,16,theme.dim,{align:'center'});
    // Exact required development notice on three lines.
    DEV_NOTICE.forEach((line,i)=>label(cv,line,800,190+i*40,i===0?22:23,theme.text,{align:'center'}));
    label(cv,word('Read-only diagnostic test'),800,365,27,theme.accent2,{align:'center',font:'bold'});
@@ -126,6 +139,7 @@ mgu.run({
    label(cv,word('PASS')+': '+totals.pass+'   '+word('FAIL')+': '+totals.fail+'   '+
       word('SKIP')+': '+totals.skip,800,506,18,theme.text,{align:'center'});
    if(exportState)label(cv,exportState,800,479,16,theme.warn,{align:'center'});
+   if(sendStatus)label(cv,sendStatus,800,460,16,theme.text,{align:'center'});
   }
   function drawShare(cv,theme){
    header(cv,theme,word('Share'),word('Read-only'));
