@@ -22,6 +22,7 @@ const required = [
   'Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)',
   'Run',
   'Language selection aligned with OSA',
+  'Language handling now uses the OSA controller',
   'English (auto) language value readability',
   'Run button translated into all languages',
   'Additional translations and Detail text sizing'
@@ -111,11 +112,18 @@ test('DPF main Settings renders English auto legibly without changing other lang
   assert.ok(opened.calls.some(c => c.value === 'English (auto)' && c.size === 28));
 });
 
-test('DPF uses the same English auto option normalization as OSA', () => {
-  const dpf = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+test('DPF uses exactly the OSA language controller with app-specific references', () => {
+  const main = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+  const dpf = fs.readFileSync(path.join(__dirname, 'language.js'), 'utf8');
   const osa = fs.readFileSync(path.join(__dirname, '../osa/language.js'), 'utf8');
-  assert.match(osa, /languageSetting\.options = languages\.map/);
-  assert.match(dpf, /setting\.options = options;/);
-  assert.match(dpf, /languageOptions = ctx\.settings\.item\('language'\)\.options\.map\(option => option\.slice\(\)\)/);
-  assert.ok(!dpf.includes("label.replace(/ \\(auto\\)$/"));
+  const expected = osa
+    .replace("require('./locales')", "require('./translations')")
+    .replace("        BTN_PAGE: 'Next page',\\n        BTN_PREV: 'Previous page',\\n        BTN_SETTINGS: 'Settings',",
+      "        BTN_SETTINGS: 'Settings',")
+    .replace(/SID_OSA_SET_/g, 'SID_DPF_SET_')
+    .replace(/OSA setting language/g, 'DPF setting language');
+  assert.equal(dpf, expected, 'DPF language implementation must stay identical to OSA');
+  assert.match(main, /Language\\.start\\(ctx\\)/);
+  assert.doesNotMatch(main, /function updateAutomaticLanguage\\(/);
+  assert.doesNotMatch(main, /function applyLanguage\\(/);
 });
