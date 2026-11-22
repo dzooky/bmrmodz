@@ -2,8 +2,10 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.57",
-  "config": {"customSettings": true},
+  "version": "0.2.60",
+  "config": {
+    "customSettings": true
+  },
   "settingsBeforeLast": true,
   "settingsTabInStandard": false,
   "vendor": "custom",
@@ -202,19 +204,7 @@
     },
     {
       "key": "clusterBcTest",
-      "label": "Cluster message test (20 s)",
-      "type": "bool",
-      "default": false
-    },
-    {
-      "key": "clusterLowerTest",
-      "label": "Lower cluster message test (20 s)",
-      "type": "bool",
-      "default": false
-    },
-    {
-      "key": "clusterPassiveTest",
-      "label": "Cluster observation test (90 s)",
+      "label": "Test cluster notification",
       "type": "bool",
       "default": false
     },
@@ -289,15 +279,12 @@
     },
     "de.bmw.infrastructure.EnvironmentalInformation": {
       "ExteriorTemperature": "s"
-    },
-    "de.bmw.infotainment.KombiInterface_2": {
-      "_optional": "Observation of BMW Check Control messages",
-      "newCCMessage": "rs"
     }
   },
   "requires": {
     "idrive7-renderd": "2.1.19",
     "mgu-inputgate": "1.2.1",
-    "bmrmodz-car-equipment": "0.1.5"
+    "bmrmodz-car-equipment": "0.1.5",
+    "bmrmodz-notification": "0.1.1"
   }
 }
