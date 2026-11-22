@@ -1,5 +1,15 @@
 # DPF Status progress
 
+## v0.1.60 — Shorter In Progress notification (2026-11-22)
+
+- Changed **only** the `In Progress` message to two blinks, each 333 ms ON / 333 ms OFF (1,332 ms total).
+- Preserve the 60-second live regeneration reminder cadence and all other message timing at 500 ms ON/OFF for three seconds.
+- Manual demonstration now advances to `Finished` after the shorter `In Progress` segment.
+- Notification Tool stays at v0.1.1, no service change.
+- Automated state-machine regression tests added; CI pending.
+- Vehicle validation pending for new timings; the earlier DPF 0.1.57 preview was confirmed visible in car.
+
+
 ## v0.1.57 — DDE-independent preview and Settings cleanup (2026-11-22)
 
 - User reported in-car: DPF 0.1.56 test showed no notification after Notification Tool 0.1.1 was installed.
