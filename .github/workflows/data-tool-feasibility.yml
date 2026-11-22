@@ -4,6 +4,7 @@ on:
     paths:
       - 'tools/data-tool/**'
       - 'apps/data-diagnostics/**'
+      - 'server/bmrmodz.php'
       - 'mgu-repo.json'
       - '.github/workflows/data-tool-feasibility.yml'
   pull_request:
@@ -23,6 +24,8 @@ jobs:
       - name: Validate syntax and JSON
         run: |
           node --check apps/data-diagnostics/main.js
+          node --check apps/data-diagnostics/upload.js
+          node --check apps/data-diagnostics/upload.test.js
           node --check apps/data-diagnostics/client.js
           node --check apps/data-diagnostics/client.test.js
           node --check apps/data-diagnostics/qr-report.js
@@ -48,6 +51,7 @@ jobs:
           node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('mgu-repo.json'));const c=JSON.parse(fs.readFileSync('tools/data-tool/component.json'));if(!m.tools.some(x=>x.id===c.id))process.exit(1)"
       - name: Offline service regression
         run: |
+          node apps/data-diagnostics/upload.test.js
           node apps/data-diagnostics/client.test.js
           node apps/data-diagnostics/qr-report.test.js
           node apps/data-diagnostics/test-runner.test.js
@@ -60,5 +64,8 @@ jobs:
           node tools/data-tool/signal-manifest.test.js
           node tools/data-tool/signal-worker.test.js
 
+      - name: Validate optional PHP endpoint syntax
+        run: |
+          if command -v php >/dev/null; then php -l server/bmrmodz.php; fi
       - name: Build offline MGU app preview
         run: python3 kit/tools/build.py --preview-only data-diagnostics
