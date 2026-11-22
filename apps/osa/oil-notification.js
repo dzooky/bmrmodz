@@ -13,7 +13,7 @@ function createWarmupMessage() {
     return (temperature, target, now) => {
         if (target !== previousTarget) {
             previousTarget = target;
-            armed = temperature < target;
+            armed = true; // An already warm engine is eligible for an immediate notification.
             reachedAt = null;
         }
         if (reachedAt !== null && now - reachedAt < MESSAGE_MS) return target;
@@ -25,54 +25,74 @@ function createWarmupMessage() {
     };
 }
 
+const MAX_SEND_ATTEMPTS = 5;
+const RETRY_MS = 500;
+
 function show(log, language, target, kind) {
     const segments = [
         { text: warmupLabel(language) + ' ', color: '#ffffff' },
         { text: String(target) + ' °C', color: '#ffb547' }
     ];
-    const send = attempt => Promise.resolve()
-        .then(() => notification.show('osa', segments,
-            { durationMs: MESSAGE_MS, blinkMs: 0, repeat: 1, repeatIntervalMs: 0 }))
-        .then(result => {
-            if (result && result.ok) {
-                log.info('OSA Notification Tool accepted ' + kind + ' oil warm-up message');
-                return;
+    async function send() {
+        for (let attempt = 1; attempt <= MAX_SEND_ATTEMPTS; attempt++) {
+            try {
+                const result = await notification.show('osa', segments,
+                    { durationMs: MESSAGE_MS, blinkMs: 0, repeat: 1, repeatIntervalMs: 0 });
+                if (result && result.ok) {
+                    log.info('OSA Notification Tool accepted ' + kind + ' oil warm-up message (attempt ' + attempt + ')');
+                    return true;
+                }
+                log.warn('OSA Notification Tool ' + kind + ' attempt ' + attempt + '/' + MAX_SEND_ATTEMPTS + ': ' +
+                    (result && result.error || 'no response'));
+            } catch (error) {
+                log.warn('OSA Notification Tool ' + kind + ' attempt ' + attempt + '/' + MAX_SEND_ATTEMPTS +
+                    ' send/render failed: ' + String(error && error.message || error));
             }
-            if (result && result.error === 'busy' && attempt < 8) {
-                return new Promise(resolve => {
-                    const timer = setTimeout(() => resolve(send(attempt + 1)), 250);
-                    timer.unref();
-                });
-            }
-            log.warn('OSA Notification Tool ' + kind + ': ' +
-                (result && result.error || 'no response'));
-        })
-        .catch(error => log.warn('OSA Notification Tool ' + kind + ' send/render failed: ' +
-            String(error && error.message || error)));
-    return send(0);
+            if (attempt < MAX_SEND_ATTEMPTS)
+                await new Promise(resolve => setTimeout(resolve, RETRY_MS));
+        }
+        log.warn('OSA Notification Tool ' + kind + ': delivery exhausted after ' + MAX_SEND_ATTEMPTS + ' attempts');
+        return false;
+    }
+    return send();
 }
 
 function start(log, getSample, getLanguage) {
     if (process.env.MGU_RENDERD_SOCKET && /mgu-emu-/.test(process.env.MGU_RENDERD_SOCKET)) return;
-    let warmupMessage = createWarmupMessage();
-    let wasEnabled = false;
-    let active = false;
+    const warmupMessage = createWarmupMessage();
+    let pending = null;
+    let sending = false;
+    let deliveryExhausted = false;
     function poll() {
         try {
             const sample = getSample();
-            const enabled = !!(sample && sample.enabled && Number.isFinite(sample.oil) &&
-                Number.isFinite(sample.target));
-            if (!enabled) {
-                if (wasEnabled) warmupMessage = createWarmupMessage();
-                wasEnabled = false;
-                active = false;
-                return;
-            }
-            wasEnabled = true;
+            if (!sample || sample.demo || !Number.isFinite(sample.oil) ||
+                !Number.isFinite(sample.target)) return;
+            // Track temperature independently of the output preference. This avoids
+            // missing a threshold while Settings or Notification Tool is unavailable.
             const message = warmupMessage(sample.oil, sample.target, Date.now());
-            const visible = message !== null;
-            if (visible && !active) show(log, getLanguage(), message, 'automatic');
-            active = visible;
+            if (message !== null) {
+                pending = message;
+                deliveryExhausted = false;
+                log.info('OSA oil threshold reached: ' + sample.oil + ' °C (target ' + message + ' °C)');
+            }
+            if (sample.oil <= sample.target - 2 && !sending) pending = null;
+            if (pending === null || !sample.enabled || sending || deliveryExhausted) return;
+            sending = true;
+            const current = pending;
+            Promise.resolve()
+                .then(() => show(log, getLanguage(), current, 'automatic'))
+                .then(success => {
+                    if (pending === current) {
+                        if (success) pending = null;
+                        else deliveryExhausted = true;
+                    }
+                })
+                .catch(error => {
+                    deliveryExhausted = true;
+                    log.warn('OSA oil notification delivery failed: ' + String(error && error.message || error));
+                })
+                .finally(() => { sending = false; });
         } catch (error) {
             log.warn('OSA oil notification polling: ' + String(error && error.message || error));
         }
