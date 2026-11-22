@@ -52,7 +52,7 @@ test('new Detail B47 texts pass through localization', () => {
 
 test('selected Settings language uses readable type size', () => {
   const sheet = fs.readFileSync(path.join(__dirname, '../../kit/runtime/sheet.js'), 'utf8');
-  assert.match(sheet, /row\.value === 'English \(auto\)' && row\.englishAutoValueSize/);
+  assert.match(sheet, /row\.key === 'language' \? 32 : 26/);
   assert.match(sheet, /key: s\.key, label: s\.label/);
 });
 
@@ -68,13 +68,15 @@ test('DPF Settings uses OSA sheet rendering for English auto language', () => {
   assert.match(settings, /if \(page === 'settings'\)/);
   assert.match(settings, /return ui\.image\('MAIN_GFX', cv\)/);
   const app = JSON.parse(fs.readFileSync(path.join(__dirname, 'app.json'), 'utf8'));
-  assert.equal(app.settings.find(s => s.key === 'language').options[0][1], 'English (auto)');
+  assert.deepEqual(app.settings.find(s => s.key === 'language').options[0], ['en', 'English']);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(__dirname, '../osa/app.json'), 'utf8')).settings.find(s => s.key === 'language').options[0], ['en', 'English']);
 });
 
 test('DPF main Settings renders English auto legibly without changing other language rows', () => {
   const { listSheet } = require('../../kit/runtime/sheet');
   const app = JSON.parse(fs.readFileSync(path.join(__dirname, 'app.json'), 'utf8'));
-  const language = app.settings.find(s => s.key === 'language');
+  const language = { ...app.settings.find(s => s.key === 'language') };
+  language.options = language.options.map(([code, label]) => code === 'en' ? ['auto', label + ' (auto)'] : [code, label]);
   const canvas = () => {
     const calls = [];
     const r = {
@@ -97,7 +99,7 @@ test('DPF main Settings renders English auto legibly without changing other lang
   const sheet = listSheet(settings, 'Settings', { version: app.version });
   const english = canvas();
   sheet.draw(english, theme);
-  assert.ok(english.calls.some(c => c.value === 'English (auto)' && c.size === 38));
+  assert.ok(english.calls.some(c => c.value === 'English (auto)' && c.size === 32));
   current.value = 'Deutsch';
   const german = canvas();
   sheet.draw(german, theme);
@@ -106,4 +108,13 @@ test('DPF main Settings renders English auto legibly without changing other lang
   const opened = canvas();
   sheet.draw(opened, theme);
   assert.ok(opened.calls.some(c => c.value === 'English (auto)' && c.size === 28));
+});
+
+test('DPF uses the same English auto option normalization as OSA', () => {
+  const dpf = fs.readFileSync(path.join(__dirname, 'main.js'), 'utf8');
+  const osa = fs.readFileSync(path.join(__dirname, '../osa/language.js'), 'utf8');
+  assert.match(osa, /languageSetting\.options = languages\.map/);
+  assert.match(dpf, /setting\.options = options;/);
+  assert.match(dpf, /languageOptions = ctx\.settings\.item\('language'\)\.options\.map\(option => option\.slice\(\)\)/);
+  assert.ok(!dpf.includes("label.replace(/ \\(auto\\)$/"));
 });
