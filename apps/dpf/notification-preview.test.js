@@ -20,7 +20,7 @@ const sandbox = {
 vm.runInNewContext("ctx.settings.onAction('regenClusterTest', () => {" + m[1] + "\n});", sandbox);
 callbacks.regenClusterTest();
 assert.strictEqual(sandbox.clusterTestStartedAt,12345,'Preview must run without a DDE');
-assert(!/if\\s*\\(\\s*profile\\b/.test(m[1]),'Preview action must never depend on a DDE profile');
+assert(!m[1].includes('if (profile'),'Preview action must never depend on a DDE profile');
 assert(!m[1].includes('profile.regeneration'),'Preview action must never depend on a regeneration state');
 assert(main.includes("ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('regenCluster') === true"),
        'Live cluster equipment/user gate must remain');
