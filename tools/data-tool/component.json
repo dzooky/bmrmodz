@@ -1,9 +1,9 @@
 {
   "id": "bmrmodz-data-tool",
   "kind": "tool",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "title": "Data Tool Feasibility",
-  "description": "Experimental allowlisted read-only TASU diagnostic gateway. No autopolled data or actuator commands; CDS/SOME-IP capability unverified.",
+  "description": "Experimental read-only TASU gateway and passive SOME/IP environment survey; no actuator or live signal subscription",
   "optional": true,
   "uninstallable": true,
   "mguHmi": [
@@ -32,6 +32,11 @@
     {
       "path": "probe.js",
       "from": "probe.js",
+      "mode": "0644"
+    },
+    {
+      "path": "signal-environment.js",
+      "from": "signal-environment.js",
       "mode": "0644"
     }
   ],
