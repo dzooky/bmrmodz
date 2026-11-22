@@ -74,7 +74,7 @@ async function run() {
     assert.strictEqual(calls.length,3,'Manual preview does not require live temperature data');
     const app=JSON.parse(fs.readFileSync(__dirname + '/app.json','utf8'));
     const main=fs.readFileSync(__dirname + '/main.js','utf8');
-    assert.strictEqual(app.version,'0.2.61');
+    assert.strictEqual(app.version,'0.2.62');
     assert.strictEqual(app.requires['bmrmodz-notification'],'0.1.1');
     assert(!app.settings.some(s=>s.key==='clusterLowerTest'||s.key==='clusterPassiveTest'));
     assert(!main.includes('turboIconPreview'));
@@ -87,6 +87,24 @@ async function run() {
     assert(main.includes("ctx.settings.onAction('clusterBcTest'"));
     assert(!main.includes("ctx.settings.get('clusterBcTest')"));
     assert(!main.includes("ctx.settings.set('clusterBcTest'"));
+    // Every supported app language must translate all newly introduced UI labels.
+    const catalogs = require('./locales');
+    const settingLanguages = app.settings.find(s=>s.key==='language').options
+        .map(([key])=>key).filter(key=>key!=='en'&&key!=='auto');
+    const labels = [
+        'Show notification message',
+        'Run',
+        'Changed cluster notification preview from toggle to Run action',
+        'Migrated KOMBI oil notifications to the shared Notification Tool'
+    ];
+    assert.deepStrictEqual(Object.keys(catalogs).sort(), settingLanguages.sort());
+    for (const lang of settingLanguages) {
+        for (const label of labels) {
+            assert.strictEqual(typeof catalogs[lang][label], 'string', lang+': missing '+label);
+            assert(catalogs[lang][label].trim(), lang+': empty '+label);
+            assert.notStrictEqual(catalogs[lang][label],label,lang+': untranslated '+label);
+        }
+    }
     console.log('OSA shared Notification Tool: preview, trigger, 4s display and re-arm passed.');
 }
 run().catch(err=>{ console.error(err); process.exitCode=1; });
