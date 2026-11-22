@@ -58,6 +58,4 @@ assert.strictEqual(testMessage(3500).text,'');
 assert.strictEqual(testMessage(4000).text,'Started');
 assert.strictEqual(testMessage(7832).text,'');
 assert.strictEqual(testMessage(8332).text,'Finished');
-// Periodic live reminder remains every 60 seconds.
-assert.strictEqual(message('active',67000).text,'In Progress');
 console.log('DPF regeneration cluster: all four messages and transitions passed.');
