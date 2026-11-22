@@ -68,7 +68,7 @@ function serve(factory,socketPath){
       }
     });
   });
-  server.listen(socket,()=>fs.chmodSync(socket,0o660));
+  server.listen(socket,()=>fs.chmodSync(socket,0o666));
   function close(){server.close();if(transport&&transport.close)transport.close();try{fs.unlinkSync(socket);}catch(_){}}
   return {server,read,close,stats};
 }
