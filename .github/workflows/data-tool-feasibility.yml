@@ -1,0 +1,28 @@
+name: Data Tool feasibility
+on:
+  push:
+    paths:
+      - 'tools/data-tool/**'
+      - 'mgu-repo.json'
+      - '.github/workflows/data-tool-feasibility.yml'
+  pull_request:
+    paths:
+      - 'tools/data-tool/**'
+      - 'mgu-repo.json'
+      - '.github/workflows/data-tool-feasibility.yml'
+jobs:
+  data-tool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Validate syntax and JSON
+        run: |
+          node --check tools/data-tool/service.js
+          node --check tools/data-tool/transport.js
+          node --check tools/data-tool/test.js
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('mgu-repo.json'));const c=JSON.parse(fs.readFileSync('tools/data-tool/component.json'));if(!m.tools.some(x=>x.id===c.id))process.exit(1)"
+      - name: Offline service regression
+        run: node tools/data-tool/test.js
