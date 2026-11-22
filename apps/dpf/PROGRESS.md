@@ -1,5 +1,14 @@
 # DPF Status progress
 
+## v0.1.57 — DDE-independent preview and Settings cleanup (2026-11-22)
+
+- User reported in-car: DPF 0.1.56 test showed no notification after Notification Tool 0.1.1 was installed.
+- Confirmed application bug: the **manual preview button** required `profile.regeneration`, even though a visual demo should work with no identified DDE and on B47. Removed that condition from the manual preview, without changing the real-regeneration safety gate.
+- Suppress automatic VO-detection status strings such as `6U3: detected` on the Settings reload row; retain hidden VO capability checks and explicit reload errors.
+- Catch synchronous notification canvas exceptions and log the exact send/render failure. Accepting a command does not confirm physical display.
+- Version 0.1.57; Notification Tool stays 0.1.1. CI and parked vehicle verification pending.
+
+
 ## v0.1.56 — Notification Tool integration candidate (2026-11-22)
 
 - Replace DPF-owned cluster socket and canvas drawing with shared Notification Tool calls.

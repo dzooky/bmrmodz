@@ -1,13 +1,14 @@
 name: Notification Tool and DPF integration
 on:
   push:
-    branches: [feature/notification-tool-dpf-0.1.56]
+    branches: [feature/notification-tool-dpf-0.1.57]
   pull_request:
     paths:
       - 'tools/notification/**'
       - 'kit/runtime/notification-tool.js'
       - 'apps/dpf/regen-message.js'
       - 'apps/dpf/regen-message.test.js'
+      - 'apps/dpf/notification-preview.test.js'
       - 'apps/dpf/app.json'
       - 'mgu-repo.json'
 jobs:
@@ -27,8 +28,10 @@ jobs:
           node --check apps/dpf/main.js
       - name: Test Notification Tool mock renderer
         run: node tools/notification/test.js
-      - name: Test original DPF regeneration state machine
-        run: node apps/dpf/regen-message.test.js
+      - name: Test DPF regeneration state machine and DDE-independent preview
+        run: |
+          node apps/dpf/regen-message.test.js
+          node apps/dpf/notification-preview.test.js
       - name: Check package registration, dependency and separation
         run: |
           node - <<'NODE'
@@ -39,7 +42,7 @@ jobs:
           const src=fs.readFileSync('apps/dpf/regen-message.js','utf8');
           assert(repo.tools.some(x=>x.id==='bmrmodz-notification'&&x.path==='tools/notification'));
           assert.strictEqual(tool.version,'0.1.1');
-          assert.strictEqual(app.version,'0.1.56');
+          assert.strictEqual(app.version,'0.1.57');
           assert.strictEqual(app.requires['bmrmodz-notification'],tool.version);
           assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.5');
           assert(src.includes("require('./kit/notification-tool')"));
