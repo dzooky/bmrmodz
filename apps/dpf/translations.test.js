@@ -21,6 +21,7 @@ const required = [
   'Read vehicle equipment again',
   'Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)',
   'Run',
+  'Language selection aligned with OSA',
   'English (auto) language value readability',
   'Run button translated into all languages',
   'Additional translations and Detail text sizing'
