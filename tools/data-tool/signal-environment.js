@@ -55,4 +55,4 @@ function inspect(options){
       'Service access and ACL authorization remain unverified'
     ]};
 }
-module.exports={inspect,SIGNALS,hasConfig};
+module.exports={inspect,SIGNALS,hasConfig,NODE_CANDIDATES};
