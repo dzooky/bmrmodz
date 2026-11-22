@@ -31,7 +31,8 @@ const catalogs={
     "Report sent": "Report sent",
     "Send failed": "Send failed",
     "Upload token missing": "Upload token missing",
-    "Secure upload": "Secure upload"
+    "Secure upload": "Secure upload",
+    "LAN report upload": "LAN report upload"
   }
 };
 function t(language,key){return catalogs.en[key]||key;}
