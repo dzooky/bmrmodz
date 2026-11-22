@@ -1,6 +1,6 @@
 # Notification Tool progress
 
-## v0.2.0 — DPF integration candidate (2026-11-22)
+## v0.1.1 — DPF integration candidate (2026-11-22)
 
 - Implemented local Unix socket service that controls one temporary cluster-render panel overlay.
 - Fixed placement at x=745, y=539, 430x76 pixels (same as existing OSA/DPF).
