@@ -16,7 +16,7 @@ const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
 const CarEquipment = require('./kit/car-equipment');
 const createSettingsCanvas = require('./kit/settings-canvas');
-const turboIconPreview = require('./turbo-icon-preview');
+const oilNotification = require('./oil-notification');
 const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
@@ -194,6 +194,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.60', 'Migrated KOMBI oil notifications to the shared Notification Tool'],
                 ['0.2.52', 'Show cluster notification setting only when VO contains 6WB'],
                 ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
                 ['0.2.50', 'Scrollable release history'],
@@ -379,89 +380,24 @@ mgu.run({
         const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
         const oilWarmTarget = () => Number(ctx.settings.get('warmOil')) || 80;
-        const warmupMessage = turboIconPreview.createWarmupMessage();
-        const messageTestEnds = [8000, 8000 + turboIconPreview.MESSAGE_MS, 16000 + turboIconPreview.MESSAGE_MS];
-        const testModes = ['clusterBcTest', 'clusterLowerTest', 'clusterPassiveTest'];
-        let testEnds = messageTestEnds;
-        let testMode = null;
-        let lastTestMode = null;
-        let checkControlCount = 0;
-        let checkControlLast = null;
-        const clusterSlots = [new Map(), new Map(), new Map()];
-        let testStarted = null;
-        let testResult = false;
-        const clusterEvents = new Map();
-        const testPhase = () => testStarted === null ? -1 : testEnds.findIndex(end => mono() - testStarted < end);
-        for (const key of testModes) if (ctx.settings.get(key)) ctx.settings.set(key, false);
+        // Preview is a user-requested display sample; no oil temperature or DDE is needed.
+        if (ctx.settings.get('clusterBcTest')) ctx.settings.set('clusterBcTest', false);
         ctx.settings.onChange((key, value) => {
-            if (!testModes.includes(key)) return;
-            if (!value) {
-                if (key === testMode) {
-                    testMode = null;
-                    testStarted = null;
-                }
-                return;
-            }
-            testMode = key;
-            lastTestMode = key;
-            testEnds = key === 'clusterPassiveTest' ? [8000, 82000, 90000] : messageTestEnds;
-            testStarted = mono();
-            clusterSlots.forEach(snapshot => snapshot.clear());
-            clusterEvents.clear();
-            testResult = false;
-            checkControlCount = 0;
-            checkControlLast = null;
-            for (const other of testModes) {
-                if (other !== key && ctx.settings.get(other)) ctx.settings.set(other, false);
-            }
+            if (key !== 'clusterBcTest' || !value) return;
+            oilNotification.show(log, getLanguage(), oilWarmTarget(), 'preview');
+            ctx.settings.set('clusterBcTest', false);
         });
-        ctx.signals.watch('de.bmw.infotainment.KombiInterface_2', '1', {
-            newCCMessage: () => {
-                if (testPhase() < 0) return;
-                checkControlCount++;
-                checkControlLast = Math.round((mono() - testStarted) / 1000);
-            },
-        }, log).catch(error => log.warn('Check Control observation: ' + error));
-        const recordCluster = (event) => {
-            const phase = testPhase();
-            if (phase < 0) return;
-            if (!Array.isArray(event)) {
-                const match = /^(Panel|Layer|Renderer): (.+)$/.exec(event);
-                if (match && (phase === 1 || match[1] === 'Renderer')) {
-                    const [, key, detail] = match;
-                    const seen = clusterEvents.get(key) || new Set();
-                    seen.add(detail);
-                    clusterEvents.set(key, seen);
-                }
-                return;
-            }
-            for (const line of event) {
-                const match = /^(?:slot )?(0x[0-9a-f]+)\s+(.*)$/i.exec(line);
-                if (!match) continue;
-                const [, slot, state] = match;
-                const snapshot = clusterSlots[phase];
-                const seen = snapshot.get(slot) || new Set();
-                const status = /\bstatus (\d+)/i.exec(state);
-                const mappings = state.match(/0x[0-9a-f]+ class \d+ map [1-9]/gi) || [];
-                const scene = mappings.map(mapping => mapping.replace(/ class \d+ map /i, ':')).join('+');
-                seen.add((status ? 's' + status[1] : 's?') + (scene ? '=' + scene : ''));
-                snapshot.set(slot, seen);
-            }
-        };
-        turboIconPreview.start(log, () => {
-            if (testStarted !== null) {
-                const phase = testPhase();
-                if (phase >= 0) {
-                    return phase === 1 && testMode !== 'clusterPassiveTest' ? oilWarmTarget() : null;
-                }
-                testResult = true;
-                ctx.settings.set(testMode, false);
-            }
+        // The warm-up state machine runs only with output enabled and available data.
+        // The tool handles rendering without waiting for an OSA-owned renderer socket.
+        oilNotification.start(log, () => {
             const { demo, oil } = car.data();
-            if (demo || !G.isNum(oil)) return null;
-            const message = warmupMessage(oil, oilWarmTarget(), mono());
-            return ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('oilCluster') ? message : null;
-        }, recordCluster, () => testPhase() >= 0, () => testMode === 'clusterLowerTest', getLanguage);
+            return {
+                enabled: !demo && ctx.settings.values.cluster6wbAvailable === true &&
+                    ctx.settings.get('oilCluster') === true,
+                oil: G.isNum(oil) ? oil : null,
+                target: oilWarmTarget()
+            };
+        }, getLanguage);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {

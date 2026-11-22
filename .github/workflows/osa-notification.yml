@@ -1,0 +1,42 @@
+name: OSA Notification Tool migration
+on:
+  pull_request:
+    paths:
+      - 'apps/osa/**'
+      - 'kit/runtime/notification-tool.js'
+      - 'tools/notification/**'
+      - '.github/workflows/osa-notification.yml'
+  push:
+    branches: [feature/osa-notification-tool-0260]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Syntax and warm-up notification tests
+        run: |
+          node --check apps/osa/main.js
+          node --check apps/osa/oil-notification.js
+          node --check apps/osa/oil-notification.test.js
+          node apps/osa/oil-notification.test.js
+      - name: Notification Tool transport regression
+        run: node tools/notification/test.js
+      - name: Verify OSA dependency and deleted renderer
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'),assert=require('assert');
+          const app=JSON.parse(fs.readFileSync('apps/osa/app.json','utf8'));
+          const tool=JSON.parse(fs.readFileSync('tools/notification/component.json','utf8'));
+          const main=fs.readFileSync('apps/osa/main.js','utf8');
+          assert.strictEqual(app.version,'0.2.60');
+          assert.strictEqual(app.requires['bmrmodz-notification'],tool.version);
+          assert(!fs.existsSync('apps/osa/turbo-icon-preview.js'));
+          assert(!/cluster-render|turboIconPreview/.test(main));
+          assert(!app.settings.some(x=>['clusterLowerTest','clusterPassiveTest'].includes(x.key)));
+          assert(app.settings.some(x=>x.key==='clusterBcTest'));
+          assert(main.includes("oilNotification.start(log"));
+          console.log('OSA Notification Tool 0.2.60 package check: passed');
+          NODE
