@@ -3,13 +3,29 @@
 // whenever the Data Tool is unavailable or returns an invalid read.
 const net=require('net');
 const SOCKET='/run/bmrmodz-data-tool/ctl.sock';
+// Stable diagnostic codes are technical identifiers, not locale-dependent UI text.
+function errorCode(error){
+ const code=String(error&&error.code||'');
+ if(code==='TOOL_TIMEOUT')return 'TOOL_TIMEOUT';
+ if(code==='INVALID_RESPONSE')return 'INVALID_RESPONSE';
+ if(code==='ECONNREFUSED'||code==='ENOENT'||code==='EACCES')return 'SOCKET_'+code;
+ const message=String(error&&error.message||error||'');
+ if(message.includes('No matching response'))return 'NO_MATCHING_RESPONSE';
+ if(message.includes('UDS negative response'))return 'UDS_NRC_'+(Number.isInteger(error&&error.nrc)?error.nrc.toString(16).toUpperCase().padStart(2,'0'):'UNKNOWN');
+ if(message.includes('ECU/DID not allowlisted'))return 'NOT_ALLOWLISTED';
+ if(message.includes('TASU rejected request'))return 'TASU_REJECTED';
+ if(message.includes('Transport or TASU command error'))return 'TRANSPORT_ERROR';
+ if(message.includes('Unexpected response'))return 'UNEXPECTED_RESPONSE';
+ if(message.includes('Data Tool closed connection'))return 'SOCKET_CLOSED';
+ return 'TOOL_ERROR';
+}
 function request(ecu,did,options){
  const opts=options||{};
  return new Promise((resolve,reject)=>{
   let settled=false,raw='';
   const socket=net.createConnection(opts.socket||SOCKET);
   const done=(error,value)=>{if(settled)return;settled=true;socket.destroy();error?reject(error):resolve(value);};
-  socket.setTimeout(opts.timeoutMs||2200,()=>done(new Error('Data Tool timeout')));
+  socket.setTimeout(opts.timeoutMs||2200,()=>{const e=new Error('Data Tool timeout');e.code='TOOL_TIMEOUT';done(e);});
   socket.on('connect',()=>socket.write(JSON.stringify({op:'read',ecu,did})+'\n'));
   socket.on('data',chunk=>{
    raw+=chunk.toString('utf8');
@@ -18,11 +34,16 @@ function request(ecu,did,options){
    try{
     const reply=JSON.parse(raw.slice(0,end));
     const uds=reply&&reply.uds;
+    if(reply&&reply.ok===false){
+      const e=new Error(String(reply.error||'Data Tool rejected read').slice(0,120));
+      if(Number.isInteger(reply.nrc))e.nrc=reply.nrc;
+      return done(e);
+    }
     if(!reply||reply.ok!==true||reply.ecu!==ecu||reply.did!==did||
       !Array.isArray(uds)||uds.length<3||uds.length>256||
       !uds.every(b=>Number.isInteger(b)&&b>=0&&b<=255)||
       uds[0]!==0x62||uds[1]!==((did>>8)&255)||uds[2]!==(did&255))
-      return done(new Error('Invalid Data Tool response'));
+      {const e=new Error('Invalid Data Tool response');e.code='INVALID_RESPONSE';return done(e);}
     done(null,uds);
    }catch(e){done(e);}
   });
@@ -56,8 +77,17 @@ function create(legacy,opts){
  return {
   get counters(){return {successful,fallbacks};},
   async read(ecu,did){
-   if(enabled())try{const result=await (options.request||request)(ecu,did,options);successful++;if(options.onSuccess)options.onSuccess(ecu,did);return result;}
-   catch(error){fallbacks++;if(options.onFallback)options.onFallback(error);}
+   if(enabled())try{
+    const result=await (options.request||request)(ecu,did,options);
+    successful++;
+    if(options.onToolResult)options.onToolResult(ecu,did,{ok:true,code:'OK'});
+    if(options.onSuccess)options.onSuccess(ecu,did);
+    return result;
+   }catch(error){
+    fallbacks++;
+    if(options.onToolResult)options.onToolResult(ecu,did,{ok:false,code:errorCode(error)});
+    if(options.onFallback)options.onFallback(error);
+   }
    legacy.wake(ecu);
    const legacyReply=await legacy.physical(ecu,0x22,[(did>>8)&255,did&255],1800,
      u=>u&&((u[0]===0x62&&u[1]===((did>>8)&255)&&u[2]===(did&255))||(u[0]===0x7f&&u[1]===0x22)),
@@ -67,4 +97,4 @@ function create(legacy,opts){
   }
  };
 }
-module.exports={create,request,status,SOCKET};
+module.exports={create,request,status,errorCode,SOCKET};
