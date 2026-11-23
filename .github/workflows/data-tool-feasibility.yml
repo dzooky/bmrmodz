@@ -34,6 +34,8 @@ jobs:
           node --check apps/data-diagnostics/test-runner.test.js
           node --check apps/data-diagnostics/translations.js
           node --check apps/data-diagnostics/translations.test.js
+          node --check tools/data-tool/authorization.js
+          node --check tools/data-tool/authorization.test.js
           node --check tools/data-tool/service.js
           node --check tools/data-tool/transport.js
           node --check tools/data-tool/test.js
@@ -56,6 +58,7 @@ jobs:
           node apps/data-diagnostics/qr-report.test.js
           node apps/data-diagnostics/test-runner.test.js
           node apps/data-diagnostics/translations.test.js
+          node tools/data-tool/authorization.test.js
           node tools/data-tool/test.js
           node tools/data-tool/signal-environment.test.js
           node tools/data-tool/signal-isolate.test.js
