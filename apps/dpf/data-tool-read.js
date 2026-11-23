@@ -33,7 +33,7 @@ function request(ecu,did,options){
 function create(legacy,opts){
  const options=opts||{};
  let successful=0,fallbacks=0;
- const enabled=()=>options.enabled===true;
+ const enabled=()=>typeof options.enabled==='function'?options.enabled()===true:options.enabled===true;
  return {
   get counters(){return {successful,fallbacks};},
   async read(ecu,did){
