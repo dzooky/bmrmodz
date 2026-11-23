@@ -9,12 +9,14 @@ const diagnosticReport=require('./diagnostic-report');
 const configCheck=require('./config-check');
 const ccFeasibility=require('./cc-feasibility');
 const {createRunner}=require('./signal-isolate');
+const authorization=require('./authorization');
 const SOCKET=process.env.BMRMODZ_DATA_SOCKET||'/run/bmrmodz-data-tool/ctl.sock';
 const GAP_MS=200, CACHE_MS=500;
 function serve(factory,socketPath,options){
   const socket=socketPath||SOCKET;
   let transport=null,queue=Promise.resolve(),lastRequest=0;
   const signalRunner=options&&options.signalRunner||createRunner();
+  const authMode=authorization.mode(options);
   const inflight=new Map(),cache=new Map();
   const stats={sent:0,ok:0,timeout:0,error:0,coalesced:0,cacheHits:0};
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -51,7 +53,8 @@ function serve(factory,socketPath,options){
   const securityPosture=()=>({
     socketMode:'0666',
     clientIdentityVerified:false,
-    appAuthorizationEnforced:false,
+    appAuthorizationEnforced:authMode.enforced,
+    trustedIdentityAdapterConfigured:authMode.identityAdapterConfigured,
     signalPermissionsVerified:false,
     productionReady:false
   });
@@ -74,12 +77,25 @@ function serve(factory,socketPath,options){
         try{
           req=JSON.parse(raw);
           if(!req||typeof req!=='object')throw new Error('Invalid request');
-          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.6',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
+          // Opt-in fail-closed policy; no production identity adapter is assumed.
+          // Status/capabilities remain passive, all other operations require trusted attestation.
+          if(authMode.enforced && req.op!=='status' && req.op!=='capabilities'){
+            let identity=null;
+            if(authMode.identityAdapterConfigured){
+              try{identity=await options.resolveTrustedIdentity(client);}catch(_){identity=null;}
+            }
+            const decision=authorization.authorize(req,identity,options&&options.allowedApps);
+            if(!decision.allowed){
+              client.write(JSON.stringify({ok:false,error:'Access denied'})+'\\n');
+              continue;
+            }
+          }
+          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.7',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
           else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
           else if(req.op==='configCheck')reply=configCheck.inspect();
           else if(req.op==='ccPlan')reply=ccFeasibility.plan();
-          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.6',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
+          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.7',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
           else if(req.op==='signalNative' && req.mode==='load')reply=await signalRunner.run('load');
           else if(req.op==='signalNative' && req.mode==='sample')reply=await signalRunner.run('sample',req.field);
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
