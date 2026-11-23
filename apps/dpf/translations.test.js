@@ -25,6 +25,8 @@ const required = [
   'Language handling now uses the OSA controller',
   'Correct Settings text after repeated page renders',
   'Install required Data Tool version for DPF testing',
+  "Data Tool read", "Data Tool error", "TASU read", "TASU error",
+  "Separate Data Tool and TASU read diagnostics",
   "Diagnostics",
   "DPF DIAGNOSTICS",
   "Diagnostic checks are passive",
