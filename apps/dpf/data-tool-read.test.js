@@ -27,9 +27,9 @@ const {create}=require('./data-tool-read');
   let raw='';
   client.on('data',chunk=>{
    raw+=String(chunk);
-   if(raw.includes('\\n')){
-    requestedOp=JSON.parse(raw.split('\\n')[0]).op;
-    client.end(JSON.stringify({ok:true,tool:'bmrmodz-data-tool'})+'\\n');
+   if(raw.includes('\n')){
+    requestedOp=JSON.parse(raw.split('\n')[0]).op;
+    client.end(JSON.stringify({ok:true,tool:'bmrmodz-data-tool'})+'\n');
    }
   });
  });
