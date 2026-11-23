@@ -1,4 +1,4 @@
-name: Data Tool feasibility
+name: Data Tool checks
 on:
   push:
     paths:
