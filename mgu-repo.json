@@ -33,6 +33,10 @@
     {
       "id": "bmrmodz-notification",
       "path": "tools/notification"
+    },
+    {
+      "id": "bmrmodz-data-tool",
+      "path": "tools/data-tool"
     }
   ]
 }

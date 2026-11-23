@@ -1,6 +1,8 @@
 'use strict';
 module.exports = {
   "sk": {
+    "Use Data Tool (experimental)": "Použiť Data Tool (experimentálne)",
+    "Experimental Data Tool reads with automatic fallback": "Experimentálne čítanie cez Data Tool s automatickým návratom",
     "Overview": "Prehľad",
     "Detail": "Detail",
     "Soot mass": "Hmotnosť sadzí",
@@ -97,6 +99,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "Use Data Tool (experimental)": "Použít Data Tool (experimentálně)",
+    "Experimental Data Tool reads with automatic fallback": "Experimentální čtení přes Data Tool s automatickým návratem",
     "Overview": "Přehled",
     "Detail": "Detail",
     "Soot mass": "Hmotnost sazí",
@@ -193,6 +197,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "Use Data Tool (experimental)": "Data Tool verwenden (experimentell)",
+    "Experimental Data Tool reads with automatic fallback": "Experimentelle Data-Tool-Abfragen mit automatischem Rückfall",
     "Overview": "Übersicht",
     "Detail": "Details",
     "Soot mass": "Rußmasse",
@@ -289,6 +295,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "Use Data Tool (experimental)": "Usar Data Tool (experimental)",
+    "Experimental Data Tool reads with automatic fallback": "Lecturas experimentales con Data Tool y retorno automático",
     "Overview": "Resumen",
     "Detail": "Detalles",
     "Soot mass": "Masa de hollín",
@@ -385,6 +393,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "Use Data Tool (experimental)": "Utiliser Data Tool (expérimental)",
+    "Experimental Data Tool reads with automatic fallback": "Lectures expérimentales via Data Tool avec repli automatique",
     "Overview": "Vue d'ensemble",
     "Detail": "Détails",
     "Soot mass": "Masse de suie",
@@ -481,6 +491,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "Use Data Tool (experimental)": "Usa Data Tool (sperimentale)",
+    "Experimental Data Tool reads with automatic fallback": "Letture sperimentali Data Tool con ripristino automatico",
     "Overview": "Panoramica",
     "Detail": "Dettagli",
     "Soot mass": "Massa di fuliggine",
@@ -577,6 +589,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "Use Data Tool (experimental)": "Data Tool használata (kísérleti)",
+    "Experimental Data Tool reads with automatic fallback": "Kísérleti Data Tool olvasás automatikus visszaállással",
     "Overview": "Áttekintés",
     "Detail": "Részletek",
     "Soot mass": "Koromtömeg",
@@ -673,6 +687,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "Use Data Tool (experimental)": "Użyj Data Tool (eksperymentalnie)",
+    "Experimental Data Tool reads with automatic fallback": "Eksperymentalny odczyt Data Tool z automatycznym powrotem",
     "Overview": "Przegląd",
     "Detail": "Szczegóły",
     "Soot mass": "Masa sadzy",
@@ -769,6 +785,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "Use Data Tool (experimental)": "Использовать Data Tool (экспериментально)",
+    "Experimental Data Tool reads with automatic fallback": "Экспериментальное чтение через Data Tool с автоматическим возвратом",
     "Overview": "Обзор",
     "Detail": "Подробно",
     "Soot mass": "Масса сажи",
@@ -865,6 +883,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "Use Data Tool (experimental)": "Brug Data Tool (eksperimentel)",
+    "Experimental Data Tool reads with automatic fallback": "Eksperimentelle Data Tool-læsninger med automatisk tilbagefald",
     "Overview": "Oversigt",
     "Detail": "Detaljer",
     "Soot mass": "Sodmasse",
@@ -961,6 +981,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "Use Data Tool (experimental)": "Χρήση Data Tool (πειραματικό)",
+    "Experimental Data Tool reads with automatic fallback": "Πειραματικές αναγνώσεις Data Tool με αυτόματη επαναφορά",
     "Overview": "Επισκόπηση",
     "Detail": "Λεπτομέρειες",
     "Soot mass": "Μάζα αιθάλης",
@@ -1057,6 +1079,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "Use Data Tool (experimental)": "使用 Data Tool（实验性）",
+    "Experimental Data Tool reads with automatic fallback": "实验性 Data Tool 读取，失败时自动回退",
     "Overview": "概览",
     "Detail": "详细信息",
     "Soot mass": "碳烟质量",
@@ -1153,6 +1177,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "Use Data Tool (experimental)": "Data Tool gebruiken (experimenteel)",
+    "Experimental Data Tool reads with automatic fallback": "Experimenteel lezen via Data Tool met automatische terugval",
     "Overview": "Overzicht",
     "Detail": "Details",
     "Soot mass": "Roetmassa",
@@ -1249,6 +1275,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "Use Data Tool (experimental)": "Bruk Data Tool (eksperimentell)",
+    "Experimental Data Tool reads with automatic fallback": "Eksperimentelle Data Tool-avlesninger med automatisk tilbakefall",
     "Overview": "Oversikt",
     "Detail": "Detaljer",
     "Soot mass": "Sotmasse",
@@ -1345,6 +1373,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "Use Data Tool (experimental)": "Usar Data Tool (experimental)",
+    "Experimental Data Tool reads with automatic fallback": "Leituras experimentais do Data Tool com retorno automático",
     "Overview": "Resumo",
     "Detail": "Detalhes",
     "Soot mass": "Massa de fuligem",
@@ -1441,6 +1471,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "Use Data Tool (experimental)": "Folosește Data Tool (experimental)",
+    "Experimental Data Tool reads with automatic fallback": "Citiri experimentale prin Data Tool cu revenire automată",
     "Overview": "Prezentare",
     "Detail": "Detalii",
     "Soot mass": "Masă funingine",
@@ -1537,6 +1569,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "Use Data Tool (experimental)": "Uporabi Data Tool (poskusno)",
+    "Experimental Data Tool reads with automatic fallback": "Poskusno branje prek Data Tool s samodejnim povratkom",
     "Overview": "Pregled",
     "Detail": "Podrobnosti",
     "Soot mass": "Masa saj",
@@ -1633,6 +1667,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "Use Data Tool (experimental)": "Käytä Data Toolia (kokeellinen)",
+    "Experimental Data Tool reads with automatic fallback": "Kokeelliset Data Tool -luvut automaattisella varatoiminnolla",
     "Overview": "Yleiskatsaus",
     "Detail": "Tiedot",
     "Soot mass": "Nokimassa",
@@ -1729,6 +1765,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "Use Data Tool (experimental)": "Använd Data Tool (experimentellt)",
+    "Experimental Data Tool reads with automatic fallback": "Experimentell Data Tool-avläsning med automatisk återgång",
     "Overview": "Översikt",
     "Detail": "Detaljer",
     "Soot mass": "Sotmassa",
@@ -1825,6 +1863,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "Use Data Tool (experimental)": "Data Tool kullan (deneysel)",
+    "Experimental Data Tool reads with automatic fallback": "Otomatik geri dönüşlü deneysel Data Tool okumaları",
     "Overview": "Genel bakış",
     "Detail": "Ayrıntılar",
     "Soot mass": "Kurum kütlesi",
@@ -1921,6 +1961,8 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "Use Data Tool (experimental)": "Використовувати Data Tool (експериментально)",
+    "Experimental Data Tool reads with automatic fallback": "Експериментальне читання через Data Tool з автоматичним поверненням",
     "Overview": "Огляд",
     "Detail": "Докладно",
     "Soot mass": "Маса сажі",
