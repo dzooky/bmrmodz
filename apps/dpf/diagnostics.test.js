@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('assert'),fs=require('fs'),path=require('path');
+const app=JSON.parse(fs.readFileSync(path.join(__dirname,'app.json'),'utf8'));
+const source=fs.readFileSync(path.join(__dirname,'main.js'),'utf8');
+const adapter=fs.readFileSync(path.join(__dirname,'data-tool-read.js'),'utf8');
+assert.strictEqual(app.version,'0.1.69');
+assert.ok(source.includes("const TABS = ['Overview', 'Detail', 'Settings', 'About', 'Diagnostics']"));
+assert.ok(source.includes("renderDiagnostics(cv, t)"));
+assert.ok(source.includes("page !== 'diagnostics' && ui.isVisible('MAIN')"));
+assert.ok(source.includes("page === 'about' || page === 'settings' || page === 'diagnostics'"));
+assert.ok(source.includes("dataToolRead.status()"));
+assert.ok(source.includes("diagnostic.identification = 'Unsupported DDE'"));
+assert.ok(source.includes("diagnostic.identification = 'TASU unavailable'"));
+assert.ok(source.includes("diagnostic.lastIssue = 'Unexpected data length'"));
+assert.ok(source.includes("onLegacyResult: (ecu, did, response)"));
+assert.ok(adapter.includes("JSON.stringify({op:'status'})"));
+assert.ok(adapter.includes("JSON.stringify({op:'read',ecu,did})"));
+console.log('DPF diagnostics tab: source wiring, passive status and no extra polling verified');

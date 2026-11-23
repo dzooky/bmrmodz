@@ -30,6 +30,25 @@ function request(ecu,did,options){
   socket.on('end',()=>done(new Error('Data Tool closed connection')));
  });
 }
+function status(options){
+ const opts=options||{};
+ return new Promise(resolve=>{
+  let finished=false,raw='';
+  const socket=net.createConnection(opts.socket||SOCKET);
+  const done=value=>{if(finished)return;finished=true;socket.destroy();resolve(value);};
+  socket.setTimeout(opts.timeoutMs||1200,()=>done(false));
+  socket.on('connect',()=>socket.write(JSON.stringify({op:'status'})+'\n'));
+  socket.on('data',chunk=>{
+   raw+=chunk.toString('utf8');
+   if(raw.length>8192)return done(false);
+   const end=raw.indexOf('\n');
+   if(end<0)return;
+   try{const reply=JSON.parse(raw.slice(0,end));done(!!(reply&&reply.ok===true&&reply.tool==='bmrmodz-data-tool'));}catch(_){done(false);}
+  });
+  socket.on('error',()=>done(false));
+  socket.on('end',()=>done(false));
+ });
+}
 function create(legacy,opts){
  const options=opts||{};
  let successful=0,fallbacks=0;
@@ -40,10 +59,12 @@ function create(legacy,opts){
    if(enabled())try{const result=await (options.request||request)(ecu,did,options);successful++;if(options.onSuccess)options.onSuccess(ecu,did);return result;}
    catch(error){fallbacks++;if(options.onFallback)options.onFallback(error);}
    legacy.wake(ecu);
-   return legacy.physical(ecu,0x22,[(did>>8)&255,did&255],1800,
+   const legacyReply=await legacy.physical(ecu,0x22,[(did>>8)&255,did&255],1800,
      u=>u&&((u[0]===0x62&&u[1]===((did>>8)&255)&&u[2]===(did&255))||(u[0]===0x7f&&u[1]===0x22)),
      options.requestOptions);
+   if(options.onLegacyResult)options.onLegacyResult(ecu,did,legacyReply);
+   return legacyReply;
   }
  };
 }
-module.exports={create,request,SOCKET};
+module.exports={create,request,status,SOCKET};

@@ -26,7 +26,7 @@ const createSettingsCanvas = require('./kit/settings-canvas');
 
 const W = 1600;
 const H = 520;
-const TABS = ['Overview', 'Detail', 'Settings', 'About'];
+const TABS = ['Overview', 'Detail', 'Settings', 'About', 'Diagnostics'];
 
 mgu.run({
     async start(ctx) {
@@ -121,11 +121,39 @@ mgu.run({
         let detailReadAttempted = false;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
+        const diagnostic = {
+            tool: 'Not checked', identification: 'Connecting',
+            lastRead: 'Not checked', lastIssue: 'None',
+            lastDid: null, source: 'Legacy TASU', reads: 0
+        };
+        async function checkDataTool() {
+            diagnostic.tool = 'Checking';
+            diagnostic.tool = await dataToolRead.status() ? 'Responding' : 'Unavailable';
+        }
         const dpfTransport = dataToolRead.create(link, {
             enabled: () => ctx.settings.get('experimentalDataTool') === true,
             requestOptions,
-            onFallback: error => log.warn('DPF Data Tool fallback: ' + String(error.message || error)),
-            onSuccess: (ecu,did) => log.info('DPF Data Tool read OK ECU '+ecu.toString(16)+' DID '+did.toString(16))
+            onFallback: error => {
+                diagnostic.tool = 'Unavailable';
+                diagnostic.lastIssue = 'Data Tool request failed';
+                log.warn('DPF Data Tool fallback: ' + String(error.message || error));
+            },
+            onLegacyResult: (ecu, did, response) => {
+                diagnostic.source = 'Legacy TASU';
+                diagnostic.lastDid = did;
+                diagnostic.reads++;
+                diagnostic.lastRead = response && response[0] === 0x62 ? 'Responding'
+                    : response && response[0] === 0x7f ? 'Negative response' : 'No response';
+                if (diagnostic.lastRead !== 'Responding') diagnostic.lastIssue = diagnostic.lastRead;
+            },
+            onSuccess: (ecu,did) => {
+                diagnostic.source = 'Data Tool';
+                diagnostic.tool = 'Responding';
+                diagnostic.lastDid = did;
+                diagnostic.reads++;
+                diagnostic.lastRead = 'Responding';
+                log.info('DPF Data Tool read OK ECU '+ecu.toString(16)+' DID '+did.toString(16));
+            }
         });
         // B57 calibration is unchanged; B47 gets only its verified DIDs.
         const overviewDids = () => profile ? profile.overview : [];
@@ -134,7 +162,7 @@ mgu.run({
             ? profile.overview.filter(([key]) => key === 'REQUEST' || key === 'MODE') : [];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         async function testSelected(regenOnly = false) {
-            if (!identified || (!regenOnly && (page === 'about' || page === 'settings'))) return;
+            if (!identified || (!regenOnly && (page === 'about' || page === 'settings' || page === 'diagnostics'))) return;
             if (testing) {
                 readPending = true;
                 return;
@@ -167,6 +195,8 @@ mgu.run({
                     } else if (name === 'REQUEST' || name === 'MODE' || name === 'LOCK') {
                         delete readings[name];
                     }
+                    if (!response) diagnostic.lastIssue = 'DDE did not respond';
+                    else if (result.startsWith('LEN ')) diagnostic.lastIssue = 'Unexpected data length';
                     const line = name+' '+did.toString(16).toUpperCase()+': '+result;
                     log.info('DPF READ ECU '+address.toString(16)+' '+line);
                     if (readPending && page !== readingPage) break;
@@ -192,13 +222,23 @@ mgu.run({
             ddeIndex = null;
             try {
                 if (!link.ready) await link.init();
+                diagnostic.identification = 'Checking';
                 if (!link.available && ctx.settings.get('experimentalDataTool') !== true) {
+                    diagnostic.identification = 'TASU unavailable';
+                    diagnostic.lastIssue = 'TASU unavailable';
                     log.warn('DPF diagnostic link unavailable: ' + (link.error || 'TASU unavailable'));
                     return;
                 }
                 const u = await dpfTransport.read(DDE, 0xF150);
-                if (!u) { log.warn('DPF DDE did not respond'); return; }
+                if (!u) {
+                    diagnostic.identification = 'No response';
+                    diagnostic.lastIssue = 'DDE did not respond';
+                    log.warn('DPF DDE did not respond');
+                    return;
+                }
                 if (u[0] !== 0x62 || u.length < 6) {
+                    diagnostic.identification = 'Negative response';
+                    diagnostic.lastIssue = 'DDE identification failed';
                     log.warn('DPF DDE identification refused: ' + hexBytes(u));
                     return;
                 }
@@ -206,12 +246,18 @@ mgu.run({
                 ddeIndex = actual;
                 profile = ddeProfiles.forDde(actual);
                 if (!profile) {
+                    diagnostic.identification = 'Unsupported DDE';
+                    diagnostic.lastIssue = 'Unsupported DDE';
                     log.warn('DPF unsupported DDE index: ' + actual);
                     return;
                 }
                 log.info('DPF DDE ' + profile.engine + ' detected (index ' + actual + ')');
                 identified = true;
+                diagnostic.identification = 'Identified';
+                diagnostic.lastIssue = 'None';
             } catch (e) {
+                diagnostic.identification = 'Failed';
+                diagnostic.lastIssue = 'DDE identification failed';
                 log.warn('DPF identify: ' + String(e.message || e));
             }
         };
@@ -347,6 +393,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.69', 'Built-in DPF connection diagnostics'],
                 ['0.1.68', 'Install required Data Tool version for DPF testing'],
                 ['0.1.67', 'Experimental Data Tool reads with automatic fallback'],
                 ['0.1.66', 'Correct Settings text after repeated page renders'],
@@ -372,7 +419,7 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 20;
+                const y = 104 + index * 18;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
@@ -381,6 +428,27 @@ mgu.run({
                 { align: 'center', font: 'bold' });
         }
 
+        function renderDiagnostics(cv, t) {
+            G.panel(cv, t, 24, 48, 1552, 452, null);
+            cv.text('DPF DIAGNOSTICS', 52, 92, 32, t.text, { font: 'bold' });
+            cv.text('Diagnostic checks are passive', 52, 130, 18, t.dim);
+            const rows = [
+                ['TASU connection', link.available ? 'Ready' : link.ready ? 'Unavailable' : 'Unavailable'],
+                ['Data Tool connection', diagnostic.tool],
+                ['Selected transport', ctx.settings.get('experimentalDataTool') === true ? 'Data Tool' : 'Legacy TASU'],
+                ['DDE identification', diagnostic.identification],
+                ['DDE index', ddeIndex || 'Not checked'],
+                ['Last DDE read', diagnostic.lastRead],
+                ['Last DID', diagnostic.lastDid === null ? 'Not checked' : '0x' + diagnostic.lastDid.toString(16).toUpperCase()],
+                ['Last issue', diagnostic.lastIssue]
+            ];
+            rows.forEach(([label,value], i) => {
+                const y = 175 + i * 39;
+                cv.text(label, 58, y, 21, t.dim);
+                cv.text(value, 640, y, 22, value === 'Unavailable' || value === 'Failed' || value === 'No response'
+                    ? t.warn : t.text);
+            });
+        }
         function renderDetail(cv, t) {
             cv.text('DPF DETAIL', 48, 75, 32, t.text, { font: 'bold' });
             if (profile && !profile.detail.length) {
@@ -448,6 +516,11 @@ mgu.run({
                 return drawText(text, x, y, fitted, colour, { ...opts, literal: true });
             };
 
+            if (page === 'diagnostics') {
+                renderDiagnostics(cv, t);
+                G.frame(cv, t, TABS.map(label => translate(label)), 4, []);
+                return ui.image('MAIN_GFX', cv);
+            }
             if (page === 'detail') {
                 renderDetail(cv, t);
                 G.frame(cv, t, TABS.map(label => translate(label)), 1, []);
@@ -546,18 +619,19 @@ mgu.run({
         function openPage(next) {
             const openingDetail = next === 'detail' && page !== 'detail';
             page = next;
+            if (next === 'diagnostics') checkDataTool().catch(error => log.warn('DPF diagnostic status: '+error));
             if (openingDetail || next === 'overview') testSelected();
             return render();
         }
 
         ctx.onScroll(delta => page === 'settings' ? settingsCanvas.scroll(delta) : false);
         ctx.onTab(index => {
-            const next = ['overview', 'detail', 'settings', 'about'][index];
+            const next = ['overview', 'detail', 'settings', 'about', 'diagnostics'][index];
             if (next && next !== page) return openPage(next);
         });
         ui.onVisible((name, visible) => {
             if (name === 'MAIN' && visible) refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
-            if (name === 'MAIN' && visible && identified && !testing
+            if (name === 'MAIN' && visible && identified && !testing && page !== 'diagnostics'
                 && (page === 'detail' ? !hasDetailMeasurements() : !readAttempted)) {
                 testSelected();
             }
@@ -572,7 +646,7 @@ mgu.run({
             while (true) {
                 const dataReady = page === 'detail' ? hasDetailMeasurements() : hasMeasurements();
                 await sleep(5000);
-                const pageVisible = page !== 'about' && page !== 'settings' && ui.isVisible('MAIN');
+                const pageVisible = page !== 'about' && page !== 'settings' && page !== 'diagnostics' && ui.isVisible('MAIN');
                 const clusterActive = clusterEnabled();
                 if (testing || (!pageVisible && !clusterActive)) continue;
                 if (!identified) await identify();
