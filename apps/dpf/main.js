@@ -126,7 +126,8 @@ mgu.run({
             lastRead: 'Not checked', lastIssue: 'None',
             lastDid: null, source: 'Legacy TASU', reads: 0,
             toolRead: 'Not checked', toolError: 'Not checked',
-            tasuRead: 'Not checked', tasuError: 'Not checked'
+            tasuRead: 'Not checked', tasuError: 'Not checked',
+            ddeRecovery: 'Not checked'
         };
         async function checkDataTool() {
             diagnostic.tool = 'Checking';
@@ -137,6 +138,10 @@ mgu.run({
             timeoutMs: 15000,
             enabled: () => ctx.settings.get('experimentalDataTool') === true,
             requestOptions,
+            onRecovery: status => {
+                diagnostic.ddeRecovery = status;
+                log.info('DPF F150 recovery: ' + status);
+            },
             onToolResult: (ecu,did,result) => {
                 diagnostic.lastDid = did;
                 diagnostic.toolRead = result.ok ? 'Responding' : 'Failed';
@@ -411,6 +416,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.72', 'Retry DDE identification after TASU rejection'],
                 ['0.1.71', 'Longer Data Tool response window for DDE identification'],
                 ['0.1.70', 'Separate Data Tool and TASU read diagnostics'],
                 ['0.1.69', 'Built-in DPF connection diagnostics'],
@@ -462,6 +468,7 @@ mgu.run({
                 ['Data Tool error', diagnostic.toolError],
                 ['TASU read', diagnostic.tasuRead],
                 ['TASU error', diagnostic.tasuError],
+                ['DDE recovery', diagnostic.ddeRecovery],
                 ['Last DID', diagnostic.lastDid === null ? 'Not checked' : '0x' + diagnostic.lastDid.toString(16).toUpperCase()],
                 ['Last issue', diagnostic.lastIssue]
             ];
