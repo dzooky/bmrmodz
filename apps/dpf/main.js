@@ -16,6 +16,7 @@ const path = require('path');
 const { decode: decodePng } = require('./png');
 const regenMessage = require('./regen-message');
 const ddeProfiles = require('./dde-profiles');
+const dataToolRead = require('./data-tool-read');
 const distanceRecord = require('./distance-record');
 const { t: translate } = require('./kit/i18n');
 const Language = require('./language');
@@ -120,6 +121,11 @@ mgu.run({
         let detailReadAttempted = false;
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
+        const dpfTransport = dataToolRead.create(link, {
+            enabled: ctx.settings.get('experimentalDataTool') === true,
+            requestOptions,
+            onFallback: error => log.warn('DPF Data Tool fallback: ' + String(error.message || error))
+        });
         // B57 calibration is unchanged; B47 gets only its verified DIDs.
         const overviewDids = () => profile ? profile.overview : [];
         const detailDids = () => profile ? profile.detail : [];
@@ -137,11 +143,8 @@ mgu.run({
             const readingPage = page;
             const selected = regenOnly ? regenDids() : readingPage === 'detail' ? detailDids() : overviewDids();
             try {
-                link.wake(address);
                 for (const [name, did, len, factor, offset = 0] of selected) {
-                    const response = await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
-                        u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) || (u[0] === 0x7F && u[1] === 0x22)),
-                        requestOptions);
+                    const response = await dpfTransport.read(address, did);
                     let result = 'TIMEOUT';
                     if(response) {
                         if(response[0] === 0x7F) result = 'NRC '+hexBytes(response);
@@ -192,10 +195,7 @@ mgu.run({
                     log.warn('DPF diagnostic link unavailable: ' + (link.error || 'TASU unavailable'));
                     return;
                 }
-                link.wake(DDE);
-                const u = await link.physical(DDE, 0x22, [0xF1, 0x50], 1800,
-                    b => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50) || (b[0] === 0x7F && b[1] === 0x22)),
-                    requestOptions);
+                const u = await dpfTransport.read(DDE, 0xF150);
                 if (!u) { log.warn('DPF DDE did not respond'); return; }
                 if (u[0] !== 0x62 || u.length < 6) {
                     log.warn('DPF DDE identification refused: ' + hexBytes(u));
@@ -346,6 +346,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.67', 'Experimental Data Tool reads with automatic fallback'],
                 ['0.1.66', 'Correct Settings text after repeated page renders'],
                 ['0.1.65', 'Language handling now uses the OSA controller'],
                 ['0.1.64', 'Language selection aligned with OSA'],
