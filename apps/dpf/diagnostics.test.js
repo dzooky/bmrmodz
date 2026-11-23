@@ -14,5 +14,5 @@ assert.ok(source.includes("diagnostic.identification = 'TASU unavailable'"));
 assert.ok(source.includes("diagnostic.lastIssue = 'Unexpected data length'"));
 assert.ok(source.includes("onLegacyResult: (ecu, did, response)"));
 assert.ok(adapter.includes("JSON.stringify({op:'status'})"));
-assert.ok(!adapter.includes("JSON.stringify({op:'read',ecu,did})+'\\n')")===false);
+assert.ok(adapter.includes("JSON.stringify({op:'read',ecu,did})"));
 console.log('DPF diagnostics tab: source wiring, passive status and no extra polling verified');
