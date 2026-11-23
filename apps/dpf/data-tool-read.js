@@ -37,7 +37,7 @@ function status(options){
   const socket=net.createConnection(opts.socket||SOCKET);
   const done=value=>{if(finished)return;finished=true;socket.destroy();resolve(value);};
   socket.setTimeout(opts.timeoutMs||1200,()=>done(false));
-  socket.on('connect',()=>socket.write('{"op":"status"}\\n'.replace('\\n','\n')));
+  socket.on('connect',()=>socket.write(JSON.stringify({op:'status'})+'\n'));
   socket.on('data',chunk=>{
    raw+=chunk.toString('utf8');
    if(raw.length>8192)return done(false);
