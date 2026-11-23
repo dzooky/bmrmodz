@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
   "sk": {
+    "Install required Data Tool version for DPF testing": "Inštalácia požadovanej verzie Data Toolu na testovanie DPF",
     "Use Data Tool (experimental)": "Použiť Data Tool (experimentálne)",
     "Experimental Data Tool reads with automatic fallback": "Experimentálne čítanie cez Data Tool s automatickým návratom",
     "Overview": "Prehľad",
@@ -99,6 +100,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "Install required Data Tool version for DPF testing": "Instalace požadované verze Data Toolu pro testování DPF",
     "Use Data Tool (experimental)": "Použít Data Tool (experimentálně)",
     "Experimental Data Tool reads with automatic fallback": "Experimentální čtení přes Data Tool s automatickým návratem",
     "Overview": "Přehled",
@@ -197,6 +199,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "Install required Data Tool version for DPF testing": "Erforderliche Data Tool-Version für DPF-Tests installieren",
     "Use Data Tool (experimental)": "Data Tool verwenden (experimentell)",
     "Experimental Data Tool reads with automatic fallback": "Experimentelle Data-Tool-Abfragen mit automatischem Rückfall",
     "Overview": "Übersicht",
@@ -295,6 +298,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "Install required Data Tool version for DPF testing": "Instalar la versión necesaria de Data Tool para probar DPF",
     "Use Data Tool (experimental)": "Usar Data Tool (experimental)",
     "Experimental Data Tool reads with automatic fallback": "Lecturas experimentales con Data Tool y retorno automático",
     "Overview": "Resumen",
@@ -393,6 +397,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "Install required Data Tool version for DPF testing": "Installer la version requise de Data Tool pour les tests DPF",
     "Use Data Tool (experimental)": "Utiliser Data Tool (expérimental)",
     "Experimental Data Tool reads with automatic fallback": "Lectures expérimentales via Data Tool avec repli automatique",
     "Overview": "Vue d'ensemble",
@@ -491,6 +496,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "Install required Data Tool version for DPF testing": "Installa la versione richiesta di Data Tool per i test DPF",
     "Use Data Tool (experimental)": "Usa Data Tool (sperimentale)",
     "Experimental Data Tool reads with automatic fallback": "Letture sperimentali Data Tool con ripristino automatico",
     "Overview": "Panoramica",
@@ -589,6 +595,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "Install required Data Tool version for DPF testing": "A DPF-teszteléshez szükséges Data Tool-verzió telepítése",
     "Use Data Tool (experimental)": "Data Tool használata (kísérleti)",
     "Experimental Data Tool reads with automatic fallback": "Kísérleti Data Tool olvasás automatikus visszaállással",
     "Overview": "Áttekintés",
@@ -687,6 +694,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "Install required Data Tool version for DPF testing": "Instalacja wymaganej wersji Data Tool do testów DPF",
     "Use Data Tool (experimental)": "Użyj Data Tool (eksperymentalnie)",
     "Experimental Data Tool reads with automatic fallback": "Eksperymentalny odczyt Data Tool z automatycznym powrotem",
     "Overview": "Przegląd",
@@ -785,6 +793,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "Install required Data Tool version for DPF testing": "Установка необходимой версии Data Tool для тестирования DPF",
     "Use Data Tool (experimental)": "Использовать Data Tool (экспериментально)",
     "Experimental Data Tool reads with automatic fallback": "Экспериментальное чтение через Data Tool с автоматическим возвратом",
     "Overview": "Обзор",
@@ -883,6 +892,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "Install required Data Tool version for DPF testing": "Installer den nødvendige Data Tool-version til DPF-test",
     "Use Data Tool (experimental)": "Brug Data Tool (eksperimentel)",
     "Experimental Data Tool reads with automatic fallback": "Eksperimentelle Data Tool-læsninger med automatisk tilbagefald",
     "Overview": "Oversigt",
@@ -981,6 +991,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "Install required Data Tool version for DPF testing": "Εγκατάσταση απαιτούμενης έκδοσης Data Tool για δοκιμές DPF",
     "Use Data Tool (experimental)": "Χρήση Data Tool (πειραματικό)",
     "Experimental Data Tool reads with automatic fallback": "Πειραματικές αναγνώσεις Data Tool με αυτόματη επαναφορά",
     "Overview": "Επισκόπηση",
@@ -1079,6 +1090,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "Install required Data Tool version for DPF testing": "安装 DPF 测试所需的 Data Tool 版本",
     "Use Data Tool (experimental)": "使用 Data Tool（实验性）",
     "Experimental Data Tool reads with automatic fallback": "实验性 Data Tool 读取，失败时自动回退",
     "Overview": "概览",
@@ -1177,6 +1189,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "Install required Data Tool version for DPF testing": "Vereiste Data Tool-versie voor DPF-tests installeren",
     "Use Data Tool (experimental)": "Data Tool gebruiken (experimenteel)",
     "Experimental Data Tool reads with automatic fallback": "Experimenteel lezen via Data Tool met automatische terugval",
     "Overview": "Overzicht",
@@ -1275,6 +1288,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "Install required Data Tool version for DPF testing": "Installer nødvendig Data Tool-versjon for DPF-testing",
     "Use Data Tool (experimental)": "Bruk Data Tool (eksperimentell)",
     "Experimental Data Tool reads with automatic fallback": "Eksperimentelle Data Tool-avlesninger med automatisk tilbakefall",
     "Overview": "Oversikt",
@@ -1373,6 +1387,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "Install required Data Tool version for DPF testing": "Instalar a versão necessária do Data Tool para testes DPF",
     "Use Data Tool (experimental)": "Usar Data Tool (experimental)",
     "Experimental Data Tool reads with automatic fallback": "Leituras experimentais do Data Tool com retorno automático",
     "Overview": "Resumo",
@@ -1471,6 +1486,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "Install required Data Tool version for DPF testing": "Instalarea versiunii Data Tool necesare testării DPF",
     "Use Data Tool (experimental)": "Folosește Data Tool (experimental)",
     "Experimental Data Tool reads with automatic fallback": "Citiri experimentale prin Data Tool cu revenire automată",
     "Overview": "Prezentare",
@@ -1569,6 +1585,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "Install required Data Tool version for DPF testing": "Namestitev zahtevane različice Data Tool za preizkus DPF",
     "Use Data Tool (experimental)": "Uporabi Data Tool (poskusno)",
     "Experimental Data Tool reads with automatic fallback": "Poskusno branje prek Data Tool s samodejnim povratkom",
     "Overview": "Pregled",
@@ -1667,6 +1684,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "Install required Data Tool version for DPF testing": "Asenna DPF-testaukseen vaadittu Data Tool -versio",
     "Use Data Tool (experimental)": "Käytä Data Toolia (kokeellinen)",
     "Experimental Data Tool reads with automatic fallback": "Kokeelliset Data Tool -luvut automaattisella varatoiminnolla",
     "Overview": "Yleiskatsaus",
@@ -1765,6 +1783,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "Install required Data Tool version for DPF testing": "Installera nödvändig Data Tool-version för DPF-testning",
     "Use Data Tool (experimental)": "Använd Data Tool (experimentellt)",
     "Experimental Data Tool reads with automatic fallback": "Experimentell Data Tool-avläsning med automatisk återgång",
     "Overview": "Översikt",
@@ -1863,6 +1882,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "Install required Data Tool version for DPF testing": "DPF testi için gerekli Data Tool sürümünü yükle",
     "Use Data Tool (experimental)": "Data Tool kullan (deneysel)",
     "Experimental Data Tool reads with automatic fallback": "Otomatik geri dönüşlü deneysel Data Tool okumaları",
     "Overview": "Genel bakış",
@@ -1961,6 +1981,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "Install required Data Tool version for DPF testing": "Встановлення потрібної версії Data Tool для тестування DPF",
     "Use Data Tool (experimental)": "Використовувати Data Tool (експериментально)",
     "Experimental Data Tool reads with automatic fallback": "Експериментальне читання через Data Tool з автоматичним поверненням",
     "Overview": "Огляд",

@@ -1,5 +1,11 @@
 # Data Tool Diagnostics progress
 
+## v0.1.3 — align Data Tool installation dependency (2026-11-23)
+- **Implemented:** require bmrmodz-data-tool 0.1.8 (previously 0.1.5), bump companion app version to 0.1.3, and update its English-only experimental What's New.
+- **Purpose:** allow MGU Store to resolve the new tool version when installing/updating this companion. No new ECU commands or background operation.
+- **Validation:** automated dependency regression to be checked; MGU Store behavior and vehicle-side update remain unverified.
+
+
 ## In-car diagnostic report — 2026-11-23 (after wake)
 - **User-provided vehicle report:** explicit read-only diagnostic run 2026-11-23 21:30:57–21:31:14 UTC, summary **24 PASS / 0 FAIL / 5 SKIP**. Report lists five individual result entries: SOME/IP environment PASS (catalog and native module resolved); isolated SOME/IP native load PASS; DDE/DPF B57 UDS read PASS; EGS UDS read PASS; shared CDS stream PASS (oil/coolant/RPM values received, cache fresh, lease stopped).
 - **Scope of verification:** successful on-vehicle read responses and displayed decoded values, **not** proof of decoding accuracy, all individual 24 checks, app package identity or ACL enforcement. Report explicitly marks controlsTested=false, signalPermissionsVerified=false, deviceVerified=false and app authentication NO-GO. No UDS 0x31 or 0x2E issued.

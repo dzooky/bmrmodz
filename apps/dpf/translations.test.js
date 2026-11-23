@@ -24,6 +24,7 @@ const required = [
   'Language selection aligned with OSA',
   'Language handling now uses the OSA controller',
   'Correct Settings text after repeated page renders',
+  'Install required Data Tool version for DPF testing',
   'Use Data Tool (experimental)',
   'Experimental Data Tool reads with automatic fallback',
   'English (auto) language value readability',

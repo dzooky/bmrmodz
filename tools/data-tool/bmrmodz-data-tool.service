@@ -1,5 +1,5 @@
 [Unit]
-Description=BMRMODZ Data Tool read-only diagnostic feasibility service
+Description=BMRMODZ Data Tool read-only diagnostic service
 After=vsomeipd.service
 [Service]
 Type=simple
