@@ -1,5 +1,11 @@
 # Data Tool feasibility progress
 
+## In-car read-only report — 2026-11-23
+- **Observed from user-provided after-wake MGU diagnostic export:** 24 PASS, 0 FAIL, 5 SKIP (five aggregated result records). SOME/IP native load, DDE B57 read, EGS read and shared CDS sample returned PASS. The report notes fresh CDS cache and a stopped lease. Values are informational; decoding accuracy and exact software build were not independently checked.
+- **Remain NO-GO:** installed application identity and authorization, verified signal permissions, ECU controls, sustained multi-app concurrency, watchdog/recovery and background startup. Peer/kernel probes are preliminary and do not establish package identity. No actuator writes or routines were exercised.
+- **Follow-up gate:** reconcile report's richer checks and totals with the older test runner present in PR #48, identify exact installed revisions, then add strictly read-only regression coverage before any migration or active controls.
+
+
 ## v0.1.5 — separate Data Tool Diagnostics MGU companion (2026-11-22)
 - **Implemented on draft PR #48:** tool version increased to 0.1.5 for an explicitly read-only companion app (`apps/data-diagnostics`, 0.1.0). The app calls only the Data Tool socket and provides a parked-car smoke test and sanitized offline QR report.
 - **Scope:** no ECU control, no automatic polling, no changes to OSA/DPF/CC/Spritmonitor, no migration. A QR summary is not equivalent to full JSON export.
