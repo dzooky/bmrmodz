@@ -162,7 +162,7 @@ mgu.run({
             ? profile.overview.filter(([key]) => key === 'REQUEST' || key === 'MODE') : [];
         const hexBytes = a => a.map(b=>b.toString(16).toUpperCase().padStart(2,'0')).join(' ');
         async function testSelected(regenOnly = false) {
-            if (!identified || (!regenOnly && (page === 'about' || page === 'settings'))) return;
+            if (!identified || (!regenOnly && (page === 'about' || page === 'settings' || page === 'diagnostics'))) return;
             if (testing) {
                 readPending = true;
                 return;
@@ -631,7 +631,7 @@ mgu.run({
         });
         ui.onVisible((name, visible) => {
             if (name === 'MAIN' && visible) refreshClusterEquipment().catch(error => log.warn('DPF Car Equipment: ' + error));
-            if (name === 'MAIN' && visible && identified && !testing
+            if (name === 'MAIN' && visible && identified && !testing && page !== 'diagnostics'
                 && (page === 'detail' ? !hasDetailMeasurements() : !readAttempted)) {
                 testSelected();
             }
@@ -646,7 +646,7 @@ mgu.run({
             while (true) {
                 const dataReady = page === 'detail' ? hasDetailMeasurements() : hasMeasurements();
                 await sleep(5000);
-                const pageVisible = page !== 'about' && page !== 'settings' && ui.isVisible('MAIN');
+                const pageVisible = page !== 'about' && page !== 'settings' && page !== 'diagnostics' && ui.isVisible('MAIN');
                 const clusterActive = clusterEnabled();
                 if (testing || (!pageVisible && !clusterActive)) continue;
                 if (!identified) await identify();
