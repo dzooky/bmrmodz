@@ -19,6 +19,7 @@ jobs:
           node --check apps/dpf/main.js
           node --check apps/dpf/data-tool-read.js
           node apps/dpf/data-tool-read.test.js
+          node apps/dpf/diagnostics.test.js
           node --check apps/dpf/dde-profiles.js
           node --check apps/dpf/distance-record.js
           node apps/dpf/distance-record.test.js
