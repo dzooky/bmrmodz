@@ -124,7 +124,8 @@ mgu.run({
         const dpfTransport = dataToolRead.create(link, {
             enabled: () => ctx.settings.get('experimentalDataTool') === true,
             requestOptions,
-            onFallback: error => log.warn('DPF Data Tool fallback: ' + String(error.message || error))
+            onFallback: error => log.warn('DPF Data Tool fallback: ' + String(error.message || error)),
+            onSuccess: (ecu,did) => log.info('DPF Data Tool read OK ECU '+ecu.toString(16)+' DID '+did.toString(16))
         });
         // B57 calibration is unchanged; B47 gets only its verified DIDs.
         const overviewDids = () => profile ? profile.overview : [];
@@ -191,7 +192,7 @@ mgu.run({
             ddeIndex = null;
             try {
                 if (!link.ready) await link.init();
-                if (!link.available) {
+                if (!link.available && ctx.settings.get('experimentalDataTool') !== true) {
                     log.warn('DPF diagnostic link unavailable: ' + (link.error || 'TASU unavailable'));
                     return;
                 }
