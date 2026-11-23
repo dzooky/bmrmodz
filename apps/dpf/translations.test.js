@@ -56,6 +56,7 @@ const required = [
   "Data Tool request failed",
   "Unexpected data length",
   "Built-in DPF connection diagnostics",
+  'Longer Data Tool response window for DDE identification',
   'Use Data Tool (experimental)',
   'Experimental Data Tool reads with automatic fallback',
   'English (auto) language value readability',
