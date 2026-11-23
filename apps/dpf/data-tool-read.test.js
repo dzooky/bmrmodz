@@ -38,6 +38,6 @@ const {create}=require('./data-tool-read');
   assert.strictEqual(await require('./data-tool-read').status({socket:sock}),true);
   assert.strictEqual(requestedOp,'status');
   assert.strictEqual(await require('./data-tool-read').status({socket:sock+'.missing',timeoutMs:200}),false);
- }finally{await new Promise(resolve=>server.close(resolve));require('fs').unlinkSync(sock);}
+ }finally{await new Promise(resolve=>server.close(resolve));try{require('fs').unlinkSync(sock);}catch(e){if(e.code!=='ENOENT')throw e;}}
  console.log('DPF Data Tool opt-in, success and legacy fallback passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});
