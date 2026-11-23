@@ -47,7 +47,16 @@ function serve(factory,socketPath,options){
     request.then(()=>inflight.delete(key),()=>inflight.delete(key));
     return request;
   }
+  // Passive security posture only: never interpret socket reachability as app identity.
+  const securityPosture=()=>({
+    socketMode:'0666',
+    clientIdentityVerified:false,
+    appAuthorizationEnforced:false,
+    signalPermissionsVerified:false,
+    productionReady:false
+  });
   const capabilities=()=>({
+    security:securityPosture(),
     uds:{mode:'read-only-experimental',reads:READS,controls:'not implemented'},
     signals:{mode:'isolated-on-demand-probe',reason:'Native SOME/IP and ACL still require on-car verification'},
     background:{mode:'on-demand-only',reason:'No unattended ECU polling in feasibility build'}
@@ -65,12 +74,12 @@ function serve(factory,socketPath,options){
         try{
           req=JSON.parse(raw);
           if(!req||typeof req!=='object')throw new Error('Invalid request');
-          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.5',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
+          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.6',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
           else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
           else if(req.op==='configCheck')reply=configCheck.inspect();
           else if(req.op==='ccPlan')reply=ccFeasibility.plan();
-          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.5',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
+          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.6',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
           else if(req.op==='signalNative' && req.mode==='load')reply=await signalRunner.run('load');
           else if(req.op==='signalNative' && req.mode==='sample')reply=await signalRunner.run('sample',req.field);
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
