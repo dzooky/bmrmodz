@@ -62,9 +62,9 @@ const {create}=require('./data-tool-read');
   let raw='';
   client.on('data',chunk=>{
    raw+=String(chunk);
-   if(raw.includes('\\n')){
-    const req=JSON.parse(raw.split('\\n')[0]);
-    setTimeout(()=>client.end(JSON.stringify({ok:true,ecu:req.ecu,did:req.did,uds:[0x62,0xF1,0x50,0x0F,0x1F,0xE8]})+'\\n'),2400);
+   if(raw.includes('\n')){
+    const req=JSON.parse(raw.split('\n')[0]);
+    setTimeout(()=>client.end(JSON.stringify({ok:true,ecu:req.ecu,did:req.did,uds:[0x62,0xF1,0x50,0x0F,0x1F,0xE8]})+'\n'),2400);
    }
   });
  });
