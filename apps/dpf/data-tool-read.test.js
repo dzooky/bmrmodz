@@ -31,6 +31,52 @@ const {create}=require('./data-tool-read');
   onToolResult:(ecu,did,result)=>transportResults.push(result)});
  assert.deepStrictEqual(await toolSuccess.read(0x12,0xF150),[0x62,0xF1,0x50,1,2,3]);
  assert.deepStrictEqual(transportResults.pop(),{ok:true,code:'OK'});
+ // Only an initial F150 TASU rejection triggers one 44BB warm-up
+ // and one F150 retry. A recovered reply must not use the legacy fallback.
+ const tasuRejected=()=>new Error('TASU rejected request');
+ let sequence=[],phases=[],pauses=[],beforeRecoveryLegacy=legacyCalls;
+ const recovered=create(legacy,{enabled:true,delay:async ms=>pauses.push(ms),
+  request:async(ecu,did)=>{
+   sequence.push([ecu,did]);
+   if(sequence.length===1)throw tasuRejected();
+   return did===0x44BB?[0x62,0x44,0xBB,1]:[0x62,0xF1,0x50,0x0F,0x1F,0xE8];
+  },
+  onRecovery:state=>phases.push(state)
+ });
+ assert.deepStrictEqual(await recovered.read(0x12,0xF150),[0x62,0xF1,0x50,0x0F,0x1F,0xE8]);
+ assert.deepStrictEqual(sequence,[[0x12,0xF150],[0x12,0x44BB],[0x12,0xF150]]);
+ assert.deepStrictEqual(phases,['Retrying','Recovered']);
+ assert.deepStrictEqual(pauses,[1000]);
+ assert.strictEqual(legacyCalls,beforeRecoveryLegacy,'successful F150 recovery must not use legacy TASU');
+ assert.strictEqual(recovered.counters.successful,1);
+ assert.strictEqual(recovered.counters.fallbacks,0);
+ let failedRecoveryCalls=0;
+ const failedRecovery=create(legacy,{enabled:true,delay:async()=>{},
+  request:async()=>{failedRecoveryCalls++;throw tasuRejected();},
+  onRecovery:state=>phases.push(state)
+ });
+ assert.deepStrictEqual(await failedRecovery.read(0x12,0xF150),[0x62,0x44,0xBB,9]);
+ assert.strictEqual(failedRecoveryCalls,3,'never retry F150 more than once');
+ assert.strictEqual(failedRecovery.counters.fallbacks,1);
+ assert.deepStrictEqual(phases.slice(-2),['Retrying','Failed']);
+ let otherCalls=0;
+ const otherDid=create(legacy,{enabled:true,delay:async()=>{throw Error('unexpected retry delay');},
+  request:async()=>{otherCalls++;throw tasuRejected();}
+ });
+ await otherDid.read(0x12,0x44BE);
+ assert.strictEqual(otherCalls,1,'non-F150 DID must not run recovery');
+ let disabledCalls=0;
+ const legacyOnly=create(legacy,{enabled:false,
+  request:async()=>{disabledCalls++;throw tasuRejected();}
+ });
+ await legacyOnly.read(0x12,0xF150);
+ assert.strictEqual(disabledCalls,0,'legacy-only path must not touch Data Tool');
+ let transientCalls=0;
+ const transient=create(legacy,{enabled:true,delay:async()=>{throw Error('unexpected retry delay');},
+  request:async()=>{transientCalls++;throw Error('Data Tool timeout');}
+ });
+ await transient.read(0x12,0xF150);
+ assert.strictEqual(transientCalls,1,'timeout must not trigger TASU-reject-specific warm-up');
  let lastLegacy=null;
  const observed=create(legacy,{enabled:false,onLegacyResult:(ecu,did,reply)=>{lastLegacy={ecu,did,reply};}});
  await observed.read(0x12,0x44bb);

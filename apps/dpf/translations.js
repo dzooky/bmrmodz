@@ -1,6 +1,10 @@
 'use strict';
 module.exports = {
   "sk": {
+    "DDE recovery": "Obnova DDE",
+    "Retrying": "Opakujem pokus",
+    "Recovered": "Obnovené",
+    "Retry DDE identification after TASU rejection": "Opakovať identifikáciu DDE po odmietnutí TASU",
     "Longer Data Tool response window for DDE identification": "Dlhší čas na odpoveď Data Tool pri identifikácii DDE",
     "Data Tool read": "Čítanie Data Tool",
     "Data Tool error": "Chyba Data Tool",
@@ -135,6 +139,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "DDE recovery": "Obnova DDE",
+    "Retrying": "Opakuji pokus",
+    "Recovered": "Obnoveno",
+    "Retry DDE identification after TASU rejection": "Opakovat identifikaci DDE po odmítnutí TASU",
     "Longer Data Tool response window for DDE identification": "Delší čas na odpověď Data Tool při identifikaci DDE",
     "Data Tool read": "Čtení Data Tool",
     "Data Tool error": "Chyba Data Tool",
@@ -269,6 +277,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "DDE recovery": "DDE-Wiederherstellung",
+    "Retrying": "Erneuter Versuch",
+    "Recovered": "Wiederhergestellt",
+    "Retry DDE identification after TASU rejection": "DDE-Identifikation nach TASU-Ablehnung erneut versuchen",
     "Longer Data Tool response window for DDE identification": "Längere Data-Tool-Antwortzeit für die DDE-Erkennung",
     "Data Tool read": "Data-Tool-Lesezugriff",
     "Data Tool error": "Data-Tool-Fehler",
@@ -403,6 +415,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "DDE recovery": "Recuperación DDE",
+    "Retrying": "Reintentando",
+    "Recovered": "Recuperado",
+    "Retry DDE identification after TASU rejection": "Reintentar identificación DDE tras rechazo TASU",
     "Longer Data Tool response window for DDE identification": "Mayor tiempo de respuesta de Data Tool para identificar DDE",
     "Data Tool read": "Lectura Data Tool",
     "Data Tool error": "Error de Data Tool",
@@ -537,6 +553,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "DDE recovery": "Récupération DDE",
+    "Retrying": "Nouvelle tentative",
+    "Recovered": "Rétabli",
+    "Retry DDE identification after TASU rejection": "Retenter l’identification DDE après refus TASU",
     "Longer Data Tool response window for DDE identification": "Délai de réponse Data Tool prolongé pour identifier le DDE",
     "Data Tool read": "Lecture Data Tool",
     "Data Tool error": "Erreur Data Tool",
@@ -671,6 +691,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "DDE recovery": "Ripristino DDE",
+    "Retrying": "Nuovo tentativo",
+    "Recovered": "Ripristinato",
+    "Retry DDE identification after TASU rejection": "Ripetere identificazione DDE dopo rifiuto TASU",
     "Longer Data Tool response window for DDE identification": "Tempo di risposta Data Tool esteso per identificare la DDE",
     "Data Tool read": "Lettura Data Tool",
     "Data Tool error": "Errore Data Tool",
@@ -805,6 +829,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "DDE recovery": "DDE helyreállítás",
+    "Retrying": "Újrapróbálkozás",
+    "Recovered": "Helyreállítva",
+    "Retry DDE identification after TASU rejection": "DDE azonosítás ismétlése TASU elutasítás után",
     "Longer Data Tool response window for DDE identification": "Hosszabb Data Tool válaszidő a DDE azonosításához",
     "Data Tool read": "Data Tool olvasás",
     "Data Tool error": "Data Tool hiba",
@@ -939,6 +967,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "DDE recovery": "Odzyskiwanie DDE",
+    "Retrying": "Ponowna próba",
+    "Recovered": "Przywrócono",
+    "Retry DDE identification after TASU rejection": "Ponów identyfikację DDE po odrzuceniu TASU",
     "Longer Data Tool response window for DDE identification": "Dłuższy czas odpowiedzi Data Tool przy identyfikacji DDE",
     "Data Tool read": "Odczyt Data Tool",
     "Data Tool error": "Błąd Data Tool",
@@ -1073,6 +1105,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "DDE recovery": "Восстановление DDE",
+    "Retrying": "Повторная попытка",
+    "Recovered": "Восстановлено",
+    "Retry DDE identification after TASU rejection": "Повторная идентификация DDE после отказа TASU",
     "Longer Data Tool response window for DDE identification": "Увеличено время ответа Data Tool при определении DDE",
     "Data Tool read": "Чтение Data Tool",
     "Data Tool error": "Ошибка Data Tool",
@@ -1207,6 +1243,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "DDE recovery": "DDE-genoprettelse",
+    "Retrying": "Prøver igen",
+    "Recovered": "Genoprettet",
+    "Retry DDE identification after TASU rejection": "Gentag DDE-identifikation efter TASU-afvisning",
     "Longer Data Tool response window for DDE identification": "Længere svartid for Data Tool ved DDE-identifikation",
     "Data Tool read": "Data Tool-læsning",
     "Data Tool error": "Data Tool-fejl",
@@ -1341,6 +1381,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "DDE recovery": "Αποκατάσταση DDE",
+    "Retrying": "Νέα προσπάθεια",
+    "Recovered": "Αποκαταστάθηκε",
+    "Retry DDE identification after TASU rejection": "Επανάληψη αναγνώρισης DDE μετά από απόρριψη TASU",
     "Longer Data Tool response window for DDE identification": "Μεγαλύτερος χρόνος απόκρισης Data Tool για αναγνώριση DDE",
     "Data Tool read": "Ανάγνωση Data Tool",
     "Data Tool error": "Σφάλμα Data Tool",
@@ -1475,6 +1519,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "DDE recovery": "DDE 恢复",
+    "Retrying": "正在重试",
+    "Recovered": "已恢复",
+    "Retry DDE identification after TASU rejection": "TASU 拒绝后重试 DDE 识别",
     "Longer Data Tool response window for DDE identification": "延长 Data Tool 识别 DDE 的响应等待时间",
     "Data Tool read": "Data Tool 读取",
     "Data Tool error": "Data Tool 错误",
@@ -1609,6 +1657,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "DDE recovery": "DDE-herstel",
+    "Retrying": "Opnieuw proberen",
+    "Recovered": "Hersteld",
+    "Retry DDE identification after TASU rejection": "DDE-identificatie opnieuw proberen na TASU-weigering",
     "Longer Data Tool response window for DDE identification": "Langere Data Tool-reactietijd voor DDE-identificatie",
     "Data Tool read": "Data Tool-uitlezing",
     "Data Tool error": "Data Tool-fout",
@@ -1743,6 +1795,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "DDE recovery": "DDE-gjenoppretting",
+    "Retrying": "Prøver på nytt",
+    "Recovered": "Gjenopprettet",
+    "Retry DDE identification after TASU rejection": "Prøv DDE-identifikasjon på nytt etter TASU-avvisning",
     "Longer Data Tool response window for DDE identification": "Lengre svartid for Data Tool ved DDE-identifisering",
     "Data Tool read": "Data Tool-lesing",
     "Data Tool error": "Data Tool-feil",
@@ -1877,6 +1933,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "DDE recovery": "Recuperação DDE",
+    "Retrying": "A tentar novamente",
+    "Recovered": "Recuperado",
+    "Retry DDE identification after TASU rejection": "Repetir identificação DDE após rejeição TASU",
     "Longer Data Tool response window for DDE identification": "Prazo de resposta do Data Tool alargado para identificar DDE",
     "Data Tool read": "Leitura Data Tool",
     "Data Tool error": "Erro Data Tool",
@@ -2011,6 +2071,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "DDE recovery": "Recuperare DDE",
+    "Retrying": "Se reîncearcă",
+    "Recovered": "Recuperat",
+    "Retry DDE identification after TASU rejection": "Reîncercare identificare DDE după refuz TASU",
     "Longer Data Tool response window for DDE identification": "Timp de răspuns Data Tool extins pentru identificarea DDE",
     "Data Tool read": "Citire Data Tool",
     "Data Tool error": "Eroare Data Tool",
@@ -2145,6 +2209,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "DDE recovery": "Obnovitev DDE",
+    "Retrying": "Ponovni poskus",
+    "Recovered": "Obnovljeno",
+    "Retry DDE identification after TASU rejection": "Ponovi prepoznavo DDE po zavrnitvi TASU",
     "Longer Data Tool response window for DDE identification": "Daljši odzivni čas Data Tool pri identifikaciji DDE",
     "Data Tool read": "Branje Data Tool",
     "Data Tool error": "Napaka Data Tool",
@@ -2279,6 +2347,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "DDE recovery": "DDE-palautus",
+    "Retrying": "Yritetään uudelleen",
+    "Recovered": "Palautettu",
+    "Retry DDE identification after TASU rejection": "Yritä DDE-tunnistusta uudelleen TASU-hylkäyksen jälkeen",
     "Longer Data Tool response window for DDE identification": "Pidempi Data Tool -vastausaika DDE-tunnistukseen",
     "Data Tool read": "Data Tool -luku",
     "Data Tool error": "Data Tool -virhe",
@@ -2413,6 +2485,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "DDE recovery": "DDE-återställning",
+    "Retrying": "Försöker igen",
+    "Recovered": "Återställd",
+    "Retry DDE identification after TASU rejection": "Försök DDE-identifiering igen efter TASU-avslag",
     "Longer Data Tool response window for DDE identification": "Längre svarstid för Data Tool vid DDE-identifiering",
     "Data Tool read": "Data Tool-läsning",
     "Data Tool error": "Data Tool-fel",
@@ -2547,6 +2623,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "DDE recovery": "DDE kurtarma",
+    "Retrying": "Yeniden deneniyor",
+    "Recovered": "Kurtarıldı",
+    "Retry DDE identification after TASU rejection": "TASU reddinden sonra DDE tanımlamasını yeniden dene",
     "Longer Data Tool response window for DDE identification": "DDE tanımlaması için daha uzun Data Tool yanıt süresi",
     "Data Tool read": "Data Tool okuması",
     "Data Tool error": "Data Tool hatası",
@@ -2681,6 +2761,10 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "DDE recovery": "Відновлення DDE",
+    "Retrying": "Повторна спроба",
+    "Recovered": "Відновлено",
+    "Retry DDE identification after TASU rejection": "Повторна ідентифікація DDE після відмови TASU",
     "Longer Data Tool response window for DDE identification": "Подовжений час відповіді Data Tool для ідентифікації DDE",
     "Data Tool read": "Читання Data Tool",
     "Data Tool error": "Помилка Data Tool",

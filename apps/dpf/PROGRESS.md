@@ -1,5 +1,13 @@
 # DPF Status progress
 
+## v0.1.72 — bounded TASU-rejection recovery for DDE F150 (2026-11-23)
+- **In-car evidence (v0.1.71):** DPF still did not obtain measurements with experimental Tool enabled. `Data Tool error` showed `TASU_REJECTED`, while the independent Data Tool Diagnostics v0.1.43 DDE 44BB and F150 checks were reported PASS in the car. Thus increasing the IPC timeout alone did not resolve identification. Exact ECU/transport root cause remains unproven.
+- **Implemented:** only for Data Tool reads of DDE ECU `0x12`, DID `0xF150`, and only when the first read fails with `TASU rejected request`, run one read-only DDE `0x44BB` warm-up through the **same Tool transport**, allow 1,000 ms settling, then repeat the F150 request **once**. If the repeat fails, use the existing legacy TASU fallback exactly once; healthy F150 reads, other DIDs, all non-rejection errors and legacy-only operation add zero reads. No ECU controls or writes. A rejected warm-up does not cause a separate fallback.
+- **Diagnostics:** additional `DDE recovery` field reports `Not checked`, `Retrying`, `Recovered` or `Failed` (localized); original separate tool/TASU statuses remain. About What's New entry for 0.1.72 localized across all 21 non-English catalogs.
+- **Preserved:** 15 s Data Tool timeout, legacy TASU timeouts, DDE profiles/calibration, pollution measurement formulas, settings, notification logic, default-OFF experimental setting and normal read cadence.
+- **Tests:** offline mock regressions for success, failed bounded retry, non-F150, timeout and opt-out isolation, plus existing translation and CI checks. New in-car behavior unverified.
+
+
 ## v0.1.71 — longer Data Tool IPC read and identification guard (2026-11-23)
 - **In-car evidence:** Data Tool Diagnostics v0.1.43 manually confirmed all PASS, including direct DDE F150 identification after an earlier DDE 44BB read. DPF 0.1.70 still timed out at F150 with Data Tool `TOOL_TIMEOUT` and legacy TASU `NO_MATCHING_RESPONSE`; exact root cause is not yet proven.
 - **Implemented:** Data Tool reads initiated by DPF now allow 15,000 ms for the existing IPC response (previously default 2,200 ms), matching the proven Data Tool Diagnostics client's wait. The passive Data Tool status probe remains at 1,200 ms. Wrap the whole DDE identification, including TASU link initialization and any fallback, in a single-flight guard so a second call cannot overlap it.

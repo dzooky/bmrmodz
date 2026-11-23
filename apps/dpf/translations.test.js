@@ -57,6 +57,8 @@ const required = [
   "Unexpected data length",
   "Built-in DPF connection diagnostics",
   'Longer Data Tool response window for DDE identification',
+  'DDE recovery', 'Retrying', 'Recovered',
+  'Retry DDE identification after TASU rejection',
   'Use Data Tool (experimental)',
   'Experimental Data Tool reads with automatic fallback',
   'English (auto) language value readability',
