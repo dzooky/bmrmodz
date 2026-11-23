@@ -24,6 +24,8 @@ const required = [
   'Language selection aligned with OSA',
   'Language handling now uses the OSA controller',
   'Correct Settings text after repeated page renders',
+  'Use Data Tool (experimental)',
+  'Experimental Data Tool reads with automatic fallback',
   'English (auto) language value readability',
   'Run button translated into all languages',
   'Additional translations and Detail text sizing'
