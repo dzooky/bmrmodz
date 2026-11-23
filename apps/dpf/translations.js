@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
   "sk": {
+    "Restore direct TASU communication without Data Tool": "Obnovená priama komunikácia TASU bez Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Zamedzenie súbežných spojení TASU pri čítaní Data Tool",
     "DDE recovery": "Obnova DDE",
     "Retrying": "Opakujem pokus",
@@ -140,6 +141,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "Restore direct TASU communication without Data Tool": "Obnovena přímá komunikace TASU bez Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Zamezení souběžných spojení TASU při čtení Data Tool",
     "DDE recovery": "Obnova DDE",
     "Retrying": "Opakuji pokus",
@@ -279,6 +281,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "Restore direct TASU communication without Data Tool": "Direkte TASU-Kommunikation ohne Data Tool wiederhergestellt",
     "Avoid competing TASU sessions during Data Tool reads": "Parallele TASU-Sitzungen bei Data-Tool-Lesezugriffen vermeiden",
     "DDE recovery": "DDE-Wiederherstellung",
     "Retrying": "Erneuter Versuch",
@@ -418,6 +421,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "Restore direct TASU communication without Data Tool": "Restaurada la comunicación TASU directa sin Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Evitar sesiones TASU simultáneas durante lecturas Data Tool",
     "DDE recovery": "Recuperación DDE",
     "Retrying": "Reintentando",
@@ -557,6 +561,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "Restore direct TASU communication without Data Tool": "Communication TASU directe rétablie sans Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Éviter les sessions TASU concurrentes pendant les lectures Data Tool",
     "DDE recovery": "Récupération DDE",
     "Retrying": "Nouvelle tentative",
@@ -696,6 +701,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "Restore direct TASU communication without Data Tool": "Ripristinata la comunicazione TASU diretta senza Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Evita sessioni TASU simultanee durante le letture Data Tool",
     "DDE recovery": "Ripristino DDE",
     "Retrying": "Nuovo tentativo",
@@ -835,6 +841,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "Restore direct TASU communication without Data Tool": "Közvetlen TASU-kommunikáció visszaállítva Data Tool nélkül",
     "Avoid competing TASU sessions during Data Tool reads": "Párhuzamos TASU-kapcsolatok elkerülése Data Tool olvasáskor",
     "DDE recovery": "DDE helyreállítás",
     "Retrying": "Újrapróbálkozás",
@@ -974,6 +981,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "Restore direct TASU communication without Data Tool": "Przywrócono bezpośrednią komunikację TASU bez Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Unikanie równoległych sesji TASU podczas odczytu Data Tool",
     "DDE recovery": "Odzyskiwanie DDE",
     "Retrying": "Ponowna próba",
@@ -1113,6 +1121,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "Restore direct TASU communication without Data Tool": "Восстановлена прямая связь TASU без Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Исключены параллельные сеансы TASU при чтении Data Tool",
     "DDE recovery": "Восстановление DDE",
     "Retrying": "Повторная попытка",
@@ -1252,6 +1261,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "Restore direct TASU communication without Data Tool": "Direkte TASU-kommunikation uden Data Tool gendannet",
     "Avoid competing TASU sessions during Data Tool reads": "Undgå samtidige TASU-sessioner under Data Tool-læsning",
     "DDE recovery": "DDE-genoprettelse",
     "Retrying": "Prøver igen",
@@ -1391,6 +1401,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "Restore direct TASU communication without Data Tool": "Αποκαταστάθηκε η άμεση επικοινωνία TASU χωρίς Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Αποφυγή παράλληλων συνεδριών TASU κατά την ανάγνωση Data Tool",
     "DDE recovery": "Αποκατάσταση DDE",
     "Retrying": "Νέα προσπάθεια",
@@ -1530,6 +1541,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "Restore direct TASU communication without Data Tool": "恢复不经过 Data Tool 的直接 TASU 通信",
     "Avoid competing TASU sessions during Data Tool reads": "避免 Data Tool 读取时的并行 TASU 会话",
     "DDE recovery": "DDE 恢复",
     "Retrying": "正在重试",
@@ -1669,6 +1681,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "Restore direct TASU communication without Data Tool": "Directe TASU-communicatie zonder Data Tool hersteld",
     "Avoid competing TASU sessions during Data Tool reads": "Gelijktijdige TASU-sessies vermijden bij Data Tool-uitlezingen",
     "DDE recovery": "DDE-herstel",
     "Retrying": "Opnieuw proberen",
@@ -1808,6 +1821,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "Restore direct TASU communication without Data Tool": "Direkte TASU-kommunikasjon uten Data Tool gjenopprettet",
     "Avoid competing TASU sessions during Data Tool reads": "Unngå samtidige TASU-økter under Data Tool-lesing",
     "DDE recovery": "DDE-gjenoppretting",
     "Retrying": "Prøver på nytt",
@@ -1947,6 +1961,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "Restore direct TASU communication without Data Tool": "Restaurada a comunicação TASU direta sem Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Evitar sessões TASU simultâneas durante leituras Data Tool",
     "DDE recovery": "Recuperação DDE",
     "Retrying": "A tentar novamente",
@@ -2086,6 +2101,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "Restore direct TASU communication without Data Tool": "Comunicarea directă TASU fără Data Tool a fost restaurată",
     "Avoid competing TASU sessions during Data Tool reads": "Evitarea sesiunilor TASU simultane la citirile Data Tool",
     "DDE recovery": "Recuperare DDE",
     "Retrying": "Se reîncearcă",
@@ -2225,6 +2241,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "Restore direct TASU communication without Data Tool": "Obnovljena neposredna komunikacija TASU brez Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Preprečevanje sočasnih sej TASU pri branju Data Tool",
     "DDE recovery": "Obnovitev DDE",
     "Retrying": "Ponovni poskus",
@@ -2364,6 +2381,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "Restore direct TASU communication without Data Tool": "Suora TASU-yhteys ilman Data Toolia palautettu",
     "Avoid competing TASU sessions during Data Tool reads": "Vältetään samanaikaisia TASU-istuntoja Data Tool -lukujen aikana",
     "DDE recovery": "DDE-palautus",
     "Retrying": "Yritetään uudelleen",
@@ -2503,6 +2521,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "Restore direct TASU communication without Data Tool": "Direkt TASU-kommunikation utan Data Tool återställd",
     "Avoid competing TASU sessions during Data Tool reads": "Undvik parallella TASU-sessioner vid Data Tool-läsning",
     "DDE recovery": "DDE-återställning",
     "Retrying": "Försöker igen",
@@ -2642,6 +2661,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "Restore direct TASU communication without Data Tool": "Data Tool olmadan doğrudan TASU iletişimi geri yüklendi",
     "Avoid competing TASU sessions during Data Tool reads": "Data Tool okumalarında eşzamanlı TASU oturumlarını önleme",
     "DDE recovery": "DDE kurtarma",
     "Retrying": "Yeniden deneniyor",
@@ -2781,6 +2801,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "Restore direct TASU communication without Data Tool": "Відновлено прямий зв’язок TASU без Data Tool",
     "Avoid competing TASU sessions during Data Tool reads": "Усунення паралельних сеансів TASU під час читання Data Tool",
     "DDE recovery": "Відновлення DDE",
     "Retrying": "Повторна спроба",
