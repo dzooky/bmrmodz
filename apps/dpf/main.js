@@ -122,7 +122,7 @@ mgu.run({
         const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
         const requestOptions = { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 };
         const dpfTransport = dataToolRead.create(link, {
-            enabled: ctx.settings.get('experimentalDataTool') === true,
+            enabled: () => ctx.settings.get('experimentalDataTool') === true,
             requestOptions,
             onFallback: error => log.warn('DPF Data Tool fallback: ' + String(error.message || error))
         });
