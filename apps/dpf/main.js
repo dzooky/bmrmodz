@@ -124,7 +124,9 @@ mgu.run({
         const diagnostic = {
             tool: 'Not checked', identification: 'Connecting',
             lastRead: 'Not checked', lastIssue: 'None',
-            lastDid: null, source: 'Legacy TASU', reads: 0
+            lastDid: null, source: 'Legacy TASU', reads: 0,
+            toolRead: 'Not checked', toolError: 'Not checked',
+            tasuRead: 'Not checked', tasuError: 'Not checked'
         };
         async function checkDataTool() {
             diagnostic.tool = 'Checking';
@@ -133,8 +135,12 @@ mgu.run({
         const dpfTransport = dataToolRead.create(link, {
             enabled: () => ctx.settings.get('experimentalDataTool') === true,
             requestOptions,
+            onToolResult: (ecu,did,result) => {
+                diagnostic.lastDid = did;
+                diagnostic.toolRead = result.ok ? 'Responding' : 'Failed';
+                diagnostic.toolError = result.ok ? 'None' : result.code;
+            },
             onFallback: error => {
-                diagnostic.tool = 'Unavailable';
                 diagnostic.lastIssue = 'Data Tool request failed';
                 log.warn('DPF Data Tool fallback: ' + String(error.message || error));
             },
@@ -144,6 +150,10 @@ mgu.run({
                 diagnostic.reads++;
                 diagnostic.lastRead = response && response[0] === 0x62 ? 'Responding'
                     : response && response[0] === 0x7f ? 'Negative response' : 'No response';
+                diagnostic.tasuRead = diagnostic.lastRead;
+                diagnostic.tasuError = response && response[0] === 0x7f && Number.isInteger(response[2])
+                    ? 'UDS_NRC_' + response[2].toString(16).toUpperCase().padStart(2,'0')
+                    : response && response[0] === 0x62 ? 'None' : 'NO_MATCHING_RESPONSE';
                 if (diagnostic.lastRead !== 'Responding') diagnostic.lastIssue = diagnostic.lastRead;
             },
             onSuccess: (ecu,did) => {
@@ -393,6 +403,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.70', 'Separate Data Tool and TASU read diagnostics'],
                 ['0.1.69', 'Built-in DPF connection diagnostics'],
                 ['0.1.68', 'Install required Data Tool version for DPF testing'],
                 ['0.1.67', 'Experimental Data Tool reads with automatic fallback'],
@@ -419,7 +430,7 @@ mgu.run({
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 18;
+                const y = 104 + index * 17;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
                 cv.text(label, newsX + 66, y, 14, t.dim);
             });
@@ -438,14 +449,17 @@ mgu.run({
                 ['Selected transport', ctx.settings.get('experimentalDataTool') === true ? 'Data Tool' : 'Legacy TASU'],
                 ['DDE identification', diagnostic.identification],
                 ['DDE index', ddeIndex || 'Not checked'],
-                ['Last DDE read', diagnostic.lastRead],
+                ['Data Tool read', diagnostic.toolRead],
+                ['Data Tool error', diagnostic.toolError],
+                ['TASU read', diagnostic.tasuRead],
+                ['TASU error', diagnostic.tasuError],
                 ['Last DID', diagnostic.lastDid === null ? 'Not checked' : '0x' + diagnostic.lastDid.toString(16).toUpperCase()],
                 ['Last issue', diagnostic.lastIssue]
             ];
             rows.forEach(([label,value], i) => {
-                const y = 175 + i * 39;
-                cv.text(label, 58, y, 21, t.dim);
-                cv.text(value, 640, y, 22, value === 'Unavailable' || value === 'Failed' || value === 'No response'
+                const y = 163 + i * 30;
+                cv.text(label, 58, y, 19, t.dim);
+                cv.text(value, 640, y, 19, value === 'Unavailable' || value === 'Failed' || value === 'No response'
                     ? t.warn : t.text);
             });
         }

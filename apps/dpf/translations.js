@@ -1,6 +1,11 @@
 'use strict';
 module.exports = {
   "sk": {
+    "Data Tool read": "Čítanie Data Tool",
+    "Data Tool error": "Chyba Data Tool",
+    "TASU read": "Čítanie TASU",
+    "TASU error": "Chyba TASU",
+    "Separate Data Tool and TASU read diagnostics": "Oddelená diagnostika čítania Data Tool a TASU",
     "Ready": "Pripravené",
     "Legacy TASU": "Pôvodné TASU",
     "None": "Žiadny",
@@ -129,6 +134,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "Data Tool read": "Čtení Data Tool",
+    "Data Tool error": "Chyba Data Tool",
+    "TASU read": "Čtení TASU",
+    "TASU error": "Chyba TASU",
+    "Separate Data Tool and TASU read diagnostics": "Oddělená diagnostika čtení Data Tool a TASU",
     "Ready": "Připraveno",
     "Legacy TASU": "Původní TASU",
     "None": "Žádný",
@@ -257,6 +267,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "Data Tool read": "Data-Tool-Lesezugriff",
+    "Data Tool error": "Data-Tool-Fehler",
+    "TASU read": "TASU-Lesezugriff",
+    "TASU error": "TASU-Fehler",
+    "Separate Data Tool and TASU read diagnostics": "Getrennte Diagnose für Data-Tool- und TASU-Lesezugriffe",
     "Ready": "Bereit",
     "Legacy TASU": "Bisheriges TASU",
     "None": "Keiner",
@@ -385,6 +400,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "Data Tool read": "Lectura Data Tool",
+    "Data Tool error": "Error de Data Tool",
+    "TASU read": "Lectura TASU",
+    "TASU error": "Error de TASU",
+    "Separate Data Tool and TASU read diagnostics": "Diagnóstico separado de lecturas Data Tool y TASU",
     "Ready": "Listo",
     "Legacy TASU": "TASU anterior",
     "None": "Ninguno",
@@ -513,6 +533,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "Data Tool read": "Lecture Data Tool",
+    "Data Tool error": "Erreur Data Tool",
+    "TASU read": "Lecture TASU",
+    "TASU error": "Erreur TASU",
+    "Separate Data Tool and TASU read diagnostics": "Diagnostic séparé des lectures Data Tool et TASU",
     "Ready": "Prêt",
     "Legacy TASU": "TASU classique",
     "None": "Aucun",
@@ -641,6 +666,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "Data Tool read": "Lettura Data Tool",
+    "Data Tool error": "Errore Data Tool",
+    "TASU read": "Lettura TASU",
+    "TASU error": "Errore TASU",
+    "Separate Data Tool and TASU read diagnostics": "Diagnostica separata delle letture Data Tool e TASU",
     "Ready": "Pronto",
     "Legacy TASU": "TASU originale",
     "None": "Nessuno",
@@ -769,6 +799,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "Data Tool read": "Data Tool olvasás",
+    "Data Tool error": "Data Tool hiba",
+    "TASU read": "TASU olvasás",
+    "TASU error": "TASU hiba",
+    "Separate Data Tool and TASU read diagnostics": "A Data Tool és a TASU olvasás külön diagnosztikája",
     "Ready": "Kész",
     "Legacy TASU": "Eredeti TASU",
     "None": "Nincs",
@@ -897,6 +932,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "Data Tool read": "Odczyt Data Tool",
+    "Data Tool error": "Błąd Data Tool",
+    "TASU read": "Odczyt TASU",
+    "TASU error": "Błąd TASU",
+    "Separate Data Tool and TASU read diagnostics": "Oddzielna diagnostyka odczytów Data Tool i TASU",
     "Ready": "Gotowe",
     "Legacy TASU": "Oryginalne TASU",
     "None": "Brak",
@@ -1025,6 +1065,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "Data Tool read": "Чтение Data Tool",
+    "Data Tool error": "Ошибка Data Tool",
+    "TASU read": "Чтение TASU",
+    "TASU error": "Ошибка TASU",
+    "Separate Data Tool and TASU read diagnostics": "Раздельная диагностика чтения Data Tool и TASU",
     "Ready": "Готово",
     "Legacy TASU": "Исходный TASU",
     "None": "Нет",
@@ -1153,6 +1198,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "Data Tool read": "Data Tool-læsning",
+    "Data Tool error": "Data Tool-fejl",
+    "TASU read": "TASU-læsning",
+    "TASU error": "TASU-fejl",
+    "Separate Data Tool and TASU read diagnostics": "Separat diagnostik af Data Tool- og TASU-læsninger",
     "Ready": "Klar",
     "Legacy TASU": "Oprindelig TASU",
     "None": "Ingen",
@@ -1281,6 +1331,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "Data Tool read": "Ανάγνωση Data Tool",
+    "Data Tool error": "Σφάλμα Data Tool",
+    "TASU read": "Ανάγνωση TASU",
+    "TASU error": "Σφάλμα TASU",
+    "Separate Data Tool and TASU read diagnostics": "Ξεχωριστή διάγνωση αναγνώσεων Data Tool και TASU",
     "Ready": "Έτοιμο",
     "Legacy TASU": "Αρχικό TASU",
     "None": "Κανένα",
@@ -1409,6 +1464,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "Data Tool read": "Data Tool 读取",
+    "Data Tool error": "Data Tool 错误",
+    "TASU read": "TASU 读取",
+    "TASU error": "TASU 错误",
+    "Separate Data Tool and TASU read diagnostics": "分别诊断 Data Tool 与 TASU 读取",
     "Ready": "就绪",
     "Legacy TASU": "原始 TASU",
     "None": "无",
@@ -1537,6 +1597,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "Data Tool read": "Data Tool-uitlezing",
+    "Data Tool error": "Data Tool-fout",
+    "TASU read": "TASU-uitlezing",
+    "TASU error": "TASU-fout",
+    "Separate Data Tool and TASU read diagnostics": "Afzonderlijke diagnose voor Data Tool- en TASU-uitlezingen",
     "Ready": "Gereed",
     "Legacy TASU": "Oorspronkelijke TASU",
     "None": "Geen",
@@ -1665,6 +1730,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "Data Tool read": "Data Tool-lesing",
+    "Data Tool error": "Data Tool-feil",
+    "TASU read": "TASU-lesing",
+    "TASU error": "TASU-feil",
+    "Separate Data Tool and TASU read diagnostics": "Separat diagnostikk for Data Tool- og TASU-lesing",
     "Ready": "Klar",
     "Legacy TASU": "Opprinnelig TASU",
     "None": "Ingen",
@@ -1793,6 +1863,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "Data Tool read": "Leitura Data Tool",
+    "Data Tool error": "Erro Data Tool",
+    "TASU read": "Leitura TASU",
+    "TASU error": "Erro TASU",
+    "Separate Data Tool and TASU read diagnostics": "Diagnóstico separado das leituras Data Tool e TASU",
     "Ready": "Pronto",
     "Legacy TASU": "TASU original",
     "None": "Nenhum",
@@ -1921,6 +1996,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "Data Tool read": "Citire Data Tool",
+    "Data Tool error": "Eroare Data Tool",
+    "TASU read": "Citire TASU",
+    "TASU error": "Eroare TASU",
+    "Separate Data Tool and TASU read diagnostics": "Diagnostic separat pentru citirile Data Tool și TASU",
     "Ready": "Pregătit",
     "Legacy TASU": "TASU original",
     "None": "Niciuna",
@@ -2049,6 +2129,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "Data Tool read": "Branje Data Tool",
+    "Data Tool error": "Napaka Data Tool",
+    "TASU read": "Branje TASU",
+    "TASU error": "Napaka TASU",
+    "Separate Data Tool and TASU read diagnostics": "Ločena diagnostika branja Data Tool in TASU",
     "Ready": "Pripravljeno",
     "Legacy TASU": "Izvorni TASU",
     "None": "Nič",
@@ -2177,6 +2262,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "Data Tool read": "Data Tool -luku",
+    "Data Tool error": "Data Tool -virhe",
+    "TASU read": "TASU-luku",
+    "TASU error": "TASU-virhe",
+    "Separate Data Tool and TASU read diagnostics": "Erillinen Data Tool- ja TASU-lukudiagnostiikka",
     "Ready": "Valmis",
     "Legacy TASU": "Alkuperäinen TASU",
     "None": "Ei mitään",
@@ -2305,6 +2395,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "Data Tool read": "Data Tool-läsning",
+    "Data Tool error": "Data Tool-fel",
+    "TASU read": "TASU-läsning",
+    "TASU error": "TASU-fel",
+    "Separate Data Tool and TASU read diagnostics": "Separat diagnostik för Data Tool- och TASU-läsningar",
     "Ready": "Redo",
     "Legacy TASU": "Ursprunglig TASU",
     "None": "Ingen",
@@ -2433,6 +2528,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "Data Tool read": "Data Tool okuması",
+    "Data Tool error": "Data Tool hatası",
+    "TASU read": "TASU okuması",
+    "TASU error": "TASU hatası",
+    "Separate Data Tool and TASU read diagnostics": "Data Tool ve TASU okumaları için ayrı tanılama",
     "Ready": "Hazır",
     "Legacy TASU": "Orijinal TASU",
     "None": "Yok",
@@ -2561,6 +2661,11 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "Data Tool read": "Читання Data Tool",
+    "Data Tool error": "Помилка Data Tool",
+    "TASU read": "Читання TASU",
+    "TASU error": "Помилка TASU",
+    "Separate Data Tool and TASU read diagnostics": "Окрема діагностика читання Data Tool і TASU",
     "Ready": "Готово",
     "Legacy TASU": "Початковий TASU",
     "None": "Немає",

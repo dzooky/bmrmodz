@@ -15,6 +15,22 @@ const {create}=require('./data-tool-read');
  assert.deepStrictEqual(await failed.read(0x12,0x44bb),[0x62,0x44,0xbb,9]);
  assert.strictEqual(failed.counters.fallbacks,1);
  assert.strictEqual(legacyCalls,2);
+ let transportResults=[];
+ const rejected=create(legacy,{enabled:true,
+  request:async()=>{const e=new Error('No matching response');throw e;},
+  onToolResult:(ecu,did,result)=>transportResults.push({ecu,did,result})
+ });
+ assert.deepStrictEqual(await rejected.read(0x12,0xF150),[0x62,0x44,0xbb,9]);
+ assert.deepStrictEqual(transportResults.pop(),{ecu:0x12,did:0xF150,result:{ok:false,code:'NO_MATCHING_RESPONSE'}});
+ const nrcError=new Error('UDS negative response');nrcError.nrc=0x31;
+ assert.strictEqual(require('./data-tool-read').errorCode(nrcError),'UDS_NRC_31');
+ const disconnected=new Error('connect ENOENT');disconnected.code='ENOENT';
+ assert.strictEqual(require('./data-tool-read').errorCode(disconnected),'SOCKET_ENOENT');
+ assert.strictEqual(require('./data-tool-read').errorCode(Object.assign(new Error('Data Tool timeout'),{code:'TOOL_TIMEOUT'})),'TOOL_TIMEOUT');
+ const toolSuccess=create(legacy,{enabled:true,request:async()=>[0x62,0xF1,0x50,1,2,3],
+  onToolResult:(ecu,did,result)=>transportResults.push(result)});
+ assert.deepStrictEqual(await toolSuccess.read(0x12,0xF150),[0x62,0xF1,0x50,1,2,3]);
+ assert.deepStrictEqual(transportResults.pop(),{ok:true,code:'OK'});
  let lastLegacy=null;
  const observed=create(legacy,{enabled:false,onLegacyResult:(ecu,did,reply)=>{lastLegacy={ecu,did,reply};}});
  await observed.read(0x12,0x44bb);

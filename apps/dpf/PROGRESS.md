@@ -1,5 +1,13 @@
 # DPF Status progress
 
+## v0.1.70 — separate transport read diagnostics (2026-11-23)
+- **In-car report (v0.1.69):** with experimental Data Tool enabled, TASU connection `Ready`, Data Tool connection `Responding` (status only), DDE identification `No response`, last DID `0xF150`, last issue `DDE did not respond`. This **does not** prove the Tool diagnostic read succeeds, and does not identify the underlying failure.
+- **Implemented:** preserve each existing Data Tool `read` attempt result and last categorized error separately from the subsequent legacy TASU fallback. Show `Data Tool read`, `Data Tool error`, `TASU read`, `TASU error`, identification and last DID on the existing Diagnostics tab. Display stable technical error codes (e.g. `NO_MATCHING_RESPONSE`, `UDS_NRC_31`, `SOCKET_ENOENT`, `TOOL_TIMEOUT`, `INVALID_RESPONSE`) rather than adding ECU requests. `Not checked` explicitly indicates a path not attempted.
+- **No behavioral migration:** unchanged DDE DID profiles, timings, legacy fallback and default-OFF experimental setting. Tool status availability must not be mistaken for successful ECU reads.
+- **Translations and notes:** five user-facing labels/release-note strings across 21 non-English locales; About What's New bumped to 0.1.70.
+- **Verification:** code and mock tests prepared; CI and real-car behavior must be recorded separately. In-car verification pending.
+
+
 ## v0.1.69 — in-app connection diagnostics (2026-11-23)
 - **Vehicle report:** after installing DPF 0.1.68, user reported no DPF readings even when `Use Data Tool (experimental)` was OFF. Root cause remains unknown; this is not evidence that Data Tool or TASU is specifically at fault.
 - **Implemented:** fifth `Diagnostics` tab in the existing canvas with TASU availability, passive Data Tool `status` socket check, selected transport, DDE F150 identification status/index, last DDE read, last DID and categorised last failure. Tool probe sends **only** `{op:'status'}`, no ECU read; ordinary poll cadence and read-only DPF protocol are unchanged. Live legacy and tool read outcomes are observed, not duplicated.
