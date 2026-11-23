@@ -1,5 +1,11 @@
 # DPF Status progress
 
+## v0.1.68 — Data Tool dependency declared (2026-11-23)
+- **Implemented:** declare `bmrmodz-data-tool >=0.1.7` in DPF's app manifest so MGU Store resolves the experimental service dependency when updating DPF. Existing `experimentalDataTool` setting remains OFF by default; legacy TASU reading is preserved.
+- **Release note:** add visible What's New entry and translate into all 21 non-English DPF locales. No changes to vehicle decoding or timing.
+- **Testing:** manifest and release-note regression through CI; new vehicle version and tool installation are pending direct user confirmation. Requiring the Data Tool can block DPF installation if tool health fails; this is a test-stage change, not a production guarantee.
+
+
 ## v0.1.67 — experimental Data Tool transport (2026-11-23)
 - **Implemented on PR #48 development branch only:** a default-OFF `Use Data Tool (experimental)` boolean setting. When enabled, DPF sends allowlisted DDE 0x22 reads through the local Data Tool socket, checking positive response echo and byte structure. When unavailable, timed out, or malformed, it falls back to the unchanged legacy ReadOnlyDiag/TASU request for that read. The setting is evaluated at each read and is reversible without removing legacy support.
 - **No source-of-truth migration:** default remains legacy; existing B57/B47 profile decoding, calibration, regeneration notification logic, equipment behavior and polling cadence remain unchanged. No automatic retry storm beyond existing DPF polling, no ECU writes, and no changes to OSA/CC.
