@@ -347,6 +347,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.68', 'Install required Data Tool version for DPF testing'],
                 ['0.1.67', 'Experimental Data Tool reads with automatic fallback'],
                 ['0.1.66', 'Correct Settings text after repeated page renders'],
                 ['0.1.65', 'Language handling now uses the OSA controller'],
