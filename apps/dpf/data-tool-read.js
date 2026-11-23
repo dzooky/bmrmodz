@@ -70,6 +70,10 @@ function status(options){
   socket.on('end',()=>done(false));
  });
 }
+// One bounded F150 recovery mirrors the successful diagnostics sequence:
+// DDE 44BB -> settle -> DDE F150, only after a TASU-layer rejection.
+// Never retry unrelated failures or add reads during a successful first attempt.
+function delay(ms){return new Promise(resolve=>setTimeout(resolve,ms));}
 function create(legacy,opts){
  const options=opts||{};
  let successful=0,fallbacks=0;
@@ -77,16 +81,35 @@ function create(legacy,opts){
  return {
   get counters(){return {successful,fallbacks};},
   async read(ecu,did){
-   if(enabled())try{
-    const result=await (options.request||request)(ecu,did,options);
-    successful++;
-    if(options.onToolResult)options.onToolResult(ecu,did,{ok:true,code:'OK'});
-    if(options.onSuccess)options.onSuccess(ecu,did);
-    return result;
-   }catch(error){
+   if(enabled()){
+    const toolRequest=options.request||request;
+    let result,toolError;
+    try{result=await toolRequest(ecu,did,options);}
+    catch(error){toolError=error;}
+    if(toolError&&ecu===0x12&&did===0xF150&&errorCode(toolError)==='TASU_REJECTED'){
+      if(options.onRecovery)options.onRecovery('Retrying');
+      // Warm-up is diagnostic-only. A rejection here does not bypass the
+      // original bounded F150 retry, and never triggers a separate fallback.
+      try{await toolRequest(ecu,0x44BB,options);}catch(_){}
+      await (options.delay||delay)(1000);
+      try{
+        result=await toolRequest(ecu,did,options);
+        toolError=null;
+        if(options.onRecovery)options.onRecovery('Recovered');
+      }catch(error){
+        toolError=error;
+        if(options.onRecovery)options.onRecovery('Failed');
+      }
+    }
+    if(!toolError){
+      successful++;
+      if(options.onToolResult)options.onToolResult(ecu,did,{ok:true,code:'OK'});
+      if(options.onSuccess)options.onSuccess(ecu,did);
+      return result;
+    }
     fallbacks++;
-    if(options.onToolResult)options.onToolResult(ecu,did,{ok:false,code:errorCode(error)});
-    if(options.onFallback)options.onFallback(error);
+    if(options.onToolResult)options.onToolResult(ecu,did,{ok:false,code:errorCode(toolError)});
+    if(options.onFallback)options.onFallback(toolError);
    }
    legacy.wake(ecu);
    const legacyReply=await legacy.physical(ecu,0x22,[(did>>8)&255,did&255],1800,
