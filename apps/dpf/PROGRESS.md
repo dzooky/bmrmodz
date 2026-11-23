@@ -1,5 +1,13 @@
 # DPF Status progress
 
+## v0.1.73 — avoid dual TASU sessions before Tool identification (2026-11-23)
+- **Observed:** user reported Data Tool `TASU_REJECTED` still prevents DPF identification on 0.1.72 despite the targeted 44BB warm-up. Data Tool Diagnostics v0.1.43 read of F150 succeeds in vehicle. Root cause **not proven**.
+- **Concrete integration difference:** DPF previously initialized its own native TASU/ReadOnlyDiag session **before** issuing the Data Tool F150 read, unlike Data Tool Diagnostics which has no direct TASU client. Concurrent independent TASU session management could interfere with the Data Tool transport.
+- **Implemented:** when experimental Data Tool is enabled, do not initialize DPF's separate TASU client during identification. Initialize it lazily only if a Data Tool request actually falls back, or when legacy-only mode is selected; reuse an already initialized legacy session. Preserve existing Data Tool 15-second timeout, bounded warm-up experiment, all DIDs/decoding, ordinary polling, and default OFF setting.
+- **Tests:** added mock assertions that healthy tool F150 never initializes or uses legacy TASU, while failed tool and legacy-only reads initialize legacy exactly when needed; new What's New 0.1.73 translated for 21 non-English locales.
+- **In-car verification:** still required. This removes one concrete divergence but is not evidence the vehicle will respond successfully.
+
+
 ## v0.1.72 — bounded TASU-rejection recovery for DDE F150 (2026-11-23)
 - **In-car evidence (v0.1.71):** DPF still did not obtain measurements with experimental Tool enabled. `Data Tool error` showed `TASU_REJECTED`, while the independent Data Tool Diagnostics v0.1.43 DDE 44BB and F150 checks were reported PASS in the car. Thus increasing the IPC timeout alone did not resolve identification. Exact ECU/transport root cause remains unproven.
 - **Implemented:** only for Data Tool reads of DDE ECU `0x12`, DID `0xF150`, and only when the first read fails with `TASU rejected request`, run one read-only DDE `0x44BB` warm-up through the **same Tool transport**, allow 1,000 ms settling, then repeat the F150 request **once**. If the repeat fails, use the existing legacy TASU fallback exactly once; healthy F150 reads, other DIDs, all non-rejection errors and legacy-only operation add zero reads. No ECU controls or writes. A rejected warm-up does not cause a separate fallback.
