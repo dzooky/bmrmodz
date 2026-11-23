@@ -37,7 +37,7 @@ function create(legacy,opts){
  return {
   get counters(){return {successful,fallbacks};},
   async read(ecu,did){
-   if(enabled())try{const result=await (options.request||request)(ecu,did,options);successful++;return result;}
+   if(enabled())try{const result=await (options.request||request)(ecu,did,options);successful++;if(options.onSuccess)options.onSuccess(ecu,did);return result;}
    catch(error){fallbacks++;if(options.onFallback)options.onFallback(error);}
    legacy.wake(ecu);
    return legacy.physical(ecu,0x22,[(did>>8)&255,did&255],1800,
