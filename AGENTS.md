@@ -13,7 +13,8 @@ At the start of development for each new app, make Info the first tab and the in
 - Add the entry in the same change as the version update; use the actual version number and accurately describe user-visible changes.
 - Translate each new user-visible release-note string into every language supported by that application, using its existing i18n catalog and keeping key sets aligned.
 - Keep older notes readable within the app's existing layout and do not claim unverified vehicle behavior as verified.
-- Apply these rules to Spritmonitor, DPF, OSA, Climate Comfort and future applications.
+- Apply these rules to production/user-facing applications such as Spritmonitor, DPF, OSA, and Climate Comfort.
+- **Exception — experimental/test/diagnostic apps:** A visible What's New section and version-specific release-note translations are optional during rapid testing. Keep version numbers and PROGRESS.md accurate; ordinary user-facing strings still require translations into every supported language. This exemption does not apply to production apps.
 
 ## Explicit implementation authorization ("priprav")
 
