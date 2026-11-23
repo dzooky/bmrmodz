@@ -1,5 +1,12 @@
 # Data Tool Diagnostics progress
 
+## In-car diagnostic report — 2026-11-23 (after wake)
+- **User-provided vehicle report:** explicit read-only diagnostic run 2026-11-23 21:30:57–21:31:14 UTC, summary **24 PASS / 0 FAIL / 5 SKIP**. Report lists five individual result entries: SOME/IP environment PASS (catalog and native module resolved); isolated SOME/IP native load PASS; DDE/DPF B57 UDS read PASS; EGS UDS read PASS; shared CDS stream PASS (oil/coolant/RPM values received, cache fresh, lease stopped).
+- **Scope of verification:** successful on-vehicle read responses and displayed decoded values, **not** proof of decoding accuracy, all individual 24 checks, app package identity or ACL enforcement. Report explicitly marks controlsTested=false, signalPermissionsVerified=false, deviceVerified=false and app authentication NO-GO. No UDS 0x31 or 0x2E issued.
+- **Source/build mismatch to resolve before next diagnostic release:** exported report has five aggregated result entries and 24/0/5 totals, while current feature branch's `test-runner.js` defines 11 distinct steps and reports per-step totals. Establish exact deployed app/tool commit and report schema before changing tests or assigning a new version; do not infer it from the report.
+- **Next:** reconcile deployed versions/commit, then design separate read-only peer identity/ACL and concurrency gates; do not enable controls or background polling.
+
+
 ## v0.1.2 — LAN HTTP manual report upload (2026-11-23)
 - **Implemented on draft PR #48:** `apps/data-diagnostics/upload.js` sends sanitized reports only on explicit **Send report** to `http://192.168.0.10/bmrmodz.php` using HTTP port 80, with no DNS fallback, internet hostname, or authentication token. All allowlist, request-size and response-ID checks remain.
 - **Updated:** English What's New `0.1.2 — LAN report upload`, app manifest version, README and mock upload regression checks. The prior HTTPS flow remains documented below as historical v0.1.1 implementation.
