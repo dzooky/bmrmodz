@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
   "sk": {
+    "Avoid competing TASU sessions during Data Tool reads": "Zamedzenie súbežných spojení TASU pri čítaní Data Tool",
     "DDE recovery": "Obnova DDE",
     "Retrying": "Opakujem pokus",
     "Recovered": "Obnovené",
@@ -139,6 +140,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "Avoid competing TASU sessions during Data Tool reads": "Zamezení souběžných spojení TASU při čtení Data Tool",
     "DDE recovery": "Obnova DDE",
     "Retrying": "Opakuji pokus",
     "Recovered": "Obnoveno",
@@ -277,6 +279,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "Avoid competing TASU sessions during Data Tool reads": "Parallele TASU-Sitzungen bei Data-Tool-Lesezugriffen vermeiden",
     "DDE recovery": "DDE-Wiederherstellung",
     "Retrying": "Erneuter Versuch",
     "Recovered": "Wiederhergestellt",
@@ -415,6 +418,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "Avoid competing TASU sessions during Data Tool reads": "Evitar sesiones TASU simultáneas durante lecturas Data Tool",
     "DDE recovery": "Recuperación DDE",
     "Retrying": "Reintentando",
     "Recovered": "Recuperado",
@@ -553,6 +557,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "Avoid competing TASU sessions during Data Tool reads": "Éviter les sessions TASU concurrentes pendant les lectures Data Tool",
     "DDE recovery": "Récupération DDE",
     "Retrying": "Nouvelle tentative",
     "Recovered": "Rétabli",
@@ -691,6 +696,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "Avoid competing TASU sessions during Data Tool reads": "Evita sessioni TASU simultanee durante le letture Data Tool",
     "DDE recovery": "Ripristino DDE",
     "Retrying": "Nuovo tentativo",
     "Recovered": "Ripristinato",
@@ -829,6 +835,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "Avoid competing TASU sessions during Data Tool reads": "Párhuzamos TASU-kapcsolatok elkerülése Data Tool olvasáskor",
     "DDE recovery": "DDE helyreállítás",
     "Retrying": "Újrapróbálkozás",
     "Recovered": "Helyreállítva",
@@ -967,6 +974,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "Avoid competing TASU sessions during Data Tool reads": "Unikanie równoległych sesji TASU podczas odczytu Data Tool",
     "DDE recovery": "Odzyskiwanie DDE",
     "Retrying": "Ponowna próba",
     "Recovered": "Przywrócono",
@@ -1105,6 +1113,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "Avoid competing TASU sessions during Data Tool reads": "Исключены параллельные сеансы TASU при чтении Data Tool",
     "DDE recovery": "Восстановление DDE",
     "Retrying": "Повторная попытка",
     "Recovered": "Восстановлено",
@@ -1243,6 +1252,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "Avoid competing TASU sessions during Data Tool reads": "Undgå samtidige TASU-sessioner under Data Tool-læsning",
     "DDE recovery": "DDE-genoprettelse",
     "Retrying": "Prøver igen",
     "Recovered": "Genoprettet",
@@ -1381,6 +1391,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "Avoid competing TASU sessions during Data Tool reads": "Αποφυγή παράλληλων συνεδριών TASU κατά την ανάγνωση Data Tool",
     "DDE recovery": "Αποκατάσταση DDE",
     "Retrying": "Νέα προσπάθεια",
     "Recovered": "Αποκαταστάθηκε",
@@ -1519,6 +1530,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "Avoid competing TASU sessions during Data Tool reads": "避免 Data Tool 读取时的并行 TASU 会话",
     "DDE recovery": "DDE 恢复",
     "Retrying": "正在重试",
     "Recovered": "已恢复",
@@ -1657,6 +1669,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "Avoid competing TASU sessions during Data Tool reads": "Gelijktijdige TASU-sessies vermijden bij Data Tool-uitlezingen",
     "DDE recovery": "DDE-herstel",
     "Retrying": "Opnieuw proberen",
     "Recovered": "Hersteld",
@@ -1795,6 +1808,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "Avoid competing TASU sessions during Data Tool reads": "Unngå samtidige TASU-økter under Data Tool-lesing",
     "DDE recovery": "DDE-gjenoppretting",
     "Retrying": "Prøver på nytt",
     "Recovered": "Gjenopprettet",
@@ -1933,6 +1947,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "Avoid competing TASU sessions during Data Tool reads": "Evitar sessões TASU simultâneas durante leituras Data Tool",
     "DDE recovery": "Recuperação DDE",
     "Retrying": "A tentar novamente",
     "Recovered": "Recuperado",
@@ -2071,6 +2086,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "Avoid competing TASU sessions during Data Tool reads": "Evitarea sesiunilor TASU simultane la citirile Data Tool",
     "DDE recovery": "Recuperare DDE",
     "Retrying": "Se reîncearcă",
     "Recovered": "Recuperat",
@@ -2209,6 +2225,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "Avoid competing TASU sessions during Data Tool reads": "Preprečevanje sočasnih sej TASU pri branju Data Tool",
     "DDE recovery": "Obnovitev DDE",
     "Retrying": "Ponovni poskus",
     "Recovered": "Obnovljeno",
@@ -2347,6 +2364,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "Avoid competing TASU sessions during Data Tool reads": "Vältetään samanaikaisia TASU-istuntoja Data Tool -lukujen aikana",
     "DDE recovery": "DDE-palautus",
     "Retrying": "Yritetään uudelleen",
     "Recovered": "Palautettu",
@@ -2485,6 +2503,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "Avoid competing TASU sessions during Data Tool reads": "Undvik parallella TASU-sessioner vid Data Tool-läsning",
     "DDE recovery": "DDE-återställning",
     "Retrying": "Försöker igen",
     "Recovered": "Återställd",
@@ -2623,6 +2642,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "Avoid competing TASU sessions during Data Tool reads": "Data Tool okumalarında eşzamanlı TASU oturumlarını önleme",
     "DDE recovery": "DDE kurtarma",
     "Retrying": "Yeniden deneniyor",
     "Recovered": "Kurtarıldı",
@@ -2761,6 +2781,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "Avoid competing TASU sessions during Data Tool reads": "Усунення паралельних сеансів TASU під час читання Data Tool",
     "DDE recovery": "Відновлення DDE",
     "Retrying": "Повторна спроба",
     "Recovered": "Відновлено",
