@@ -1,4 +1,9 @@
-# Data Tool feasibility progress
+# Data Tool progress
+
+## v0.1.8 — renamed display title and required update (2026-11-23)
+- User-facing title is **Data Tool**, technical ID `bmrmodz-data-tool` unchanged. Component and service version bumped to 0.1.8. DPF 0.1.68 and Data Tool Diagnostics 0.1.3 require tool 0.1.8 to prompt dependency resolution in MGU Store.
+- Experimental read-only operations unchanged; authorization and in-car installation remain unverified.
+
 
 ## v0.1.7 — opt-in fail-closed application authorization boundary (2026-11-23)
 - **Implemented on PR #48 development branch:** independent authorization policy only accepts an externally attested `{verified:true, appId}` identity whose application ID is on an explicit allowlist; unverified/unknown identities, client-asserted IDs and control operations are rejected. The service can opt into enforcement through injected trusted identity resolution. Service status remains readable for diagnostics.
