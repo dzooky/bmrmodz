@@ -1,5 +1,12 @@
 # DPF Status progress
 
+## v0.1.67 — experimental Data Tool transport (2026-11-23)
+- **Implemented on PR #48 development branch only:** a default-OFF `Use Data Tool (experimental)` boolean setting. When enabled, DPF sends allowlisted DDE 0x22 reads through the local Data Tool socket, checking positive response echo and byte structure. When unavailable, timed out, or malformed, it falls back to the unchanged legacy ReadOnlyDiag/TASU request for that read. The setting is evaluated at each read and is reversible without removing legacy support.
+- **No source-of-truth migration:** default remains legacy; existing B57/B47 profile decoding, calibration, regeneration notification logic, equipment behavior and polling cadence remain unchanged. No automatic retry storm beyond existing DPF polling, no ECU writes, and no changes to OSA/CC.
+- **Translation:** new setting and release note translated across all 21 non-English catalogs; English comes from the original text. Added standalone mocked transport regression and DPF CI wiring. CI pending, in-car behavior **not verified**.
+- **Security caveat:** Data Tool v0.1.7 production package identity verification is NOT implemented, socket access is permissive in the feasibility build. Use only for parked testing; no authorization GO or general migration approval.
+
+
 ## v0.1.66 — Prevent accumulated Recorder text auto-fit (2026-11-22)
 
 - **In-car user report:** selected `English (auto)` in the collapsed DPF Settings row remains visually too small through v0.1.65. OSA renders this correctly; the full DPF language picker works correctly.
