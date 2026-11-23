@@ -242,7 +242,9 @@ mgu.run({
             profile = null;
             ddeIndex = null;
             try {
-                if (!link.ready) await link.init();
+                // Data Tool owns its own hmictl/TASU session: do not start a
+                // second local TASU client until legacy fallback is necessary.
+                if (ctx.settings.get('experimentalDataTool') !== true && !link.ready) await link.init();
                 diagnostic.identification = 'Checking';
                 if (!link.available && ctx.settings.get('experimentalDataTool') !== true) {
                     diagnostic.identification = 'TASU unavailable';
@@ -416,6 +418,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.73', 'Avoid competing TASU sessions during Data Tool reads'],
                 ['0.1.72', 'Retry DDE identification after TASU rejection'],
                 ['0.1.71', 'Longer Data Tool response window for DDE identification'],
                 ['0.1.70', 'Separate Data Tool and TASU read diagnostics'],
