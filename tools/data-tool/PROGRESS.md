@@ -1,5 +1,10 @@
 # Data Tool feasibility progress
 
+## v0.1.6 — passive client authorization posture (2026-11-23)
+- **Implemented on PR #48 development branch:** status/capabilities reports now explicitly expose the existing experimental socket's permissive mode (`0666`), absent client identity verification, absent per-app authorization, unverified signal permissions and productionReady=false. This is an honest diagnostic disclosure, **not** authentication or permission enforcement.
+- **Safety:** no changes to socket access, request handling, read cadence, ECU controls, automated polling or existing app integrations. Read-only regression assertions added; CI and on-car test must be checked separately.
+- **NO-GO:** do not migrate client apps or enable CC controls until kernel-backed peer identity is tied to a trusted installed application identity and enforced, including tests for authorized and unauthorized callers.
+
 ## In-car read-only report — 2026-11-23
 - **Observed from user-provided after-wake MGU diagnostic export:** 24 PASS, 0 FAIL, 5 SKIP (five aggregated result records). SOME/IP native load, DDE B57 read, EGS read and shared CDS sample returned PASS. The report notes fresh CDS cache and a stopped lease. Values are informational; decoding accuracy and exact software build were not independently checked.
 - **Remain NO-GO:** installed application identity and authorization, verified signal permissions, ECU controls, sustained multi-app concurrency, watchdog/recovery and background startup. Peer/kernel probes are preliminary and do not establish package identity. No actuator writes or routines were exercised.
