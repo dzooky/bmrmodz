@@ -1,5 +1,13 @@
 # DPF Status progress
 
+## v0.1.74 — restore the proven direct legacy TASU code path (2026-11-23)
+- **In-car regression:** user reports DPF Status 0.1.73 no longer operates as it did before the experimental Data Tool migration, including with `Use Data Tool (experimental)` disabled. Data Tool 0.1.38 / Diagnostics 0.1.46 reported all real ECU reads FAIL in car; do not present service/IPC tests as evidence of functioning ECU data. The independent underlying TASU interference and actual restored in-car behavior remain unverified.
+- **Implemented:** restore exactly the pre-Data-Tool DPF v0.1.66 read pattern for **disabled** Tool: `link.init()` before identification, `link.wake(DDE)` immediately before `link.physical(DDE,0x22,[0xF1,0x50],1800,matcher,requestOptions)`, and one `link.wake(address)` before the physical DID loop with original request matchers/timeouts. Disabled mode bypasses `dpfTransport.read()` completely (no Data Tool IPC, warm-ups, or new retries). Keep existing diagnostic status display by observing the native result without altering it.
+- **Preserved:** current DPF screen/UI, 22-language catalogs, DDE profiles and read decoding, notifications, equipment handling, all Settings. Experiment remains opt-in and isolated; no Data Tool service modifications or backend changes in this PR.
+- **Tests:** source contract regression asserts native identification and DID reads, and all existing CI tests must pass. **Real-car legacy recovery NOT YET VERIFIED**; users must independently confirm restored behavior.
+- **Important:** The separate Data Tool service may still be active on the MGU; the disabled app path does not use it, but this source patch cannot prove the service's independent TASU processes do not interfere.
+
+
 ## v0.1.73 — avoid dual TASU sessions before Tool identification (2026-11-23)
 - **Observed:** user reported Data Tool `TASU_REJECTED` still prevents DPF identification on 0.1.72 despite the targeted 44BB warm-up. Data Tool Diagnostics v0.1.43 read of F150 succeeds in vehicle. Root cause **not proven**.
 - **Concrete integration difference:** DPF previously initialized its own native TASU/ReadOnlyDiag session **before** issuing the Data Tool F150 read, unlike Data Tool Diagnostics which has no direct TASU client. Concurrent independent TASU session management could interfere with the Data Tool transport.
