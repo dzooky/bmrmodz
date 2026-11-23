@@ -59,6 +59,7 @@ const required = [
   'Longer Data Tool response window for DDE identification',
   'DDE recovery', 'Retrying', 'Recovered',
   'Retry DDE identification after TASU rejection',
+  'Avoid competing TASU sessions during Data Tool reads',
   'Use Data Tool (experimental)',
   'Experimental Data Tool reads with automatic fallback',
   'English (auto) language value readability',

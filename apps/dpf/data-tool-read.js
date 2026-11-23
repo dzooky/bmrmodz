@@ -111,6 +111,9 @@ function create(legacy,opts){
     if(options.onToolResult)options.onToolResult(ecu,did,{ok:false,code:errorCode(toolError)});
     if(options.onFallback)options.onFallback(toolError);
    }
+   // Keep the independent TASU client closed while Data Tool is healthy.
+   // Initialize it only when a genuine fallback or legacy-only read requires it.
+   if(!legacy.ready && typeof legacy.init==='function')await legacy.init();
    legacy.wake(ecu);
    const legacyReply=await legacy.physical(ecu,0x22,[(did>>8)&255,did&255],1800,
      u=>u&&((u[0]===0x62&&u[1]===((did>>8)&255)&&u[2]===(did&255))||(u[0]===0x7f&&u[1]===0x22)),

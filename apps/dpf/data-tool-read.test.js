@@ -3,6 +3,22 @@ const assert=require('assert');
 const {create}=require('./data-tool-read');
 (async()=>{
  let legacyCalls=0,toolCalls=0;
+ // A healthy tool read must not initialize a competing TASU client.
+ let initCalls=0, fallbackCalls=0;
+ const lazyLegacy={ready:false,async init(){initCalls++;this.ready=true;},wake(){},
+  async physical(){fallbackCalls++;return [0x62,0xF1,0x50,0x0F,0x1F,0xE8];}};
+ const healthyTool=create(lazyLegacy,{enabled:true,request:async()=>[0x62,0xF1,0x50,0x0F,0x1F,0xE8]});
+ assert.deepStrictEqual(await healthyTool.read(0x12,0xF150),[0x62,0xF1,0x50,0x0F,0x1F,0xE8]);
+ assert.strictEqual(initCalls,0);
+ assert.strictEqual(fallbackCalls,0);
+ const rejectedTool=create(lazyLegacy,{enabled:true,request:async()=>{throw Error('Unavailable');}});
+ await rejectedTool.read(0x12,0xF150);
+ assert.strictEqual(initCalls,1,'initialize TASU on fallback');
+ assert.strictEqual(fallbackCalls,1);
+ await create(lazyLegacy,{enabled:false}).read(0x12,0xF150);
+ assert.strictEqual(initCalls,1,'re-use ready legacy TASU');
+ assert.strictEqual(fallbackCalls,2);
+
  const legacy={wake(){},async physical(){legacyCalls++;return [0x62,0x44,0xbb,9];}};
  const disabled=create(legacy,{enabled:false,request:async()=>{toolCalls++;return [0x62,0x44,0xbb,4];}});
  assert.deepStrictEqual(await disabled.read(0x12,0x44bb),[0x62,0x44,0xbb,9]);
