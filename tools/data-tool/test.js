@@ -25,7 +25,7 @@ async function run(){
  await new Promise((r,j)=>{svc.server.once('listening',r);svc.server.once('error',j);});
  try{
    const status=await call(socket,{op:'status'});
-   assert.strictEqual(status.version,'0.1.6');
+   assert.strictEqual(status.version,'0.1.7');
    assert.strictEqual(status.capabilities.security.socketMode,'0666');
    assert.strictEqual(status.capabilities.security.clientIdentityVerified,false);
    assert.strictEqual(status.capabilities.security.appAuthorizationEnforced,false);
@@ -60,6 +60,16 @@ async function run(){
    assert.strictEqual((await call(socket,{op:'read',ecu:0x12,did:0x44BB})).cached,true);
    assert.strictEqual(sent,1);
  }finally{svc.close();}
+ // Enforced test mode must fail closed when no trusted kernel-backed adapter is present.
+ const secureSocket=path.join(os.tmpdir(),'bmrmodz-data-secure-'+process.pid+'.sock');
+ const secure=serve(()=>mock,secureSocket,{authorizationEnabled:true,allowedApps:['data-diagnostics'],signalRunner:{run:async()=>({ok:true})}});
+ await new Promise((r,j)=>{secure.server.once('listening',r);secure.server.once('error',j);});
+ try{
+  assert.strictEqual((await call(secureSocket,{op:'status'})).capabilities.security.appAuthorizationEnforced,true);
+  assert.strictEqual((await call(secureSocket,{op:'read',ecu:0x12,did:0x44BB})).error,'Access denied');
+  assert.strictEqual((await call(secureSocket,{op:'signalNative',mode:'load'})).error,'Access denied');
+ }finally{secure.close();}
+
  console.log('Data Tool: allowlist, framing, socket, on-demand, coalescing and cache tests passed');
 }
 run().catch(e=>{console.error(e);process.exitCode=1;});
