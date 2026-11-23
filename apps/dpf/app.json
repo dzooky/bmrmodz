@@ -163,17 +163,17 @@
       }
     },
     {
+      "key": "experimentalDataTool",
+      "label": "Use Data Tool (experimental)",
+      "type": "bool",
+      "default": false
+    },
+    {
       "key": "reloadEquipment",
       "label": "Reload Equipment",
       "actionLabel": "Reload",
       "type": "action",
       "hint": "Read vehicle equipment again"
-    },
-    {
-      "key": "experimentalDataTool",
-      "label": "Use Data Tool (experimental)",
-      "type": "bool",
-      "default": false
     }
   ],
   "settingsTabInStandard": false,
