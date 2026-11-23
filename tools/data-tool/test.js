@@ -25,7 +25,7 @@ async function run(){
  await new Promise((r,j)=>{svc.server.once('listening',r);svc.server.once('error',j);});
  try{
    const status=await call(socket,{op:'status'});
-   assert.strictEqual(status.version,'0.1.7');
+   assert.strictEqual(status.version,'0.1.8');
    assert.strictEqual(status.capabilities.security.socketMode,'0666');
    assert.strictEqual(status.capabilities.security.clientIdentityVerified,false);
    assert.strictEqual(status.capabilities.security.appAuthorizationEnforced,false);
