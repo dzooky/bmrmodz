@@ -133,6 +133,20 @@ mgu.run({
             diagnostic.tool = 'Checking';
             diagnostic.tool = await dataToolRead.status() ? 'Responding' : 'Unavailable';
         }
+        // Legacy TASU is the primary, original DPF transport. Data Tool is
+        // explicitly opt-in and must never handle a legacy-only read.
+        const observeLegacy = (ecu, did, response) => {
+            diagnostic.source = 'Legacy TASU';
+            diagnostic.lastDid = did;
+            diagnostic.reads++;
+            diagnostic.lastRead = response && response[0] === 0x62 ? 'Responding'
+                : response && response[0] === 0x7f ? 'Negative response' : 'No response';
+            diagnostic.tasuRead = diagnostic.lastRead;
+            diagnostic.tasuError = response && response[0] === 0x7f && Number.isInteger(response[2])
+                ? 'UDS_NRC_' + response[2].toString(16).toUpperCase().padStart(2,'0')
+                : response && response[0] === 0x62 ? 'None' : 'NO_MATCHING_RESPONSE';
+            if (diagnostic.lastRead !== 'Responding') diagnostic.lastIssue = diagnostic.lastRead;
+        };
         const dpfTransport = dataToolRead.create(link, {
             // Match the successful 15-second Data Tool Diagnostics IPC read window.
             timeoutMs: 15000,
@@ -151,18 +165,7 @@ mgu.run({
                 diagnostic.lastIssue = 'Data Tool request failed';
                 log.warn('DPF Data Tool fallback: ' + String(error.message || error));
             },
-            onLegacyResult: (ecu, did, response) => {
-                diagnostic.source = 'Legacy TASU';
-                diagnostic.lastDid = did;
-                diagnostic.reads++;
-                diagnostic.lastRead = response && response[0] === 0x62 ? 'Responding'
-                    : response && response[0] === 0x7f ? 'Negative response' : 'No response';
-                diagnostic.tasuRead = diagnostic.lastRead;
-                diagnostic.tasuError = response && response[0] === 0x7f && Number.isInteger(response[2])
-                    ? 'UDS_NRC_' + response[2].toString(16).toUpperCase().padStart(2,'0')
-                    : response && response[0] === 0x62 ? 'None' : 'NO_MATCHING_RESPONSE';
-                if (diagnostic.lastRead !== 'Responding') diagnostic.lastIssue = diagnostic.lastRead;
-            },
+            onLegacyResult: observeLegacy,
             onSuccess: (ecu,did) => {
                 diagnostic.source = 'Data Tool';
                 diagnostic.tool = 'Responding';
@@ -189,8 +192,17 @@ mgu.run({
             const readingPage = page;
             const selected = regenOnly ? regenDids() : readingPage === 'detail' ? detailDids() : overviewDids();
             try {
+                const toolEnabled = ctx.settings.get('experimentalDataTool') === true;
+                // Match v0.1.66 exactly: one wake before the native DID loop.
+                if (!toolEnabled) link.wake(address);
                 for (const [name, did, len, factor, offset = 0] of selected) {
-                    const response = await dpfTransport.read(address, did);
+                    const response = toolEnabled
+                        ? await dpfTransport.read(address, did)
+                        : await link.physical(address, 0x22, [(did >> 8) & 255, did & 255], 1800,
+                            u => u && ((u[0] === 0x62 && u[1] === (did >> 8) && u[2] === (did & 255)) ||
+                                (u[0] === 0x7F && u[1] === 0x22)),
+                            requestOptions);
+                    if (!toolEnabled) observeLegacy(address, did, response);
                     let result = 'TIMEOUT';
                     if(response) {
                         if(response[0] === 0x7F) result = 'NRC '+hexBytes(response);
@@ -252,7 +264,15 @@ mgu.run({
                     log.warn('DPF diagnostic link unavailable: ' + (link.error || 'TASU unavailable'));
                     return;
                 }
-                const u = await dpfTransport.read(DDE, 0xF150);
+                const toolEnabled = ctx.settings.get('experimentalDataTool') === true;
+                // Restore v0.1.66 DDE F150 identification: direct native TASU.
+                if (!toolEnabled) link.wake(DDE);
+                const u = toolEnabled ? await dpfTransport.read(DDE, 0xF150)
+                    : await link.physical(DDE, 0x22, [0xF1, 0x50], 1800,
+                        b => b && ((b[0] === 0x62 && b[1] === 0xF1 && b[2] === 0x50) ||
+                            (b[0] === 0x7F && b[1] === 0x22)),
+                        requestOptions);
+                if (!toolEnabled) observeLegacy(DDE, 0xF150, u);
                 if (!u) {
                     diagnostic.identification = 'No response';
                     diagnostic.lastIssue = 'DDE did not respond';
@@ -418,6 +438,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.74', 'Restore direct TASU communication without Data Tool'],
                 ['0.1.73', 'Avoid competing TASU sessions during Data Tool reads'],
                 ['0.1.72', 'Retry DDE identification after TASU rejection'],
                 ['0.1.71', 'Longer Data Tool response window for DDE identification'],
