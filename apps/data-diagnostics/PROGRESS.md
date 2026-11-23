@@ -1,7 +1,7 @@
 # Data Tool Diagnostics progress
 
 ## v0.1.3 — align Data Tool installation dependency (2026-11-23)
-- **Implemented:** require bmrmodz-data-tool 0.1.7 (previously 0.1.5), bump companion app version to 0.1.3, and update its English-only experimental What's New.
+- **Implemented:** require bmrmodz-data-tool 0.1.8 (previously 0.1.5), bump companion app version to 0.1.3, and update its English-only experimental What's New.
 - **Purpose:** allow MGU Store to resolve the new tool version when installing/updating this companion. No new ECU commands or background operation.
 - **Validation:** automated dependency regression to be checked; MGU Store behavior and vehicle-side update remain unverified.
 
