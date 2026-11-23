@@ -42,7 +42,7 @@ jobs:
           const src=fs.readFileSync('apps/dpf/regen-message.js','utf8');
           assert(repo.tools.some(x=>x.id==='bmrmodz-notification'&&x.path==='tools/notification'));
           assert.strictEqual(tool.version,'0.1.1');
-          assert.strictEqual(app.version,'0.1.70');
+          assert.strictEqual(app.version,'0.1.71');
           assert.strictEqual(app.requires['bmrmodz-notification'],tool.version);
           assert.strictEqual(app.requires['bmrmodz-car-equipment'],'0.1.5');
           assert(src.includes("require('./kit/notification-tool')"));

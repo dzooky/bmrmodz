@@ -1,5 +1,13 @@
 # DPF Status progress
 
+## v0.1.71 — longer Data Tool IPC read and identification guard (2026-11-23)
+- **In-car evidence:** Data Tool Diagnostics v0.1.43 manually confirmed all PASS, including direct DDE F150 identification after an earlier DDE 44BB read. DPF 0.1.70 still timed out at F150 with Data Tool `TOOL_TIMEOUT` and legacy TASU `NO_MATCHING_RESPONSE`; exact root cause is not yet proven.
+- **Implemented:** Data Tool reads initiated by DPF now allow 15,000 ms for the existing IPC response (previously default 2,200 ms), matching the proven Data Tool Diagnostics client's wait. The passive Data Tool status probe remains at 1,200 ms. Wrap the whole DDE identification, including TASU link initialization and any fallback, in a single-flight guard so a second call cannot overlap it.
+- **Preserved:** original legacy TASU read timeouts/retries, F150 profile matching, DPF DID decoding, no diagnostic writes, no additional ECU requests and default-OFF experimental toggle. The existing Data Tool error and TASU fallback diagnostics remain visible.
+- **User-visible:** About/What's New entry for v0.1.71 localized into all 21 non-English DPF catalogs; app and CI version checks updated.
+- **Testing:** automated/CI subject to workflow results. **Not in-car verified** until user tests v0.1.71.
+
+
 ## v0.1.70 — separate transport read diagnostics (2026-11-23)
 - **In-car report (v0.1.69):** with experimental Data Tool enabled, TASU connection `Ready`, Data Tool connection `Responding` (status only), DDE identification `No response`, last DID `0xF150`, last issue `DDE did not respond`. This **does not** prove the Tool diagnostic read succeeds, and does not identify the underlying failure.
 - **Implemented:** preserve each existing Data Tool `read` attempt result and last categorized error separately from the subsequent legacy TASU fallback. Show `Data Tool read`, `Data Tool error`, `TASU read`, `TASU error`, identification and last DID on the existing Diagnostics tab. Display stable technical error codes (e.g. `NO_MATCHING_RESPONSE`, `UDS_NRC_31`, `SOCKET_ENOENT`, `TOOL_TIMEOUT`, `INVALID_RESPONSE`) rather than adding ECU requests. `Not checked` explicitly indicates a path not attempted.

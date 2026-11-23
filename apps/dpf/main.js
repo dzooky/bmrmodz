@@ -133,6 +133,8 @@ mgu.run({
             diagnostic.tool = await dataToolRead.status() ? 'Responding' : 'Unavailable';
         }
         const dpfTransport = dataToolRead.create(link, {
+            // Match the successful 15-second Data Tool Diagnostics IPC read window.
+            timeoutMs: 15000,
             enabled: () => ctx.settings.get('experimentalDataTool') === true,
             requestOptions,
             onToolResult: (ecu,did,result) => {
@@ -226,7 +228,11 @@ mgu.run({
         }
 
 
+        let identifyPending = false;
         const identify = async () => {
+            // Guard the entire F150 operation, including async TASU initialization and fallback.
+            if (identifyPending) return;
+            identifyPending = true;
             identified = false;
             profile = null;
             ddeIndex = null;
@@ -269,6 +275,8 @@ mgu.run({
                 diagnostic.identification = 'Failed';
                 diagnostic.lastIssue = 'DDE identification failed';
                 log.warn('DPF identify: ' + String(e.message || e));
+            } finally {
+                identifyPending = false;
             }
         };
 
@@ -403,6 +411,7 @@ mgu.run({
 
             const newsX = 1120;
             const milestones = [
+                ['0.1.71', 'Longer Data Tool response window for DDE identification'],
                 ['0.1.70', 'Separate Data Tool and TASU read diagnostics'],
                 ['0.1.69', 'Built-in DPF connection diagnostics'],
                 ['0.1.68', 'Install required Data Tool version for DPF testing'],

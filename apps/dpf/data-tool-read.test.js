@@ -55,5 +55,28 @@ const {create}=require('./data-tool-read');
   assert.strictEqual(requestedOp,'status');
   assert.strictEqual(await require('./data-tool-read').status({socket:sock+'.missing',timeoutMs:200}),false);
  }finally{await new Promise(resolve=>server.close(resolve));try{require('fs').unlinkSync(sock);}catch(e){if(e.code!=='ENOENT')throw e;}}
+ // Real socket regression: a read returning after the former 2.2s limit must
+ // succeed within the new 15s window without triggering a TASU fallback.
+ const slowSock=path.join(os.tmpdir(),'dpf-tool-slow-'+process.pid+'.sock');
+ const slowServer=net.createServer(client=>{
+  let raw='';
+  client.on('data',chunk=>{
+   raw+=String(chunk);
+   if(raw.includes('\n')){
+    const req=JSON.parse(raw.split('\n')[0]);
+    setTimeout(()=>client.end(JSON.stringify({ok:true,ecu:req.ecu,did:req.did,uds:[0x62,0xF1,0x50,0x0F,0x1F,0xE8]})+'\n'),2400);
+   }
+  });
+ });
+ await new Promise(resolve=>slowServer.listen(slowSock,resolve));
+ try{
+  const beforeLegacy=legacyCalls;
+  const reply=await create(legacy,{enabled:true,socket:slowSock,timeoutMs:15000}).read(0x12,0xF150);
+  assert.deepStrictEqual(reply,[0x62,0xF1,0x50,0x0F,0x1F,0xE8]);
+  assert.strictEqual(legacyCalls,beforeLegacy,'successful delayed Data Tool reads must not fall back');
+ }finally{
+  await new Promise(resolve=>slowServer.close(resolve));
+  try{require('fs').unlinkSync(slowSock);}catch(e){if(e.code!=='ENOENT')throw e;}
+ }
  console.log('DPF Data Tool opt-in, success and legacy fallback passed');
 })().catch(e=>{console.error(e);process.exitCode=1;});

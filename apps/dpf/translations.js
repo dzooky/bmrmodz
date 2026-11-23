@@ -1,6 +1,7 @@
 'use strict';
 module.exports = {
   "sk": {
+    "Longer Data Tool response window for DDE identification": "Dlhší čas na odpoveď Data Tool pri identifikácii DDE",
     "Data Tool read": "Čítanie Data Tool",
     "Data Tool error": "Chyba Data Tool",
     "TASU read": "Čítanie TASU",
@@ -134,6 +135,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správny text v Settings aj po opakovanom vykreslení"
   },
   "cs": {
+    "Longer Data Tool response window for DDE identification": "Delší čas na odpověď Data Tool při identifikaci DDE",
     "Data Tool read": "Čtení Data Tool",
     "Data Tool error": "Chyba Data Tool",
     "TASU read": "Čtení TASU",
@@ -267,6 +269,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Správný text v Nastavení i po opakovaném vykreslení"
   },
   "de": {
+    "Longer Data Tool response window for DDE identification": "Längere Data-Tool-Antwortzeit für die DDE-Erkennung",
     "Data Tool read": "Data-Tool-Lesezugriff",
     "Data Tool error": "Data-Tool-Fehler",
     "TASU read": "TASU-Lesezugriff",
@@ -400,6 +403,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekte Schrift in Einstellungen nach wiederholtem Rendern"
   },
   "es": {
+    "Longer Data Tool response window for DDE identification": "Mayor tiempo de respuesta de Data Tool para identificar DDE",
     "Data Tool read": "Lectura Data Tool",
     "Data Tool error": "Error de Data Tool",
     "TASU read": "Lectura TASU",
@@ -533,6 +537,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correcto en Ajustes tras renderizados repetidos"
   },
   "fr": {
+    "Longer Data Tool response window for DDE identification": "Délai de réponse Data Tool prolongé pour identifier le DDE",
     "Data Tool read": "Lecture Data Tool",
     "Data Tool error": "Erreur Data Tool",
     "TASU read": "Lecture TASU",
@@ -666,6 +671,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texte correct dans les paramètres après plusieurs affichages"
   },
   "it": {
+    "Longer Data Tool response window for DDE identification": "Tempo di risposta Data Tool esteso per identificare la DDE",
     "Data Tool read": "Lettura Data Tool",
     "Data Tool error": "Errore Data Tool",
     "TASU read": "Lettura TASU",
@@ -799,6 +805,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Testo corretto nelle Impostazioni dopo più ridisegni"
   },
   "hu": {
+    "Longer Data Tool response window for DDE identification": "Hosszabb Data Tool válaszidő a DDE azonosításához",
     "Data Tool read": "Data Tool olvasás",
     "Data Tool error": "Data Tool hiba",
     "TASU read": "TASU olvasás",
@@ -932,6 +939,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Helyes szöveg a Beállításokban ismételt megjelenítés után"
   },
   "pl": {
+    "Longer Data Tool response window for DDE identification": "Dłuższy czas odpowiedzi Data Tool przy identyfikacji DDE",
     "Data Tool read": "Odczyt Data Tool",
     "Data Tool error": "Błąd Data Tool",
     "TASU read": "Odczyt TASU",
@@ -1065,6 +1073,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Poprawny tekst w Ustawieniach po wielokrotnym renderowaniu"
   },
   "ru": {
+    "Longer Data Tool response window for DDE identification": "Увеличено время ответа Data Tool при определении DDE",
     "Data Tool read": "Чтение Data Tool",
     "Data Tool error": "Ошибка Data Tool",
     "TASU read": "Чтение TASU",
@@ -1198,6 +1207,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Правильный текст настроек после повторной отрисовки"
   },
   "da": {
+    "Longer Data Tool response window for DDE identification": "Længere svartid for Data Tool ved DDE-identifikation",
     "Data Tool read": "Data Tool-læsning",
     "Data Tool error": "Data Tool-fejl",
     "TASU read": "TASU-læsning",
@@ -1331,6 +1341,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt tekst i Indstillinger efter gentagen visning"
   },
   "el": {
+    "Longer Data Tool response window for DDE identification": "Μεγαλύτερος χρόνος απόκρισης Data Tool για αναγνώριση DDE",
     "Data Tool read": "Ανάγνωση Data Tool",
     "Data Tool error": "Σφάλμα Data Tool",
     "TASU read": "Ανάγνωση TASU",
@@ -1464,6 +1475,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Σωστό κείμενο Ρυθμίσεων μετά από επαναλαμβανόμενη απόδοση"
   },
   "zh-CN": {
+    "Longer Data Tool response window for DDE identification": "延长 Data Tool 识别 DDE 的响应等待时间",
     "Data Tool read": "Data Tool 读取",
     "Data Tool error": "Data Tool 错误",
     "TASU read": "TASU 读取",
@@ -1597,6 +1609,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "重复绘制后设置文字仍正确显示"
   },
   "nl": {
+    "Longer Data Tool response window for DDE identification": "Langere Data Tool-reactietijd voor DDE-identificatie",
     "Data Tool read": "Data Tool-uitlezing",
     "Data Tool error": "Data Tool-fout",
     "TASU read": "TASU-uitlezing",
@@ -1730,6 +1743,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Correcte tekst in Instellingen na herhaald weergeven"
   },
   "nb": {
+    "Longer Data Tool response window for DDE identification": "Lengre svartid for Data Tool ved DDE-identifisering",
     "Data Tool read": "Data Tool-lesing",
     "Data Tool error": "Data Tool-feil",
     "TASU read": "TASU-lesing",
@@ -1863,6 +1877,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Riktig tekst i Innstillinger etter gjentatt visning"
   },
   "pt": {
+    "Longer Data Tool response window for DDE identification": "Prazo de resposta do Data Tool alargado para identificar DDE",
     "Data Tool read": "Leitura Data Tool",
     "Data Tool error": "Erro Data Tool",
     "TASU read": "Leitura TASU",
@@ -1996,6 +2011,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Texto correto nas Definições após várias renderizações"
   },
   "ro": {
+    "Longer Data Tool response window for DDE identification": "Timp de răspuns Data Tool extins pentru identificarea DDE",
     "Data Tool read": "Citire Data Tool",
     "Data Tool error": "Eroare Data Tool",
     "TASU read": "Citire TASU",
@@ -2129,6 +2145,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Text corect în Setări după afișări repetate"
   },
   "sl": {
+    "Longer Data Tool response window for DDE identification": "Daljši odzivni čas Data Tool pri identifikaciji DDE",
     "Data Tool read": "Branje Data Tool",
     "Data Tool error": "Napaka Data Tool",
     "TASU read": "Branje TASU",
@@ -2262,6 +2279,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Pravilno besedilo v Nastavitvah po več prikazih"
   },
   "fi": {
+    "Longer Data Tool response window for DDE identification": "Pidempi Data Tool -vastausaika DDE-tunnistukseen",
     "Data Tool read": "Data Tool -luku",
     "Data Tool error": "Data Tool -virhe",
     "TASU read": "TASU-luku",
@@ -2395,6 +2413,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Asetusten teksti pysyy oikeana toistuvassa piirrossa"
   },
   "sv": {
+    "Longer Data Tool response window for DDE identification": "Längre svarstid för Data Tool vid DDE-identifiering",
     "Data Tool read": "Data Tool-läsning",
     "Data Tool error": "Data Tool-fel",
     "TASU read": "TASU-läsning",
@@ -2528,6 +2547,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Korrekt text i Inställningar efter upprepad rendering"
   },
   "tr": {
+    "Longer Data Tool response window for DDE identification": "DDE tanımlaması için daha uzun Data Tool yanıt süresi",
     "Data Tool read": "Data Tool okuması",
     "Data Tool error": "Data Tool hatası",
     "TASU read": "TASU okuması",
@@ -2661,6 +2681,7 @@ module.exports = {
     "Correct Settings text after repeated page renders": "Tekrarlanan çizimlerden sonra Ayarlar metni doğru"
   },
   "uk": {
+    "Longer Data Tool response window for DDE identification": "Подовжений час відповіді Data Tool для ідентифікації DDE",
     "Data Tool read": "Читання Data Tool",
     "Data Tool error": "Помилка Data Tool",
     "TASU read": "Читання TASU",
