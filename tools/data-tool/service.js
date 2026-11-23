@@ -86,7 +86,7 @@ function serve(factory,socketPath,options){
             }
             const decision=authorization.authorize(req,identity,options&&options.allowedApps);
             if(!decision.allowed){
-              client.write(JSON.stringify({ok:false,error:'Access denied'})+'\\n');
+              client.write(JSON.stringify({ok:false,error:'Access denied'})+'\n');
               continue;
             }
           }
