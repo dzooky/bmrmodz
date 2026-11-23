@@ -1,5 +1,12 @@
 # DPF Status progress
 
+## v0.1.69 — in-app connection diagnostics (2026-11-23)
+- **Vehicle report:** after installing DPF 0.1.68, user reported no DPF readings even when `Use Data Tool (experimental)` was OFF. Root cause remains unknown; this is not evidence that Data Tool or TASU is specifically at fault.
+- **Implemented:** fifth `Diagnostics` tab in the existing canvas with TASU availability, passive Data Tool `status` socket check, selected transport, DDE F150 identification status/index, last DDE read, last DID and categorised last failure. Tool probe sends **only** `{op:'status'}`, no ECU read; ordinary poll cadence and read-only DPF protocol are unchanged. Live legacy and tool read outcomes are observed, not duplicated.
+- **Translations:** 29 new diagnostic screen/status/release-note strings added across all 21 non-English locale catalogs; release note `0.1.69 — Built-in DPF connection diagnostics` visible in About.
+- **Automated:** status socket mock and legacy outcome test, DPF translation completeness and existing DPF CI. New screen and failure classification **not verified in car** until user installs v0.1.69 and shares the Diagnostics tab contents.
+
+
 ## v0.1.68 — Data Tool dependency declared (2026-11-23)
 - **Implemented:** declare `bmrmodz-data-tool >=0.1.8` in DPF's app manifest so MGU Store resolves the experimental service dependency when updating DPF. Existing `experimentalDataTool` setting remains OFF by default; legacy TASU reading is preserved.
 - **Release note:** add visible What's New entry and translate into all 21 non-English DPF locales. No changes to vehicle decoding or timing.
