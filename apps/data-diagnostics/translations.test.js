@@ -14,7 +14,7 @@ for(const [lang,catalog] of Object.entries(catalogs)){
 }
 assert.ok(spec.screens[0].buttons.some(b=>b[0]==='BTN_RUN'));
 assert.deepStrictEqual(spec.signals,{});
-assert.strictEqual(spec.requires['bmrmodz-data-tool'],'0.1.5');
+assert.strictEqual(spec.requires['bmrmodz-data-tool'],'0.1.7');
 assert.ok(spec.screens[0].buttons.some(b=>b[0]==='BTN_SEND'));
 assert.ok(t('en','Secure upload'));
 const main=fs.readFileSync(path.join(__dirname,'main.js'),'utf8');
