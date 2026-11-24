@@ -1,5 +1,13 @@
 # DPF Status progress
 
+## v0.1.75 — full pre-Data-Tool DPF runtime restoration (2026-11-24)
+- User reports v0.1.74 still does not work in car. Prior v0.1.74 only bypassed Tool selectively and was not a full rollback.
+- Restored complete DPF main.js from historical commit 356f69a (pre-Data-Tool v0.1.66), along with the original app.json settings and dependencies, removing the experimental Data Tool integration and socket activity from DPF. Version is 0.1.75 for Store update eligibility.
+- Existing DDE profile decoding, notification behavior, languages and equipment integration are retained. All other applications and the Data Tool systemd service remain untouched.
+- Restored pre-migration source-backed translation tests; About What's New uses the existing 21-locale translation for the restoration notice. Removed now-obsolete DPF Tool integration tests.
+- Automated CI and real-car functionality not yet verified. Independently running Data Tool service may still interfere with TASU despite DPF rollback; test without it active if issues persist.
+
+
 ## v0.1.74 — restore the proven direct legacy TASU code path (2026-11-23)
 - **In-car regression:** user reports DPF Status 0.1.73 no longer operates as it did before the experimental Data Tool migration, including with `Use Data Tool (experimental)` disabled. Data Tool 0.1.38 / Diagnostics 0.1.46 reported all real ECU reads FAIL in car; do not present service/IPC tests as evidence of functioning ECU data. The independent underlying TASU interference and actual restored in-car behavior remain unverified.
 - **Implemented:** restore exactly the pre-Data-Tool DPF v0.1.66 read pattern for **disabled** Tool: `link.init()` before identification, `link.wake(DDE)` immediately before `link.physical(DDE,0x22,[0xF1,0x50],1800,matcher,requestOptions)`, and one `link.wake(address)` before the physical DID loop with original request matchers/timeouts. Disabled mode bypasses `dpfTransport.read()` completely (no Data Tool IPC, warm-ups, or new retries). Keep existing diagnostic status display by observing the native result without altering it.
