@@ -43,6 +43,15 @@ function serve(factory,socketPath,options){
         cache.set(key,{at:Date.now(),reply:result});
         return result;
       }catch(e){stats.error++;return {ok:false,ecu,did,error:String(e&&e.message||e)};}
+      finally {
+        // Never retain a TASU/hmictl session between explicit reads.
+        // The global queue preserves serialization and cache/coalescing behavior.
+        const used=transport;
+        transport=null;
+        if(used&&typeof used.close==='function'){
+          try{await used.close();}catch(_){/* Closing must not mask the read result. */}
+        }
+      }
     });
     queue=request.then(()=>{},()=>{});
     inflight.set(key,request);
@@ -90,12 +99,12 @@ function serve(factory,socketPath,options){
               continue;
             }
           }
-          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.8',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
+          if(req.op==='status')reply={ok:true,tool:'bmrmodz-data-tool',version:'0.1.9',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()};
           else if(req.op==='capabilities')reply={ok:true,capabilities:capabilities()};
           else if(req.op==='signalEnvironment')reply=signalEnvironment.inspect();
           else if(req.op==='configCheck')reply=configCheck.inspect();
           else if(req.op==='ccPlan')reply=ccFeasibility.plan();
-          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.8',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
+          else if(req.op==='report')reply=diagnosticReport.create({version:'0.1.9',transportReady:!!(transport&&transport.ready),stats,capabilities:capabilities()});
           else if(req.op==='signalNative' && req.mode==='load')reply=await signalRunner.run('load');
           else if(req.op==='signalNative' && req.mode==='sample')reply=await signalRunner.run('sample',req.field);
           else if(req.op==='read'&&Number.isInteger(req.ecu)&&Number.isInteger(req.did))reply=await read(req.ecu,req.did);
