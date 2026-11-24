@@ -18,7 +18,7 @@ async function run(){
  const hex=frame.length.toString(16).padStart(8,'0')+Buffer.from(frame).toString('hex');
  assert.deepStrictEqual(decode(hex).uds,uds);
  let sent=0,opened=0,closed=0;
- const mockFactory=()=>{opened++;return {ready:true,async read(ecu,did){sent++;await new Promise(r=>setTimeout(r,30));return [0x62,did>>8,did&255,0x05];},close(){closed++;}};};
+ const mockFactory=()=>{opened++;return {ready:true,async read(ecu,did){sent++;await new Promise(r=>setTimeout(r,30));if(did===0xF150)throw new Error('TASU rejected request TASU status 0x25');return [0x62,did>>8,did&255,0x05];},close(){closed++;}};};
  const socket=path.join(os.tmpdir(),'bmrmodz-data-test-'+process.pid+'.sock');
  let signalTests=0;
  const svc=serve(mockFactory,socket,{signalRunner:{run:async(mode,field)=>{signalTests++;return {ok:true,mode,field,isolated:true};}}});
@@ -64,6 +64,11 @@ async function run(){
    const next=await call(socket,{op:'read',ecu:0x18,did:0x6000});
    assert.strictEqual(next.ok,true);
    assert.strictEqual(opened,2);assert.strictEqual(closed,2);
+   assert.strictEqual((await call(socket,{op:'status'})).transportReady,false);
+   const failed=await call(socket,{op:'read',ecu:0x12,did:0xF150});
+   assert.strictEqual(failed.ok,false);
+   assert.match(failed.error,/TASU status 0x25/);
+   assert.strictEqual(opened,3);assert.strictEqual(closed,3);
    assert.strictEqual((await call(socket,{op:'status'})).transportReady,false);
  }finally{svc.close();}
  // Enforced test mode must fail closed when no trusted kernel-backed adapter is present.
