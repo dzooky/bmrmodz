@@ -1,5 +1,15 @@
 # Data Tool progress
 
+## Development handoff — DPF integration isolation (2026-11-24)
+- **Branch:** `dev/dpf-data-tool-integration` is based on current `main`, including the existing DPF application. No production DPF source or Data Tool runtime behavior is changed by this handoff. Main remains untouched.
+- **User-approved workflow:** Data Tool exclusively owns vehicle diagnostic acquisition, centralized request scheduling, deduplication, and shared result cache. An app registers the data it needs and its freshness/cadence requirement; registration must not trigger an independent, competing ECU read loop. Multiple applications requesting the same value share acquisition and cache. Faster display may reuse a sufficiently fresh cached sample; only the Tool decides when a fresh acquisition is necessary. Adding an application must not disturb existing requests, acquisition cadence or other apps.
+- **Integration approach:** develop DPF changes in an isolated development branch from the current main app. Preserve the working legacy DPF read path and full UI/notifications/decoding/translation behavior as rollback; do not alter the production app until the integration is demonstrated end-to-end and explicitly approved.
+- **First task:** determine the last independently car-confirmed functional Data Tool build from actual deployed version/commit and diagnostic reports. Do not assume the latest code or passing CI is vehicle-functional. Restore the proven Tool state *only in the development branch* if needed, and test read-only requests before designing registration and scheduling.
+- **Test gates:** validate one DPF request, duplicate requests/coalescing, cache freshness and staleness, simultaneous app requests, reconnect/restart, rejected/time-out TASU responses, request rate ceilings, and no extra ECU reads caused by display refresh. Run offline/CI tests first, then parked in-car diagnostics; document separately which gates pass in-car.
+- **Restrictions:** do not create two independent TASU pollers; no ECU writes/control operations; no migration of OSA/CC/other apps; no unproven claims of in-car correctness. Production authentication, unattended startup, and multi-app safety remain NO-GO until verified. Update this Tool progress log after significant implementation and tests.
+- **Status:** preparation/documentation only; no implementation, CI run or in-car verification in this branch yet.
+
+
 ## v0.1.8 — renamed display title and required update (2026-11-23)
 - User-facing title is **Data Tool**, technical ID `bmrmodz-data-tool` unchanged. Component and service version bumped to 0.1.8. DPF 0.1.68 and Data Tool Diagnostics 0.1.3 require tool 0.1.8 to prompt dependency resolution in MGU Store.
 - Experimental read-only operations unchanged; authorization and in-car installation remain unverified.
