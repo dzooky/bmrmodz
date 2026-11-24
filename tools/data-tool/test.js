@@ -17,15 +17,15 @@ async function run(){
  const uds=[0x62,0x44,0xbb,0x05],frame=[0xf0,0xf2,0x71,1,15,11,0x12,0,uds.length].concat(uds);
  const hex=frame.length.toString(16).padStart(8,'0')+Buffer.from(frame).toString('hex');
  assert.deepStrictEqual(decode(hex).uds,uds);
- let sent=0;
- const mock={ready:true,async read(ecu,did){sent++;await new Promise(r=>setTimeout(r,30));return [0x62,did>>8,did&255,0x05];},close(){}};
+ let sent=0,opened=0,closed=0;
+ const mockFactory=()=>{opened++;return {ready:true,async read(ecu,did){sent++;await new Promise(r=>setTimeout(r,30));return [0x62,did>>8,did&255,0x05];},close(){closed++;}};};
  const socket=path.join(os.tmpdir(),'bmrmodz-data-test-'+process.pid+'.sock');
  let signalTests=0;
- const svc=serve(()=>mock,socket,{signalRunner:{run:async(mode,field)=>{signalTests++;return {ok:true,mode,field,isolated:true};}}});
+ const svc=serve(mockFactory,socket,{signalRunner:{run:async(mode,field)=>{signalTests++;return {ok:true,mode,field,isolated:true};}}});
  await new Promise((r,j)=>{svc.server.once('listening',r);svc.server.once('error',j);});
  try{
    const status=await call(socket,{op:'status'});
-   assert.strictEqual(status.version,'0.1.8');
+   assert.strictEqual(status.version,'0.1.9');
    assert.strictEqual(status.capabilities.security.socketMode,'0666');
    assert.strictEqual(status.capabilities.security.clientIdentityVerified,false);
    assert.strictEqual(status.capabilities.security.appAuthorizationEnforced,false);
@@ -59,10 +59,16 @@ async function run(){
    assert.strictEqual(a.ok,true);assert.strictEqual(b.ok,true);assert.strictEqual(sent,1);
    assert.strictEqual((await call(socket,{op:'read',ecu:0x12,did:0x44BB})).cached,true);
    assert.strictEqual(sent,1);
+   assert.strictEqual(opened,1);assert.strictEqual(closed,1);
+   await new Promise(r=>setTimeout(r,550));
+   const next=await call(socket,{op:'read',ecu:0x18,did:0x6000});
+   assert.strictEqual(next.ok,true);
+   assert.strictEqual(opened,2);assert.strictEqual(closed,2);
+   assert.strictEqual((await call(socket,{op:'status'})).transportReady,false);
  }finally{svc.close();}
  // Enforced test mode must fail closed when no trusted kernel-backed adapter is present.
  const secureSocket=path.join(os.tmpdir(),'bmrmodz-data-secure-'+process.pid+'.sock');
- const secure=serve(()=>mock,secureSocket,{authorizationEnabled:true,allowedApps:['data-diagnostics'],signalRunner:{run:async()=>({ok:true})}});
+ const secure=serve(mockFactory,secureSocket,{authorizationEnabled:true,allowedApps:['data-diagnostics'],signalRunner:{run:async()=>({ok:true})}});
  await new Promise((r,j)=>{secure.server.once('listening',r);secure.server.once('error',j);});
  try{
   assert.strictEqual((await call(secureSocket,{op:'status'})).capabilities.security.appAuthorizationEnforced,true);
