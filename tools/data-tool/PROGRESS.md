@@ -3,7 +3,7 @@
 ## v0.1.9 — isolated TASU session per read (2026-11-24, development branch only)
 - **In-car finding:** after MGU wake, repeated Data Tool Diagnostics runs were followed by intermittent loss of diagnostic values in the independent DPF and EGS apps; sometimes data returned without restart. Exact cause not yet proven. Data Tool installation alone and initial diagnostic runs did not reproduce permanent failure.
 - **Implemented in dev branch:** preserve global read queue, duplicate-request coalescing, 500 ms result cache, ECU/DID allowlist, and existing request timings, but close the spawned hmictl/TASU transport after **each** completed or failed uncached diagnostic read. No permanent helper session is held idle. Do not change DPF or other applications.
-- **Regression coverage:** mock checks one transport close per actual read, no extra transport for coalesced/cached reads, and fresh transport after cache expiry. Tests/CI and vehicle verification must be recorded separately; this is a hypothesis-driven mitigation, not proof of root cause.
+- **Regression coverage:** mock checks one transport close per actual read, no extra transport for coalesced/cached reads, and fresh transport after cache expiry. GitHub Actions `Data Tool checks` run #224 (ID 45368245662) **PASS** at commit `64c392ad` including syntax, service regression, PHP lint and offline MGU preview. In-car behavior remains **UNVERIFIED**; this is a hypothesis-driven mitigation, not proof of root cause.
 - **Safety:** do not deploy on the vehicle until reviewed; do not migrate apps. If this does not resolve interference, inspect helper exit/subscription cleanup and global TASU session ownership before further changes.
 
 
