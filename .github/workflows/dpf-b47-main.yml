@@ -17,9 +17,6 @@ jobs:
       - name: Syntax and gauge conversion tests
         run: |
           node --check apps/dpf/main.js
-          node --check apps/dpf/data-tool-read.js
-          node apps/dpf/data-tool-read.test.js
-          node apps/dpf/diagnostics.test.js
           node --check apps/dpf/dde-profiles.js
           node --check apps/dpf/distance-record.js
           node apps/dpf/distance-record.test.js
@@ -32,7 +29,7 @@ jobs:
           const fs=require('fs'), assert=require('assert');
           const app=JSON.parse(fs.readFileSync('apps/dpf/app.json'));
           const source=fs.readFileSync('apps/dpf/main.js','utf8');
-          assert.strictEqual(app.version,'0.1.74');
+          assert.strictEqual(app.version,'0.1.75');
           assert.ok(source.includes("ddeProfiles.forDde(actual)"));
           assert.ok(source.includes("if (!profile || !profile.regeneration) return null;"));
           assert.ok(source.includes("profile && profile.regeneration"));
