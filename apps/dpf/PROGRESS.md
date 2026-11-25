@@ -1,5 +1,11 @@
 # DPF Status progress
 
+## Roadmap — planned features (2026-11-25)
+- Startup regeneration distance notification: once per vehicle start, after valid DDE data becomes available; no repeat during driving or on opening the app. Estimated distance, not a guaranteed trigger.
+- Low-fuel advisory: when regeneration is approaching and fuel level is critically low, recommend refueling. Prevent unnecessary repeats. Fuel and distance thresholds remain open; do not imply a confirmed DDE regeneration lockout.
+- Both features are planned only; implementation and vehicle verification pending.
+
+
 ## v0.1.75 — full pre-Data-Tool DPF runtime restoration (2026-11-24)
 - User reports v0.1.74 still does not work in car. Prior v0.1.74 only bypassed Tool selectively and was not a full rollback.
 - Restored complete DPF main.js from historical commit 356f69a (pre-Data-Tool v0.1.66), along with the original app.json settings and dependencies, removing the experimental Data Tool integration and socket activity from DPF. Version is 0.1.75 for Store update eligibility.
