@@ -3,7 +3,9 @@
 ## Roadmap — planned features (2026-11-25)
 - Startup regeneration distance notification: once per vehicle start, after valid DDE data becomes available; no repeat during driving or on opening the app. Estimated distance, not a guaranteed trigger.
 - Low-fuel advisory: when regeneration is approaching and fuel level is critically low, recommend refueling. Prevent unnecessary repeats. Fuel and distance thresholds remain open; do not imply a confirmed DDE regeneration lockout.
-- Both features are planned only; implementation and vehicle verification pending.
+- Overview: preserve existing graphics and layout; replace the redundant right-side distance-to-average-regeneration panel with DPF differential pressure (mbar) and DPF temperature (°C). Verify availability per DDE profile before displaying values.
+- Since last regen gauge: retain blue current-distance fill and yellow DDE average marker; add a red marker for the historical maximum observed by the app. Preserve the existing adaptive scale with 10% headroom and upward rounding to 50 km.
+- All roadmap features are planned only; implementation and vehicle verification pending.
 
 
 ## v0.1.75 — full pre-Data-Tool DPF runtime restoration (2026-11-24)
