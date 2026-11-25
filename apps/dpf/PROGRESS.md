@@ -6,6 +6,7 @@
 - Overview: preserve existing graphics and layout; replace the redundant right-side distance-to-average-regeneration panel with DPF differential pressure (mbar) and DPF temperature (°C). Verify availability per DDE profile before displaying values.
 - Since last regen gauge: retain blue current-distance fill and yellow DDE average marker; add a red marker for the historical maximum observed by the app. Preserve the existing adaptive scale with 10% headroom and upward rounding to 50 km.
 - About: fix the recurring scrolling regression reported in the vehicle; ensure the entire About content, including What's New, can be scrolled and verify on MGU.
+- Regeneration-start notification: show estimated regeneration duration (minutes) and driving distance (km), e.g. 22 min / 50 km. First investigate ISTA/DDE parameters for B47 and B57 for average and last regeneration duration and distance; prefer validated DDE statistics. If unavailable, collect statistics from successfully completed regenerations through the Background Tool, excluding interrupted or incomplete observations. Show an estimate only when sufficient valid data exists; no separate history tab is required. Estimates are advisory, not guarantees.
 - All roadmap features are planned only; implementation and vehicle verification pending.
 
 
