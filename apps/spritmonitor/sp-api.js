@@ -194,15 +194,24 @@ async function refreshLastFuelling(account, vehicle, dataDir) {
     });
 }
 
+function recentTankFuelings(account, tankId, dataDir) {
+    const endpoint = 'vehicle/' + encodeURIComponent(account.vehicleId) +
+        '/tank/' + encodeURIComponent(tankId) + '/fuelings.json?limit=50';
+    return getJson(endpoint, account.applicationId, account.token, false,
+        dataDir ? useUplink(dataDir) : undefined);
+}
+
 async function addFuelling(account, tankId, fields, dataDir) {
     const endpoint = 'vehicle/' + encodeURIComponent(account.vehicleId) +
         '/tank/' + encodeURIComponent(tankId) + '/fueling.json?' + querystring.stringify(fields);
     const result = await getJson(endpoint, account.applicationId, account.token, true,
         dataDir ? useUplink(dataDir) : undefined);
-    if (!Number.isInteger(result.errors) || result.errors < 0) {
+    const errors = typeof result.errors === 'string' && /^\d+$/.test(result.errors)
+        ? Number(result.errors) : result.errors;
+    if (!Number.isSafeInteger(errors) || errors < 0) {
         throw new Error('Spritmonitor did not confirm the upload.');
     }
-    return result.errors === 0;
+    return errors === 0;
 }
 
-module.exports = { listVehicles, loadVehicle, refreshVehicleConfig, refreshLastFuelling, addFuelling, useUplink };
+module.exports = { listVehicles, loadVehicle, refreshVehicleConfig, refreshLastFuelling, recentTankFuelings, addFuelling, useUplink };

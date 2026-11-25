@@ -1,0 +1,52 @@
+name: OSA Car Equipment integration
+on:
+  push:
+    branches:
+      - feature/osa-car-equipment
+  pull_request:
+    paths:
+      - 'apps/osa/main.js'
+      - 'kit/tools/build.py'
+      - 'kit/runtime/mgu.js'
+      - 'apps/osa/app.json'
+      - 'kit/runtime/car-equipment.js'
+      - '.github/workflows/osa-car-equipment.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check apps/osa/main.js
+          node --check kit/runtime/car-equipment.js
+          node --check kit/runtime/mgu.js
+          python3 -m py_compile kit/tools/build.py
+      - name: Validate OSA dependency and conditional setting
+        run: |
+          node - <<'NODE'
+          const fs=require('fs'), assert=require('assert');
+          const osa=JSON.parse(fs.readFileSync('apps/osa/app.json'));
+          const repo=JSON.parse(fs.readFileSync('mgu-repo.json'));
+          assert.strictEqual(osa.requires['bmrmodz-car-equipment'],'0.1.5');
+          assert.strictEqual(osa.settings[osa.settings.length - 1].key, 'reloadEquipment');
+          assert.strictEqual(osa.settings[osa.settings.length - 1].type, 'action');
+          const source=fs.readFileSync('apps/osa/main.js','utf8');
+          assert.ok(source.includes("CarEquipment.request({ op: 'reload' }"));
+          assert.ok(source.includes("scheduleEquipmentCheck()"));
+          assert.ok(!source.includes("ctx.settings.set('oilCluster', false)"));
+          assert.ok(repo.tools.some(t=>t.id==='bmrmodz-car-equipment'));
+          assert.ok(source.includes('if (sessionDone) return;'), 'completed warm-up must not dereference a null session');
+          const builder=fs.readFileSync('kit/tools/build.py','utf8');
+          assert.ok(builder.includes("items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))"), 'action must be a native button');
+          assert.ok(fs.readFileSync('kit/runtime/mgu.js','utf8').includes("if (s.type === 'action') return null;"));
+          const gate=osa.settings.find(s=>s.key==='cluster6wbAvailable');
+          const option=osa.settings.find(s=>s.key==='oilCluster');
+          assert.strictEqual(gate.hidden,true);
+          assert.strictEqual(gate.default,false);
+          assert.strictEqual(option.when.cluster6wbAvailable,true);
+          console.log('OSA 6WB dependency and visibility verified');
+          NODE

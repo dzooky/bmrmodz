@@ -1,5 +1,7 @@
 'use strict';
 
+const { t } = require('./kit/i18n');
+
 const units = { 1: 'L', 2: 'kg', 3: 'L', 4: 'L', 5: 'kWh' };
 const quantityFactor = { 1: 1, 2: 1, 3: 3.785411784, 4: 4.54609, 5: 1 };
 
@@ -7,7 +9,7 @@ module.exports = function renderChart(cv, theme, vehicle, tankIndex, metric) {
     const tank = vehicle.tankStats[tankIndex];
     const history = vehicle.latestFuelings[tankIndex];
     const title = { consumption: 'Consumption', distance: 'Distance per fill-up', price: 'Unit price' }[metric];
-    cv.text(tank.name + ' / ' + title, 65, 150, 26, theme.text, { font: 'bold' });
+    cv.text(tank.name + ' / ' + t(title), 65, 150, 26, theme.text, { font: 'bold' });
 
     let unit = metric === 'consumption' ? tank.consumption[1] : tank.distance[1];
     const samples = [];
@@ -51,7 +53,7 @@ module.exports = function renderChart(cv, theme, vehicle, tankIndex, metric) {
     const pad = Math.max((max - min) * 0.08, min * 0.01);
     const lower = Math.max(0, min - pad), upper = max + pad;
     const decimals = metric === 'price' ? 2 : metric === 'distance' && max >= 100 ? 0 : 1;
-    cv.text(samples.length + ' points' + (unit ? ' / ' + unit : ''), 1520, 150, 21, theme.dim, { align: 'right' });
+    cv.text(samples.length + ' ' + t('points') + (unit ? ' / ' + unit : ''), 1520, 150, 21, theme.dim, { align: 'right' });
     for (let tick = 0; tick <= 4; tick++) {
         const row = y + tick * height / 4;
         cv.line(x, row, x + width, row, 1, theme.dim);

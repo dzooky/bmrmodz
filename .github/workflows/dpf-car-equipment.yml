@@ -1,0 +1,53 @@
+name: DPF Car Equipment integration
+on:
+  push:
+    branches:
+      - feature/dpf-car-equipment-6wb
+  pull_request:
+    paths:
+      - 'apps/dpf/main.js'
+      - 'kit/tools/build.py'
+      - 'kit/runtime/mgu.js'
+      - 'apps/dpf/app.json'
+      - 'kit/runtime/car-equipment.js'
+      - '.github/workflows/dpf-car-equipment.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Validate JavaScript syntax
+        run: |
+          node --check apps/dpf/main.js
+          node --check kit/runtime/car-equipment.js
+          node --check kit/runtime/mgu.js
+          python3 -m py_compile kit/tools/build.py
+      - name: Validate DPF dependencies and conditional cluster settings
+        run: |
+          node - <<'NODE'
+          const fs = require('fs'), assert = require('assert');
+          const dpf = JSON.parse(fs.readFileSync('apps/dpf/app.json'));
+          const repo = JSON.parse(fs.readFileSync('mgu-repo.json'));
+          const original = {'idrive7-renderd':'2.1.19','mgu-inputgate':'1.2.1'};
+          for (const [id, version] of Object.entries(original))
+            assert.strictEqual(dpf.requires[id], version);
+          assert.strictEqual(dpf.requires['bmrmodz-car-equipment'], '0.1.5');
+          assert.strictEqual(dpf.settings[dpf.settings.length - 1].key, 'reloadEquipment');
+          assert.strictEqual(dpf.settings[dpf.settings.length - 1].type, 'action');
+          assert.ok(fs.readFileSync('kit/tools/build.py','utf8').includes("items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))"));
+          assert.ok(!mainHasForcedReset());
+          function mainHasForcedReset(){return fs.readFileSync('apps/dpf/main.js','utf8').includes("ctx.settings.set('regenCluster', false)");}
+          assert.ok(repo.tools.some(t => t.id === 'bmrmodz-car-equipment'));
+          const gate = dpf.settings.find(s => s.key === 'cluster6wbAvailable');
+          assert.strictEqual(gate.hidden, true);
+          assert.strictEqual(gate.default, false);
+          for (const key of ['regenCluster','regenClusterTest'])
+            assert.strictEqual(dpf.settings.find(s => s.key === key).when.cluster6wbAvailable, true);
+          const main = fs.readFileSync('apps/dpf/main.js','utf8');
+          assert.ok(main.includes("CarEquipment.check(['6WB', '6U3']"));
+          assert.ok(main.includes("ctx.settings.values.cluster6wbAvailable === true && ctx.settings.get('regenCluster') === true"));
+          console.log('DPF Car Equipment integration manifest and logic validated.');
+          NODE

@@ -1,6 +1,6 @@
-<p align="center">
-
 [简体中文说明](README.zh-CN.md)
+
+<p align="center">
   <img src="docs/brmodz_logo_github.png" alt="BMRMODZ logo" width="220">
 </p>
 
@@ -12,7 +12,7 @@
   <a href="https://www.facebook.com/profile.php?id=61590181470490">Facebook</a>
 </p>
 
-Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications.
+Independent repository for BMRMODZ's custom BMW MGU / iDrive 7 applications. I test these apps in an emulator and on my own BMW G31 LCI. The apps are developed for European-specification BMW vehicles and include AI-generated translations into 20 languages. On first launch, the apps detect the iDrive system language and automatically select it.
 
 ## Applications
 

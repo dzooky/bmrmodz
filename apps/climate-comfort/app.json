@@ -1,0 +1,325 @@
+{
+  "id": "climate-comfort",
+  "title": "Climate Comfort",
+  "description": "Development preview of seat heating, seat ventilation and steering wheel heating rules for BMW iDrive 7.",
+  "version": "0.1.61",
+  "vendor": "custom",
+  "loggingId": "CLCM",
+  "settings": [
+    {
+      "key": "appEnabled",
+      "label": "Enable Climate Comfort",
+      "type": "bool",
+      "default": false,
+      "hidden": true
+    },
+    {
+      "key": "frontLeftVentilationTemperature",
+      "label": "Front left ventilation temperature",
+      "type": "number",
+      "min": 10,
+      "max": 40,
+      "step": 1,
+      "default": 10,
+      "hidden": true
+    },
+    {
+      "key": "frontLeftHeatingTemperature",
+      "label": "Front left heating temperature",
+      "type": "number",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 20,
+      "hidden": true
+    },
+    {
+      "key": "frontRightVentilationTemperature",
+      "label": "Front right ventilation temperature",
+      "type": "number",
+      "min": 10,
+      "max": 40,
+      "step": 1,
+      "default": 10,
+      "hidden": true
+    },
+    {
+      "key": "frontRightHeatingTemperature",
+      "label": "Front right heating temperature",
+      "type": "number",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 20,
+      "hidden": true
+    },
+    {
+      "key": "frontLeftVentilationLevel",
+      "label": "Front left ventilation level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "frontLeftHeatingLevel",
+      "label": "Front left heating level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "frontRightVentilationLevel",
+      "label": "Front right ventilation level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "frontRightHeatingLevel",
+      "label": "Front right heating level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "steeringHeatingTemperature",
+      "label": "Steering wheel heating temperature",
+      "type": "number",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 20,
+      "hidden": true
+    },
+    {
+      "key": "rearLeftVentilationTemperature",
+      "label": "Rear left ventilation temperature",
+      "type": "number",
+      "min": 10,
+      "max": 40,
+      "step": 1,
+      "default": 10,
+      "hidden": true
+    },
+    {
+      "key": "rearLeftHeatingTemperature",
+      "label": "Rear left heating temperature",
+      "type": "number",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 20,
+      "hidden": true
+    },
+    {
+      "key": "rearRightVentilationTemperature",
+      "label": "Rear right ventilation temperature",
+      "type": "number",
+      "min": 10,
+      "max": 40,
+      "step": 1,
+      "default": 10,
+      "hidden": true
+    },
+    {
+      "key": "rearRightHeatingTemperature",
+      "label": "Rear right heating temperature",
+      "type": "number",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "default": 20,
+      "hidden": true
+    },
+    {
+      "key": "rearLeftVentilationLevel",
+      "label": "Rear left ventilation level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "rearLeftHeatingLevel",
+      "label": "Rear left heating level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "rearRightVentilationLevel",
+      "label": "Rear right ventilation level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "rearRightHeatingLevel",
+      "label": "Rear right heating level",
+      "type": "number",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 0,
+      "hidden": true
+    },
+    {
+      "key": "temperatureSource",
+      "label": "Front seat temperature source",
+      "type": "choice",
+      "options": [
+        [
+          "outside",
+          "Outside"
+        ],
+        [
+          "inside",
+          "Inside"
+        ]
+      ],
+      "default": "inside",
+      "hidden": true
+    },
+    {
+      "key": "steeringTemperatureSource",
+      "label": "Steering wheel temperature source",
+      "type": "choice",
+      "options": [
+        [
+          "outside",
+          "Outside"
+        ],
+        [
+          "inside",
+          "Inside"
+        ]
+      ],
+      "default": "inside",
+      "hidden": true
+    },
+    {
+      "key": "rearTemperatureSource",
+      "label": "Rear seat temperature source",
+      "type": "choice",
+      "options": [
+        [
+          "outside",
+          "Outside"
+        ],
+        [
+          "inside",
+          "Inside"
+        ]
+      ],
+      "default": "inside",
+      "hidden": true
+    }
+  ],
+  "screens": [
+    {
+      "name": "MAIN",
+      "kind": "canvas",
+      "title": "Climate Comfort"
+    }
+  ],
+  "config": {
+    "previewEquipment": [
+      {
+        "key": "frontSeatHeating",
+        "label": "Heated front seats",
+        "type": "bool",
+        "default": true
+      },
+      {
+        "key": "frontSeatVentilation",
+        "label": "Ventilated front seats",
+        "type": "bool",
+        "default": true
+      },
+      {
+        "key": "rearSeatHeating",
+        "label": "Heated rear seats",
+        "type": "bool",
+        "default": true
+      },
+      {
+        "key": "rearSeatVentilation",
+        "label": "Ventilated rear seats",
+        "type": "bool",
+        "default": true
+      },
+      {
+        "key": "fourZoneClimate",
+        "label": "Four-zone climate control",
+        "type": "bool",
+        "default": true
+      },
+      {
+        "key": "steeringWheelHeating",
+        "label": "Heated steering wheel",
+        "type": "bool",
+        "default": true
+      },
+      {
+        "key": "mSportSteeringWheel",
+        "label": "M Sport steering wheel",
+        "type": "bool",
+        "default": false
+      },
+      {
+        "key": "auxiliaryHeating",
+        "label": "Auxiliary heating",
+        "type": "bool",
+        "default": false
+      }
+    ],
+    "customSettings": true,
+    "allowEngineOffTest": false,
+    "garageThresholdTest": true,
+    "frontStartStopTest": false,
+    "rearStartStopTest": false
+  },
+  "signals": {
+    "de.bmw.infotainment.vehicle.CDS": {
+      "statusEngineSpeed2": "rs"
+    },
+    "com.harman.infotainment.systemfunctions.tasu.tasu.InternalTasu": {
+      "_instances": "SystemFunctionsInternalTasuInst1",
+      "_methods": [
+        "sendTasuRequest"
+      ],
+      "_broadcasts": [
+        "sendTasuResponse"
+      ],
+      "_optional": "Automatic Vehicle Order detection"
+    },
+    "de.bmw.infrastructure.EnvironmentalInformation": {
+      "ExteriorTemperature": "s"
+    }
+  },
+  "requires": {
+    "idrive7-renderd": "2.1.19",
+    "mgu-inputgate": "1.2.1",
+    "bmrmodz-car-equipment": "0.1.5"
+  }
+}

@@ -202,13 +202,24 @@ def build_ui(spec, language='en'):
                 # a drop-down with every value, as BMW's parking app settings: rows = options
                 # (ItemText), HeaderText = the setting, SelectedItem = the chosen row (mgu.js sets it)
                 values, labels = setting_options(s)
+                header = {'value': hmi_text(s['label']), 'type': 'Text'}
+                rows = [{'ItemText': {'value': hmi_text(lb), 'type': 'Text'}} for lb in labels]
+                if app in ('osa', 'dpf'):
+                    header = text_row('SET_' + s['key'], s['label'])['Text']
+                    if s['type'] == 'choice' and s['key'] != 'language':
+                        rows = [text_row('SET_' + s['key'] + '_' + str(i), label, 'ItemText')
+                                for i, label in enumerate(labels)]
                 did = nid()
                 items.append((did, [f'            <component id="{did}" type="dropDownMenu"/>'], {
                     'type': 'dropDownMenu', 'name': name,
-                    'rows': [{'ItemText': {'value': hmi_text(lb), 'type': 'Text'}} for lb in labels],
-                    'cells': {'HeaderText': {'value': hmi_text(s['label']), 'type': 'Text'},
+                    'rows': rows,
+                    'cells': {'HeaderText': header,
                               'SelectedItem': {'value': values.index(s['default']) if s['default'] in values else 0, 'type': 'UInt'}},
                 }))
+            elif s['type'] == 'action':
+                # A one-row native HMI button is focusable/clickable. An action must
+                # not appear as a value/menu setting that offers no usable control.
+                items.append(comp('button', name, rows=[text_row('SET_' + s['key'], s['label'])]))
             else:
                 strings[sid(app, 'SET_' + s['key'])] = s['label']
                 items.append(comp('tworow', name, rows=[{'Text1stRow': {'value': s['label'], 'type': 'Text'},
@@ -416,6 +427,46 @@ def build_start_widget(spec, app_id, icon_src, out, pkg_out=None):
     return {'component': comp, 'layout': ui['containers']['500']['components'][str(WIDGET_COMPONENT_ID)]['cells']['Widget']['value']}
 
 
+def discover_spritmonitor_location(spec):
+    """Register the location field and instance offered by this MGU's installed firmware."""
+    catalog_path = os.environ.get('MGU_SOMEIP_CATALOG', '/etc/oap/someip/someip-interfaces.json')
+    try:
+        with open(catalog_path, encoding='utf-8') as file:
+            catalog = json.load(file)
+        interfaces = catalog['interfaces']
+        instances = catalog['instanceIDs']
+    except (OSError, ValueError, KeyError, TypeError):
+        return
+
+    if not isinstance(interfaces, dict) or not isinstance(instances, dict):
+        return
+
+    candidates = []
+    for name, interface in interfaces.items():
+        if name.rsplit('.', 1)[-1].lower() != 'positioning' or not isinstance(interface, dict):
+            continue
+        fields = interface.get('fields')
+        field = fields.get('currentLocation') if isinstance(fields, dict) else None
+        known = instances.get(name)
+        if not isinstance(field, dict) or not isinstance(known, dict):
+            continue
+        access = ('r' if field.get('getter') is not None else '') + ('s' if field.get('notifier') is not None else '')
+        instance = 'Main_Instance' if 'Main_Instance' in known else None
+        if not instance and len(known) == 1:
+            instance = next(iter(known))
+        if access and instance:
+            candidates.append((name, instance, access))
+
+    if len(candidates) == 1:
+        name, instance, access = candidates[0]
+        spec['signals'][name] = {
+            '_optional': 'Automatic fuelling location',
+            '_instances': instance,
+            'currentLocation': access
+        }
+        spec.setdefault('config', {})['stationPositioning'] = {'interface': name, 'instance': instance}
+
+
 def build(app_id, language='en', preview_only=False):
     language = normalize_language(language)
     # mgu-store supplies the BMW SDK donor and links it into the app on the head unit.
@@ -427,6 +478,8 @@ def build(app_id, language='en', preview_only=False):
     spec = json.load(open(os.path.join(adir, 'app.json'), encoding='utf-8'))
     spec = localize_spec(spec, language)
     spec.setdefault('id', app_id)
+    if spec['id'] == 'spritmonitor':
+        discover_spritmonitor_location(spec)
     ver = spec['version']
     stage = os.path.join(DIST, app_id)
     # The source folder may use display casing; keep the installed identity stable.
@@ -505,9 +558,20 @@ def build(app_id, language='en', preview_only=False):
             p = os.path.join(src, 'javascript', 'kit', 'locales', name)
             if os.path.exists(p):
                 os.remove(p)
-    if language == 'ru':
+    if language == 'ru' or app_id in ('osa', 'spritmonitor', 'dpf'):
         shutil.copy(os.path.join(KIT, 'localization', 'fonts', 'cyrillic-ru.json'),
                     os.path.join(src, 'javascript', 'kit', 'fonts', 'cyrillic.json'))
+    if app_id == 'spritmonitor':
+        fonts_dir = os.path.join(KIT, 'localization', 'fonts')
+        package_fonts = os.path.join(src, 'javascript', 'kit', 'fonts')
+        shutil.copy(os.path.join(fonts_dir, 'spritmonitor-cjk.json'), os.path.join(package_fonts, 'cjk.json'))
+        shutil.copy(os.path.join(fonts_dir, 'OFL-NotoSansSC.txt'), package_fonts)
+    if app_id == 'dpf':
+        shutil.copy(os.path.join(KIT, 'localization', 'fonts', 'dpf-cjk.json'),
+                    os.path.join(src, 'javascript', 'kit', 'fonts', 'cjk.json'))
+    if app_id == 'osa':
+        shutil.copy(os.path.join(KIT, 'localization', 'fonts', 'osa-cjk.json'),
+                    os.path.join(src, 'javascript', 'kit', 'fonts', 'cjk.json'))
     if language == 'ko':
         # Korean and Chinese are separate fixed-language packages. Loading both large
         # atlases could fragment the renderer's two 1024x4096 glyph shelves.
@@ -530,7 +594,7 @@ def build(app_id, language='en', preview_only=False):
             body = file.read()
         with open(entry, 'wb') as file:
             file.write(comment.encode('utf-8') + body)
-    rt_spec = {k: spec.get(k) for k in ('id', 'title', 'version', 'screens', 'settings', 'settingsBeforeLast', 'config', 'startWidget')}
+    rt_spec = {k: spec.get(k) for k in ('id', 'title', 'version', 'screens', 'settings', 'settingsBeforeLast', 'settingsTabInStandard', 'config', 'startWidget')}
     rt_spec['stateIds'] = state_ids
     json.dump(rt_spec, open(os.path.join(src, 'javascript', 'kit', 'app-spec.json'), 'w', encoding='utf-8', newline='\n'), indent=1)
     locale = {'language': language, 'strings': load_locale(language)}

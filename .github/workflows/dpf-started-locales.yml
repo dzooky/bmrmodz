@@ -1,0 +1,36 @@
+name: DPF Started translation coverage
+on:
+  push:
+    branches: [fix/dpf-started-all-languages]
+  pull_request:
+    paths:
+      - 'apps/dpf/translations.js'
+      - 'apps/dpf/app.json'
+      - '.github/workflows/dpf-started-locales.yml'
+jobs:
+  locales:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Check syntax and all language translations
+        run: |
+          node --check apps/dpf/translations.js
+          node --check apps/dpf/main.js
+          node - <<'NODE'
+          const fs = require('fs'), assert = require('assert');
+          const locales = require('./apps/dpf/translations.js');
+          const expected = ['sk','cs','de','es','fr','it','hu','pl','ru','da','el','zh-CN','nl','nb','pt','ro','sl','fi','sv','tr','uk'];
+          assert.deepStrictEqual(Object.keys(locales).sort(), expected.sort());
+          for (const lang of expected) {
+            const t = locales[lang];
+            assert.strictEqual(typeof t.Started, 'string', lang + ' Started missing');
+            assert.ok(t.Started.trim().length, lang + ' Started empty');
+            assert.ok(t.Requested && t['In Progress'] && t.Finished, lang + ' missing existing cluster state translation');
+          }
+          const app=JSON.parse(fs.readFileSync('apps/dpf/app.json','utf8'));
+          assert.ok(app.version.startsWith('0.1.') && Number(app.version.split('.')[2]) >= 37, 'Started translations require DPF 0.1.37 or newer');
+          console.log('Started and existing regeneration states checked in 21 translated locales + English fallback');
+          NODE

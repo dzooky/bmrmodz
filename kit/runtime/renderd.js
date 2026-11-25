@@ -14,8 +14,7 @@
  * opts.native: ask for mgu-render's own dialect (mgu-render/1, the Store's renderer). There touch
  * claims and the controller grab work on one connection, and X_STATE says when the renderer has
  * the app on screen. A renderer that does not speak it answers READY alone and the connection
- * stays in the upstream dialect. Pixel images (op 18) are upstream only: an app that draws them
- * (Doom) connects without opts.native.
+ * stays in the upstream dialect. Native pixel images use pixmaps when advertised.
  */
 const net = require('net');
 const fs = require('fs');
@@ -32,7 +31,7 @@ const E = { READY: 101, TICK: 102, ERROR: 103, STATS: 104, CCU: 105 };
 // touch (mgu-render, IterioDev's mgu-renderd): message 9 is CLAIM there; 105 and 106 come back as TOUCH and CLOSED
 const CLAIM = 9, TOUCH = 105, CLOSED = 106;
 // mgu-render/1 (mgu-store native/mgu-render/PROTOCOL.md)
-const X = { MODE: 0x4d520001, GRAB: 0x4d520002, READY: 0x4d520101, STATE: 0x4d520102, CCU: 0x4d520103 };
+const X = { MODE: 0x4d520001, GRAB: 0x4d520002, PIXMAP: 0x4d520003, PIXELS: 0x4d520004, READY: 0x4d520101, STATE: 0x4d520102, CCU: 0x4d520103 };
 const X_MODE_LAYER = 1;
 
 function msg(type, payload) {
@@ -195,7 +194,7 @@ class RenderClient extends EventEmitter {
             if (type === X.READY && p.length >= 12) {
                 const caps = p.readUInt32LE(8);
                 this.native = true;
-                this.info = { touch: !!(caps & 1), controller: !!(caps & 2), frontGate: !!(caps & 4) };
+                this.info = { touch: !!(caps & 1), controller: !!(caps & 2), frontGate: !!(caps & 4), pixmaps: !!(caps & 8) };
             } else if (type === E.READY) {
                 this.ready = true; this.errLogged = false;
                 this.screen = { w: p.readUInt32LE(4), h: p.readUInt32LE(8) };
@@ -298,11 +297,23 @@ class RenderClient extends EventEmitter {
     }
     /** upload a pixel image when this connection hasn't got its current version */
     _ensureImage(id) {
-        if (this.native) { if (!this.imgWarned) { this.imgWarned = true; this.log.warn('renderd: pixel images need the upstream dialect'); } return; }
+        if (this.native && (!this.info || !this.info.pixmaps)) return;
         const im = rec.imageById.get(id);
         if (!im || !im.data) return;
         if (this.sent.image.get(id) === im.ver) return;
-        const n = im.w * im.h * 4, b = this._imageBuf(8 + 12 + n);
+        const n = im.w * im.h * 4;
+        if (this.native) {
+            const formatOpaque = 2;
+            this._write(this._u32msg(X.PIXMAP, [id, im.w, im.h, formatOpaque, 1]));
+            const pixels = Buffer.allocUnsafe(32 + n);
+            [X.PIXELS, 24 + n, id, 1, 0, 0, im.w, im.h].forEach((word, index) =>
+                pixels.writeUInt32LE(word, index * 4));
+            Buffer.from(im.data.buffer, im.data.byteOffset, n).copy(pixels, 32);
+            this._write(pixels);
+            this.sent.image.set(id, im.ver);
+            return;
+        }
+        const b = this._imageBuf(8 + 12 + n);
         b.writeUInt32LE(M.IMAGE, 0); b.writeUInt32LE(12 + n, 4);
         b.writeUInt32LE(id, 8); b.writeUInt32LE(im.w, 12); b.writeUInt32LE(im.h, 16);
         Buffer.from(im.data.buffer, im.data.byteOffset, n).copy(b, 20);

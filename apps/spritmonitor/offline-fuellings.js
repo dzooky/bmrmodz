@@ -22,6 +22,10 @@ function open(dataDir) {
         const scope = key(account);
         if (!scope) throw new Error('Select a vehicle before saving.');
         const updated = Object.assign({}, saved, { [scope]: next });
+        persist(updated);
+    }
+
+    function persist(updated) {
         const temporary = file + '.' + crypto.randomBytes(8).toString('hex') + '.tmp';
         try {
             fs.writeFileSync(temporary, JSON.stringify(updated), { mode: 0o600, flag: 'wx' });
@@ -31,6 +35,26 @@ function open(dataDir) {
             throw error;
         }
         saved = updated;
+    }
+
+    // Earlier versions kept all details of the last successful upload in the local receipt.
+    let migrated = false;
+    for (const scope of Object.values(saved)) {
+        for (const [kind, entry] of Object.entries(scope.lastFuelling || {})) {
+            if (entry.state !== 'sent' || (!entry.fields && !entry.upload)) continue;
+            scope.lastFuelling[kind] = { id: entry.id, state: 'sent' };
+            migrated = true;
+        }
+    }
+    if (migrated) {
+        try { persist(saved); } catch (_) { /* Keep the local queue usable if migration cannot be written yet. */ }
+    }
+
+    function clearLocal(account) {
+        const current = read(account);
+        const next = Object.assign({}, current, { entries: [], lastFuelling: {} });
+        delete next.conditions;
+        write(account, next);
     }
 
     function cache(account, vehicle) {
@@ -62,24 +86,27 @@ function open(dataDir) {
         if (current.vehicle) entry.upload = uploadFields(current.vehicle, entry);
         write(account, Object.assign({}, current, {
             entries: current.entries.concat(entry),
-            lastFuelling: Object.assign({}, current.lastFuelling, { [kind]: entry }),
+            lastFuelling: Object.assign({}, current.lastFuelling, { [kind]: { id: entry.id, state: entry.state } }),
             conditions: kind === 'Fuel' ? conditions : current.conditions
         }));
         return entry.id;
     }
 
-    function change(account, id, state) {
+    function change(account, id, state, details) {
         const current = read(account);
         const entries = state ? current.entries.map(entry => entry.id === id
-            ? Object.assign({}, entry, { state }) : entry) : current.entries.filter(entry => entry.id !== id);
+            ? Object.assign({}, entry, { state }, details) : entry) : current.entries.filter(entry => entry.id !== id);
         const lastFuelling = Object.assign({}, current.lastFuelling);
         for (const [kind, entry] of Object.entries(lastFuelling)) {
-            if (entry.id === id) lastFuelling[kind] = Object.assign({}, entry, { state: state || 'sent' });
+            if (entry.id === id) lastFuelling[kind] = { id: entry.id, state: state || 'sent' };
         }
-        write(account, Object.assign({}, current, { entries, lastFuelling }));
+        const confirmedIds = details && details.confirmedId
+            ? (current.confirmedIds || []).concat(details.confirmedId).slice(-128)
+            : current.confirmedIds;
+        write(account, Object.assign({}, current, { entries, lastFuelling, confirmedIds }));
     }
 
-    return { read, cache, enqueue, change };
+    return { read, cache, enqueue, change, clearLocal };
 }
 
 function uploadFields(vehicle, entry) {
@@ -112,4 +139,48 @@ function uploadFields(vehicle, entry) {
     return { tankId: tank.id, fields };
 }
 
-module.exports = { open, uploadFields };
+function matchesUpload(remote, fields) {
+    const equalNumber = (actual, expected) => actual != null && actual !== '' && expected != null && expected !== '' &&
+        Math.abs(Number(actual) - Number(expected)) < 0.0001;
+    if (remote.date !== fields.date || remote.type !== fields.type) return false;
+    for (const key of ['odometer', 'quantity', 'quantityunitid', 'fuelsortid', 'currencyid']) {
+        if (!equalNumber(remote[key], fields[key])) return false;
+    }
+    const cost = fields.pricetype === 1 ? fields.price * fields.quantity : fields.price;
+    if (!equalNumber(remote.cost, Math.round(cost * 100) / 100)) return false;
+    return String(remote.note || '').trim() === String(fields.note || '').trim();
+}
+
+async function verifyUnconfirmed(store, account, vehicle, loadTankHistory, stillSelected) {
+    const state = store.read(account);
+    const confirmed = new Set(state.confirmedIds || []);
+    const byTank = new Map();
+    for (const entry of state.entries) {
+        if (entry.state !== 'sending') continue;
+        const upload = entry.upload || uploadFields(vehicle, entry);
+        if (!upload) continue;
+        const tank = String(upload.tankId);
+        if (!byTank.has(tank)) byTank.set(tank, []);
+        byTank.get(tank).push({ entry, fields: upload.fields });
+    }
+    let verified = false;
+    for (const [tank, entries] of byTank) {
+        if (!stillSelected()) return verified;
+        const history = await loadTankHistory(tank);
+        if (!stillSelected()) return verified;
+        const candidates = history.filter(row => row && row.id != null && !confirmed.has(String(row.id)));
+        for (const { entry, fields } of entries) {
+            const matches = candidates.filter(row => matchesUpload(row, fields));
+            if (matches.length !== 1) continue;
+            const remote = matches[0];
+            if (entries.some(other => other.entry.id !== entry.id && matchesUpload(remote, other.fields))) continue;
+            const confirmedId = String(remote.id);
+            store.change(account, entry.id, null, { confirmedId });
+            confirmed.add(confirmedId);
+            verified = true;
+        }
+    }
+    return verified;
+}
+
+module.exports = { open, uploadFields, verifyUnconfirmed };

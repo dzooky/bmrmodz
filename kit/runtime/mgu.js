@@ -22,6 +22,8 @@ const fs = require('fs');
 const path = require('path');
 const { OnlineApp, logging } = require('oap-sdk');
 const themes = require('./themes');
+const { t: translate } = require('./i18n');
+const notifications = require('./notifications');
 const { Display } = require('./display');
 const { HmiText } = require('./hmi-text');
 const { listSheet } = require('./sheet');
@@ -87,6 +89,7 @@ class Settings {
         this.file = path.join(DATA_DIR, 'settings.json');
         this.values = {};
         this.listeners = [];
+        this.actions = new Map();
         for (const s of this.schema) this.values[s.key] = s.default;
         try { Object.assign(this.values, JSON.parse(fs.readFileSync(this.file, 'utf8'))); } catch (e) {}
         // "aliases": { old value: new value } - a value saved before the setting's values were renamed
@@ -112,13 +115,27 @@ class Settings {
         }
         if (changed && fs.existsSync(this.file)) try { fs.writeFileSync(this.file, JSON.stringify(this.values, null, 1)); } catch (e) { /* read-only */ }
     }
-    get(key) { return this.values[key]; }
+    get(key) {
+        const setting = this.item(key);
+        if (setting && setting.notification === true) {
+            try { return notifications.read(DATA_DIR, key, setting.default); }
+            catch (error) { return setting.default; }
+        }
+        return this.values[key];
+    }
     set(key, value) {
-        this.values[key] = value;
-        try { fs.writeFileSync(this.file, JSON.stringify(this.values, null, 1)); } catch (e) { log.warn('settings save: ' + e); }
+        const setting = this.item(key);
+        if (setting && setting.notification === true) {
+            try { notifications.write(DATA_DIR, key, value === true); }
+            catch (error) { log.warn('notification setting save: ' + error); return; }
+        } else {
+            this.values[key] = value;
+            try { fs.writeFileSync(this.file, JSON.stringify(this.values, null, 1)); } catch (e) { log.warn('settings save: ' + e); }
+        }
         this.listeners.forEach((fn) => { try { fn(key, value); } catch (e) { log.error(e); } });
     }
     onChange(fn) { this.listeners.push(fn); }
+    onAction(key, fn) { this.actions.set(key, fn); }
     item(key) { return this.schema.find((s) => s.key === key); }
     /**
      * Whether a setting is offered: not "hidden", and its "when" holds - { key: value or [values] }, each other
@@ -131,8 +148,9 @@ class Settings {
     }
     /** Human text for the current value of a setting. */
     display(key) {
-        const s = this.item(key), v = this.values[key];
+        const s = this.item(key), v = this.get(key);
         if (!s) return String(v);
+        if (s.type === 'action') return s.hint || '';
         if (s.type === 'choice') { const o = (s.options || []).find((x) => x[0] === v); return o ? o[1] : String(v); }
         if (s.type === 'number') return (s.labels && s.labels[String(v)] !== undefined ? s.labels[String(v)] : String(v) + (s.unit ? ' ' + s.unit : '')) + (s.markDefault && v === s.default ? ' (default)' : '');
         if (s.type === 'bool') return v ? 'On' : 'Off';
@@ -142,7 +160,12 @@ class Settings {
     cycle(key) {
         const s = this.item(key);
         if (!s) return;
-        if (s.type === 'bool') return this.set(key, !this.values[key]);
+        if (s.type === 'action') {
+            const action = this.actions.get(key);
+            if (action) action();
+            return;
+        }
+        if (s.type === 'bool') return this.set(key, !this.get(key));
         const list = s.type === 'choice' ? s.options.map((o) => o[0]) : (s.steps || []);
         if (!list.length) return;
         const i = list.indexOf(this.values[key]);
@@ -458,7 +481,7 @@ class Widget {
 /* ---------------- generic settings screen ---------------- */
 function wireSettings(ctx) {
     const { ui, settings } = ctx;
-    const schema = settings.schema;
+    const schema = settings.schema.filter((s) => !s.hidden);
     // the settings screen, or an app's own menu screen that shows them ("settings": true)
     if (!schema.length || !schema.some((s) => ui.comp('SET_' + s.key.toUpperCase()))) return;
     // choice / number settings are drop-downs (kit/tools/build.py): their rows are the values in this order
@@ -468,10 +491,13 @@ function wireSettings(ctx) {
         if (!ui.comp(comp)) return null;
         // one another setting offers it ("when"): shown or not as that one is
         if (s.when) ui.visible(comp, settings.shown(s));
-        if (s.type === 'bool') return Promise.all([ui.text(comp, s.label), ui.checked(comp, !!settings.get(s.key))]);
+        if (s.type === 'bool') return Promise.all([ui.text(comp, translate(s.label)), ui.checked(comp, !!settings.get(s.key))]);
+        // Native HMI action buttons have their static row label from build.py.
+        // They are clickable commands, not selectable value rows.
+        if (s.type === 'action') return null;
         if (values(s)) return ui.selected(comp, Math.max(0, values(s).indexOf(settings.get(s.key))));
         // other types: two-row buttons in the wide settings state, label above, value below
-        return ui.cells(comp, 0, { Text1stRow: s.label, Text2ndRow: settings.display(s.key) });
+        return ui.cells(comp, 0, { Text1stRow: translate(s.label), Text2ndRow: translate(settings.display(s.key)) });
     }));
     schema.forEach((s) => {
         const comp = 'SET_' + s.key.toUpperCase();

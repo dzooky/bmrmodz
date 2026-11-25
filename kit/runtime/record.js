@@ -113,15 +113,21 @@ class Recorder {
      * key names it from frame to frame (the controller stays on it). Drawn by the caller; where the kit
      * runs the screen (display.js) it rings the one the controller is on.
      */
-    target(x, y, w, h, run, key, r) { this.targets.push({ x, y, w, h, run, key: String(key), r }); return this; }
+    target(x, y, w, h, run, key, r, focusColor) { this.targets.push({ x, y, w, h, run, key: String(key), r, focusColor }); return this; }
 
     /* ---------- canvas.js API ---------- */
     /** Draw pixel image `id` (see setImage) scaled into x, y, w, h (nearest pixel). */
-    image(id, x, y, w, h) {
+    image(id, x, y, w, h, nativePixmap) {
         const im = imageById.get(id);
         if (!im || !(w > 0 && h > 0)) return this;
         this._grow(7); const f = this.f, i = this.n;
-        this.u[i] = OP.IMAGE; this.u[i + 1] = id; this.u[i + 2] = im.ver; f[i + 3] = x; f[i + 4] = y; f[i + 5] = w; f[i + 6] = h;
+        this.u[i] = OP.IMAGE;
+        if (nativePixmap) {
+            f[i + 1] = x; f[i + 2] = y; f[i + 3] = w; f[i + 4] = h; f[i + 5] = 0; this.u[i + 6] = id;
+        } else {
+            this.u[i + 1] = id; this.u[i + 2] = im.ver;
+            f[i + 3] = x; f[i + 4] = y; f[i + 5] = w; f[i + 6] = h;
+        }
         this.images.add(id);
         this.n += 7; return this;
     }
@@ -353,7 +359,16 @@ function play(words, real) {
             i += k * 8; break;
         }
         case OP.LAYER: { const L = layerById.get(u[i]); if (L) cv.blit(softLayer(L), f[i + 1], f[i + 2]); i += 3; break; }
-        case OP.IMAGE: { const im = imageById.get(u[i]); if (im && cv.drawImage) cv.drawImage(im.data, im.w, im.h, f[i + 2], f[i + 3], f[i + 4], f[i + 5]); i += 6; break; }
+        case OP.IMAGE: {
+            const upstream = imageById.get(u[i]);
+            const im = upstream || imageById.get(u[i + 5]);
+            if (im && cv.drawImage) {
+                const base = upstream ? i + 2 : i;
+                cv.drawImage(im.data, im.w, im.h, f[base], f[base + 1], f[base + 2], f[base + 3]);
+            }
+            i += 6;
+            break;
+        }
         case OP.CLIP: clip = [f[i], f[i + 1], f[i + 2], f[i + 3]]; i += 4; break;     // (software path: ignored)
         case OP.NOCLIP: clip = null; break;
         case OP.ALPHA: alpha = f[i]; i += 1; break;

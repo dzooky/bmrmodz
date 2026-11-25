@@ -1,8 +1,11 @@
 {
   "id": "dpf",
   "title": "DPF Status",
-  "description": "Read-only diesel particulate filter status monitoring",
-  "version": "0.1.25",
+  "description": "Read-only BMW DPF monitoring for B57 and B47 diesel engines, with validated soot, ash and regeneration distance gauges.",
+  "version": "0.1.75",
+  "config": {
+    "customSettings": true
+  },
   "vendor": "custom",
   "loggingId": "DPF1",
   "iconGlyph": "temp",
@@ -10,7 +13,13 @@
     {
       "name": "MAIN",
       "kind": "canvas",
-      "title": "DPF Status"
+      "title": "DPF Status",
+      "buttons": [
+        [
+          "BTN_SETTINGS",
+          "Settings"
+        ]
+      ]
     }
   ],
   "signals": {
@@ -22,6 +31,150 @@
       "_broadcasts": [
         "sendTasuResponse"
       ]
+    },
+    "de.bmw.infotainment.hmi.hmicontext.HMIContext": {
+      "_optional": "Automatic iDrive language",
+      "_instances": "HMI_CID",
+      "currentDisplayLanguage": "rs"
     }
+  },
+  "settingsBeforeLast": true,
+  "settings": [
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "choice",
+      "default": "auto",
+      "options": [
+        [
+          "en",
+          "English"
+        ],
+        [
+          "de",
+          "Deutsch"
+        ],
+        [
+          "es",
+          "Español"
+        ],
+        [
+          "fr",
+          "Français"
+        ],
+        [
+          "hu",
+          "Magyar"
+        ],
+        [
+          "pl",
+          "Polski"
+        ],
+        [
+          "sk",
+          "Slovenčina"
+        ],
+        [
+          "cs",
+          "Čeština"
+        ],
+        [
+          "it",
+          "Italiano"
+        ],
+        [
+          "ru",
+          "Русский"
+        ],
+        [
+          "da",
+          "Dansk"
+        ],
+        [
+          "el",
+          "Ελληνικά"
+        ],
+        [
+          "zh-CN",
+          "简体中文"
+        ],
+        [
+          "nl",
+          "Nederlands"
+        ],
+        [
+          "nb",
+          "Norsk"
+        ],
+        [
+          "pt",
+          "Português"
+        ],
+        [
+          "ro",
+          "Română"
+        ],
+        [
+          "sl",
+          "Slovenščina"
+        ],
+        [
+          "fi",
+          "Suomi"
+        ],
+        [
+          "sv",
+          "Svenska"
+        ],
+        [
+          "tr",
+          "Türkçe"
+        ],
+        [
+          "uk",
+          "Українська"
+        ]
+      ]
+    },
+    {
+      "key": "cluster6wbAvailable",
+      "label": "6WB or 6U3 cluster detected",
+      "type": "bool",
+      "default": false,
+      "hidden": true
+    },
+    {
+      "key": "regenCluster",
+      "label": "DPF notification on cluster",
+      "type": "bool",
+      "default": true,
+      "notification": true,
+      "when": {
+        "cluster6wbAvailable": true
+      }
+    },
+    {
+      "key": "regenClusterTest",
+      "label": "Test DPF cluster message",
+      "type": "action",
+      "hint": "Four alerts: Requested (yellow), Started and In Progress (red), Finished (green)",
+      "when": {
+        "cluster6wbAvailable": true
+      }
+    },
+    {
+      "key": "reloadEquipment",
+      "label": "Reload Equipment",
+      "actionLabel": "Reload",
+      "type": "action",
+      "hint": "Read vehicle equipment again"
+    }
+  ],
+  "settingsTabInStandard": false,
+  "requires": {
+    "idrive7-renderd": "2.1.19",
+    "mgu-inputgate": "1.2.1",
+    "bmrmodz-car-equipment": "0.1.5",
+    "bmrmodz-notification": "0.1.1"
   }
 }

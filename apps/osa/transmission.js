@@ -7,6 +7,10 @@
  */
 const { ReadOnlyDiag } = require('./kit/readonly-diag');
 
+const POLL_MS = 5000;
+const ERROR_POLL_MS = 30000;
+const ERROR_BACKOFF_AFTER = 3;
+
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const hex = (bytes) => Array.from(bytes || []).map((b) => Number(b).toString(16).padStart(2, '0')).join('').toUpperCase();
 
@@ -22,6 +26,7 @@ class TransmissionReader {
         this.visible = false;
         this.running = false;
         this.busy = false;
+        this.consecutiveFailures = 0;
     }
 
     setVisible(on) {
@@ -62,7 +67,7 @@ class TransmissionReader {
         this.sgbd = hex(uds.slice(3, 6));
         if (this.sgbd !== '0F25D0') {
             this.statusText = 'UNSUPPORTED EGS';
-            this.error = 'EGS ' + this.sgbd + ' is not verified';
+            this.error = 'Unverified EGS variant';
             return false;
         }
         this.statusText = 'IDENTIFIED · 0F25D0';
@@ -77,19 +82,20 @@ class TransmissionReader {
             { maxRetries: 2, retryBaseMs: 500, callTimeoutMs: 2500, hardTimeoutMs: 6500, pendingTimeoutMs: 2500 });
         if (!uds || uds[0] !== 0x62 || uds[1] !== 0x60 || uds[2] !== 0x00 || uds.length !== 4) {
             this.statusText = 'WAITING FOR DATA';
-            this.error = !uds ? 'No response from EGS' : 'Unexpected DID 6000 response';
-            return;
+            this.error = !uds ? 'NO EGS RESPONSE' : 'Unexpected DID 6000 response';
+            return false;
         }
         const value = Number(uds[3]) - 40;
         if (!Number.isFinite(value) || value < -40 || value > 215) {
             this.statusText = 'INVALID DATA';
             this.error = 'DID 6000 value out of range';
-            return;
+            return false;
         }
         this.temp = value;
         this.at = Date.now();
         this.statusText = 'LIVE';
         this.error = '';
+        return true;
     }
 
     async pump() {
@@ -106,20 +112,24 @@ class TransmissionReader {
             }
             if (this.busy) { await sleep(100); continue; }
             this.busy = true;
+            let success = false;
             try {
                 if (!this.sgbd) {
-                    if (await this.identify()) await this.readTemperature();
+                    if (await this.identify()) success = await this.readTemperature();
                 } else if (this.sgbd === '0F25D0') {
-                    await this.readTemperature();
+                    success = await this.readTemperature();
                 }
             } catch (e) {
-                this.error = String(e.message || e);
+                this.error = 'Diagnostic read failed';
+                this.ctx.log.warn('OSA transmission: ' + (e.message || e));
                 this.statusText = 'READ ERROR';
-                this.ctx.log.warn('OSA EGS read: ' + this.error);
             } finally {
                 this.busy = false;
             }
-            await sleep(2000);
+            this.consecutiveFailures = success ? 0 : this.consecutiveFailures + 1;
+            // Pace UDS traffic independently of the UI refresh rate.
+            // Back off when the EGS or transport repeatedly fails.
+            await sleep(this.consecutiveFailures >= ERROR_BACKOFF_AFTER ? ERROR_POLL_MS : POLL_MS);
         }
     }
 

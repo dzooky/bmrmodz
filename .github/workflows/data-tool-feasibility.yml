@@ -1,0 +1,74 @@
+name: Data Tool checks
+on:
+  push:
+    paths:
+      - 'tools/data-tool/**'
+      - 'apps/data-diagnostics/**'
+      - 'server/bmrmodz.php'
+      - 'mgu-repo.json'
+      - '.github/workflows/data-tool-feasibility.yml'
+  pull_request:
+    paths:
+      - 'apps/data-diagnostics/**'
+      - 'tools/data-tool/**'
+      - 'mgu-repo.json'
+      - '.github/workflows/data-tool-feasibility.yml'
+jobs:
+  data-tool:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Validate syntax and JSON
+        run: |
+          node --check apps/data-diagnostics/main.js
+          node --check apps/data-diagnostics/upload.js
+          node --check apps/data-diagnostics/upload.test.js
+          node --check apps/data-diagnostics/client.js
+          node --check apps/data-diagnostics/client.test.js
+          node --check apps/data-diagnostics/qr-report.js
+          node --check apps/data-diagnostics/qr-report.test.js
+          node --check apps/data-diagnostics/test-runner.js
+          node --check apps/data-diagnostics/test-runner.test.js
+          node --check apps/data-diagnostics/translations.js
+          node --check apps/data-diagnostics/translations.test.js
+          node --check tools/data-tool/authorization.js
+          node --check tools/data-tool/authorization.test.js
+          node --check tools/data-tool/service.js
+          node --check tools/data-tool/transport.js
+          node --check tools/data-tool/test.js
+          node --check tools/data-tool/signal-environment.js
+          node --check tools/data-tool/signal-environment.test.js
+          node --check tools/data-tool/signal-worker.js
+          node --check tools/data-tool/signal-isolate.js
+          node --check tools/data-tool/signal-isolate.test.js
+          node --check tools/data-tool/signal-worker.test.js
+          node --check tools/data-tool/config-check.js
+          node --check tools/data-tool/diagnostic-report.js
+          node --check tools/data-tool/diagnostic-report.test.js
+          node --check tools/data-tool/cc-feasibility.js
+          node --check tools/data-tool/cc-feasibility.test.js
+          node -e "const fs=require('fs');const m=JSON.parse(fs.readFileSync('mgu-repo.json'));const c=JSON.parse(fs.readFileSync('tools/data-tool/component.json'));if(!m.tools.some(x=>x.id===c.id))process.exit(1)"
+      - name: Offline service regression
+        run: |
+          node apps/data-diagnostics/upload.test.js
+          node apps/data-diagnostics/client.test.js
+          node apps/data-diagnostics/qr-report.test.js
+          node apps/data-diagnostics/test-runner.test.js
+          node apps/data-diagnostics/translations.test.js
+          node tools/data-tool/authorization.test.js
+          node tools/data-tool/test.js
+          node tools/data-tool/signal-environment.test.js
+          node tools/data-tool/signal-isolate.test.js
+          node tools/data-tool/diagnostic-report.test.js
+          node tools/data-tool/cc-feasibility.test.js
+          node tools/data-tool/signal-manifest.test.js
+          node tools/data-tool/signal-worker.test.js
+
+      - name: Validate optional PHP endpoint syntax
+        run: |
+          if command -v php >/dev/null; then php -l server/bmrmodz.php; fi
+      - name: Build offline MGU app preview
+        run: python3 kit/tools/build.py --preview-only data-diagnostics

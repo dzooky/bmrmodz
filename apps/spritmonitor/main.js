@@ -9,19 +9,63 @@ const { toggle } = require('./kit/sheet');
 const { withAlpha } = require('./kit/canvas');
 const { decode: decodePng } = require('./png');
 
-const TABS = ['Info', 'My Car', 'About'];
+const { t, setRuntimeTranslations } = require('./kit/i18n');
+
+const TABS = ['My Car', 'About'];
+const MY_CAR = 0, ABOUT = 1;
+const ABOUT_TOP = 54, ABOUT_BOTTOM = 508;
 
 mgu.run({
     start(ctx) {
+        let idriveLanguage = 'en';
+        function applyLanguage() {
+            const preference = ctx.settings.get('language');
+            const language = preference === 'auto' ? idriveLanguage : preference;
+            let words;
+            if (language === 'de') words = require('./de');
+            else if (language === 'es' || language === 'fr') words = require('./fr-es')[language];
+            else if (language !== 'en') {
+                words = require('./more-locales')[language] || require('./additional-locales')[language];
+            }
+            setRuntimeTranslations(words);
+            ctx.ui.text('BTN_FUEL', t('Add Fuel'));
+            ctx.ui.text('BTN_ADBLUE', t('Add AdBlue'));
+            ctx.ui.text('BTN_SETTINGS', t('Settings'));
+        }
+        const languageOptions = ctx.settings.item('language').options.map(option => option.slice());
+        function updateAutoLanguageLabel() {
+            const setting = ctx.settings.item('language');
+            setting.options = languageOptions.map(([code, label]) =>
+                code === idriveLanguage ? ['auto', label + ' (auto)'] : [code, label]);
+            setting.options.forEach((option, index) => {
+                ctx.ui.text('SET_LANGUAGE', option[1], index, 'ItemText');
+            });
+            // A previously saved manual choice of the system language becomes automatic.
+            if (ctx.settings.get('language') === idriveLanguage) ctx.settings.set('language', 'auto');
+            const selected = setting.options.findIndex(option => option[0] === ctx.settings.get('language'));
+            ctx.ui.selected('SET_LANGUAGE', Math.max(0, selected));
+        }
+        updateAutoLanguageLabel();
+        applyLanguage();
+        ctx.settings.onChange(key => { if (key === 'language') applyLanguage(); });
+        require('./idrive-language').watch(ctx, language => {
+            idriveLanguage = language;
+            updateAutoLanguageLabel();
+            if (ctx.settings.get('language') === 'auto') applyLanguage();
+        });
+
         let entry = '';
         let draft;
+        let lastStationPosition;
+        const stationLocation = require('./station-location');
         let activeField = null;
         let formStatus = '';
         let formScroll = 0;
         let savedEntryId;
         let refreshOnOpen = false;
         const maxFormScroll = () => entry === 'Fuel' ? 915 : 184;
-        let page = 0;
+        let page = MY_CAR;
+        let aboutScroll = 0;
         let artwork;
         let vehicle;
         const readings = {};
@@ -87,12 +131,17 @@ mgu.run({
         const api = require('./sp-api');
         const accountFile = path.join(ctx.dataDir, 'sp-account.json');
         const uplinkDir = isEmulator ? undefined : ctx.dataDir;
+        const offlineFuel = require('./offline-fuellings');
         let offline;
-        try { offline = require('./offline-fuellings').open(ctx.dataDir); }
+        try { offline = offlineFuel.open(ctx.dataDir); }
         catch (_) { accountStatus = 'Could not open local fuelling storage.'; }
         if (offline) vehicle = offline.read(account).vehicle;
         let connection = '';
         let syncing = false;
+        let clearLocalOpen = false;
+        let clearLocalError = false;
+        let clearLocalNoticeUntil = 0;
+        let nextHistoryCheck = 0;
         let loadingAccount = false;
         let vehicleOptions = null;
         let phonePairing;
@@ -117,14 +166,43 @@ mgu.run({
             const pending = entries.filter(item => item.state === 'pending').length;
             const review = entries.filter(item => item.state === 'sending').length;
             const rejected = entries.filter(item => item.state === 'rejected').length;
-            return [connection, pending ? pending + ' pending' : '',
-                review ? review + ' unconfirmed in Spritmonitor' : '',
-                rejected ? rejected + ' rejected by Spritmonitor' : '',
-                offline ? '' : 'Local storage unavailable'].filter(Boolean).join('  /  ');
+            return [t(connection), pending ? pending + ' ' + t('pending') : '',
+                review ? review + ' ' + t('unconfirmed in Spritmonitor') : '',
+                rejected ? rejected + ' ' + t('rejected by Spritmonitor') : '',
+                offline ? '' : t('Local storage unavailable')].filter(Boolean).join('  /  ');
+        }
+
+        function clearLocalFuelings() {
+            if (!clearLocalOpen || syncing || !offline || !account || !account.vehicleId) return;
+            try {
+                offline.clearLocal(account);
+                clearLocalOpen = false;
+                clearLocalNoticeUntil = Date.now() + 8000;
+            } catch (_) {
+                clearLocalError = true;
+            }
+        }
+
+        function renderClearLocal(cv, theme) {
+            cv.text('Clear local fuelings', 65, 100, 34, theme.text, { font: 'bold' });
+            cv.text('This clears unsynced fuelings for this vehicle from iDrive.', 65, 161, 25, theme.text);
+            if (clearLocalError) cv.text('Could not clear local fuelings.', 65, 208, 23, theme.dim);
+            if (syncing) cv.text('Waiting for the current sync to finish...', 65, 250, 23, theme.dim);
+            G.button(cv, theme, 65, 447, 300, 45, 'Clear local fuelings', clearLocalFuelings,
+                { primary: true, color: theme.crit, busy: syncing });
+            G.button(cv, theme, 385, 447, 210, 45, 'Cancel', () => { clearLocalOpen = false; });
+        }
+
+        function showClearLocalButton(cv, theme, x, y, width, height) {
+            if (!offline || !account || !account.vehicleId || !offline.read(account).entries.length) return;
+            G.button(cv, theme, x, y, width, height, 'Clear local fuelings', () => {
+                clearLocalOpen = true;
+                clearLocalError = false;
+            });
         }
 
         async function syncFuelings() {
-            if (!offline || !account || !account.vehicleId || syncing || loadingAccount) return;
+            if (!offline || !account || !account.vehicleId || syncing || loadingAccount || clearLocalOpen) return;
             syncing = true;
             const owner = account;
             try {
@@ -162,20 +240,33 @@ mgu.run({
                     }
                 }
                 let sent = false;
+                if (Date.now() >= nextHistoryCheck) {
+                    nextHistoryCheck = Date.now() + 120000;
+                    try {
+                        sent = await offlineFuel.verifyUnconfirmed(offline, owner, vehicle,
+                            tank => api.recentTankFuelings(owner, tank, uplinkDir), () => owner === account);
+                    } catch (error) {
+                        ctx.log.warn('Could not verify unconfirmed fuelings: ' + error.message);
+                    }
+                }
                 for (const item of pending) {
-                    if (owner !== account) return;
-                    const upload = item.upload || require('./offline-fuellings').uploadFields(vehicle, item);
+                    if (owner !== account || clearLocalOpen) return;
+                    const upload = item.upload || offlineFuel.uploadFields(vehicle, item);
                     if (!upload) {
                         connection = 'Waiting for Spritmonitor tank, fuel sort or units';
                         continue;
                     }
-                    offline.change(owner, item.id, 'sending');
+                    offline.change(owner, item.id, 'sending', { upload });
                     let accepted;
                     try {
                         accepted = await api.addFuelling(owner, upload.tankId, upload.fields, uplinkDir);
                     } catch (error) {
                         if (error.beforeSend || [401, 403, 429].includes(error.status)) {
                             offline.change(owner, item.id, 'pending');
+                        } else {
+                            nextHistoryCheck = 0;
+                            ctx.log.warn('Fuelling confirmation unavailable: ' + error.message);
+                            continue;
                         }
                         throw error;
                     }
@@ -344,10 +435,6 @@ mgu.run({
                             y + (row + 4) * cell, cell, cell, 0x000000ff);
                     }
                 }
-                G.button(cv, theme, 65, 425, 275, 50, 'Cancel', () => {
-                    cancelPairingGuide();
-                    page = 0;
-                });
                 if (firstStep) {
                     G.button(cv, theme, 1210, 425, 315, 50, 'Next', startPhonePairing);
                 } else {
@@ -362,6 +449,7 @@ mgu.run({
             if (account && !vehicleOptions) {
                 if (account.vehicleId) {
                     G.button(cv, theme, 65, 420, 270, 50, 'Remove vehicle', removeVehicle);
+                    showClearLocalButton(cv, theme, 360, 420, 360, 50);
                 } else {
                     G.button(cv, theme, 65, 420, 270, 50, 'Choose vehicle', refreshVehicle);
                 }
@@ -441,18 +529,59 @@ mgu.run({
                 : 'Auto (Spritmonitor)';
         }
 
+        function setStationCountry(code) {
+            draft.country = code;
+            if (!draft.manualCurrency) draft.currency = stationLocation.countryCurrency(code);
+        }
+
+        function prefillStationAddress(address, now) {
+            if (!draft || now - draft.openedAt > stationLocation.POSITION_MAX_AGE_MS) return;
+            if (address.location && !draft.location && !draft.editedStation.has('location')) draft.location = address.location;
+            if (address.country && !draft.country && !draft.editedStation.has('country')) setStationCountry(address.country);
+        }
+
+        function prefillStation(sample, now) {
+            if (!draft || now - draft.openedAt > stationLocation.POSITION_MAX_AGE_MS) return;
+            if (sample.address) prefillStationAddress(sample.address, now);
+            if (!sample.position || draft.gpsChecked || (draft.location && draft.country)) return;
+            draft.gpsChecked = true;
+            try {
+                const town = stationLocation.nearbyTown(sample.position);
+                if (town && stationLocation.apiCountryCode(town.country) &&
+                    (!draft.country || draft.country === town.country)) {
+                    prefillStationAddress(town, now);
+                    draft.gpsResult = 'Nearby town from GPS (GeoNames)';
+                } else {
+                    draft.gpsResult = 'No clear nearby town in offline data';
+                }
+            } catch (_) {
+                draft.gpsResult = 'Offline town data unavailable';
+            }
+        }
+
+        const stationStatus = stationLocation.watch(ctx, (address, position) => {
+            const now = Date.now();
+            lastStationPosition = address || position ? { address, position, at: now } : null;
+            if (lastStationPosition) prefillStation(lastStationPosition, now);
+        });
+
         function openFuelling(type) {
             if (!account || !account.vehicleId || (type === 'AdBlue' && !hasAdBlue())) return;
             cancelPairingGuide();
+            clearLocalOpen = false;
             formScroll = 0;
             entry = type;
             const now = new Date();
             const date = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
             draft = {
                 date, type: '', manualType: false, odometer: '', trip: '', quantity: '', unit: 'L',
-                price: '', currency: 'EUR', priceMode: 'Total', note: '', company: '', country: '', location: '',
-                conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set()
+                price: '', currency: 'EUR', manualCurrency: false, priceMode: 'Total', note: '', company: '', country: '', location: '',
+                conditions: type === 'Fuel' ? previousDrivingConditions() : {}, editedConditions: new Set(),
+                openedAt: now.getTime(), editedStation: new Set()
             };
+            if (lastStationPosition && now.getTime() - lastStationPosition.at <= stationLocation.POSITION_MAX_AGE_MS) {
+                prefillStation(lastStationPosition, now.getTime());
+            }
             activeField = null;
             formStatus = '';
             savedEntryId = undefined;
@@ -470,7 +599,7 @@ mgu.run({
             ['price', 'Price'], ['note', 'Note']
         ];
         const stationFields = [
-            ['company', 'Company'], ['country', 'Country'], ['location', 'Location']
+            ['company', 'Company'], ['country', 'Country'], ['location', 'City']
         ];
         const computerFields = [
             ['consumption', 'Consumption'], ['consumedQuantity', 'Quantity'], ['averageSpeed', 'Avg. speed']
@@ -479,14 +608,19 @@ mgu.run({
         const choices = {
             type: ['Full', 'Partial'],
             unit: ['L', 'US gal', 'Imp gal', 'kg'],
-            currency: ['EUR', 'CZK', 'HUF', 'PLN', 'GBP', 'CHF', 'USD'],
+            currency: ['EUR', 'CZK', 'HUF', 'PLN', 'RON', 'GBP', 'CHF', 'USD'],
             priceMode: ['Total', 'Per unit']
         };
         const labels = { unit: 'Quantity unit', currency: 'Currency', priceMode: 'Price mode' };
 
         function editField(key) {
+            if (key === 'country' || key === 'location') draft.editedStation.add(key);
             activeField = key;
             formStatus = '';
+        }
+
+        function selectedStyle(theme, selected) {
+            return selected ? { primary: true, color: theme.crit } : undefined;
         }
 
         function renderEditor(cv, theme) {
@@ -494,24 +628,48 @@ mgu.run({
             const label = labels[key] || basicFields.concat(stationFields).find(field => field[0] === key)[1];
             cv.text(label, 48, 80, 32, theme.text, { font: 'bold' });
             G.button(cv, theme, 1350, 53, 195, 42, 'Done', () => editField(null));
-            if (choices[key]) {
-                choices[key].forEach((value, index) => {
-                    G.button(cv, theme, 48, 105 + index * 54, 900, 46,
-                        value + (draft[key] === value ? ' (selected)' : ''), () => {
-                            draft[key] = value;
-                            if (key === 'type') draft.manualType = true;
-                            editField(null);
-                        });
+            if (key === 'country') {
+                const options = [['', 'Clear'], ...stationLocation.countries];
+                options.forEach(([code, name], index) => {
+                    const x = 48 + index % 3 * 500;
+                    const y = 105 + Math.floor(index / 3) * 54;
+                    const label = code ? code + ' / ' + t(name) : t(name);
+                    G.button(cv, theme, x, y, 470, 46, label, () => {
+                        setStationCountry(code);
+                        editField(null);
+                    }, selectedStyle(theme, draft.country === code));
                 });
                 return;
             }
-            if (key === 'quantity') G.button(cv, theme, 1100, 95, 445, 44, 'Unit: ' + draft.unit, () => editField('unit'));
+            if (choices[key]) {
+                if (key === 'type' && entry === 'Fuel') {
+                    const { capacity, level, limit } = fuelTankStatus(liveData());
+                    const measured = t(reading(level, 'L', 1));
+                    const tank = capacity > 0 ? measured + ' / ' + reading(capacity, 'L', 1) : measured;
+                    cv.text(t('Tank level from iDrive') + ': ' + tank, 1000, 133, 19, theme.dim);
+                    if (limit !== null) cv.text(t('Full from') + ': ' + reading(limit, 'L', 1), 1000, 184, 19, theme.dim);
+                }
+                choices[key].forEach((value, index) => {
+                    const currency = key === 'currency';
+                    const x = currency ? 48 + index % 2 * 500 : 48;
+                    const y = 105 + (currency ? Math.floor(index / 2) : index) * 54;
+                    G.button(cv, theme, x, y, currency ? 470 : 900, 46,
+                        t(value), () => {
+                            draft[key] = value;
+                            if (key === 'type') draft.manualType = true;
+                            if (key === 'currency') draft.manualCurrency = true;
+                            editField(null);
+                        }, selectedStyle(theme, draft[key] === value));
+                });
+                return;
+            }
+            if (key === 'quantity') G.button(cv, theme, 1100, 95, 445, 44, t('Unit') + ': ' + draft.unit, () => editField('unit'));
             if (key === 'price') {
                 G.button(cv, theme, 950, 95, 290, 44, draft.currency, () => editField('currency'));
                 G.button(cv, theme, 1255, 95, 290, 44, draft.priceMode, () => editField('priceMode'));
             }
-            cv.text(draft[key].slice(-78) || '--', 48, 132, 27, theme.text);
-            const textField = ['note', 'company', 'country', 'location'].includes(key);
+            cv.text(draft[key].slice(-78) || '--', 48, 132, 27, theme.text, { literal: true });
+            const textField = ['note', 'company', 'location'].includes(key);
             const keys = textField
                 ? 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'.split('').concat(['Space', '.', ',', 'Delete', 'Clear'])
                 : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'Delete', 'Clear'];
@@ -546,10 +704,10 @@ mgu.run({
                 options.forEach((option, index) => {
                     const selected = conditions[label] === option;
                     G.button(cv, theme, 420 + index * 372, y + 5, 340, 45,
-                        option + (selected ? ' (selected)' : ''), y >= 92 && y + 55 <= 446 ? () => {
+                        t(option), y >= 92 && y + 55 <= 446 ? () => {
                             draft.editedConditions.add(label);
                             conditions[label] = selected ? undefined : option;
-                        } : null);
+                        } : null, selectedStyle(theme, selected));
                 });
             });
 
@@ -613,9 +771,11 @@ mgu.run({
             };
             if (draft.odometer != null) fields.odometer = draft.odometer;
             for (const [key, apiKey] of [['note', 'note'], ['company', 'stationname'],
-                ['country', 'country'], ['location', 'location']]) {
+                ['location', 'location']]) {
                 if (draft[key]) fields[apiKey] = draft[key];
             }
+            const country = stationLocation.apiCountryCode(draft.country);
+            if (country) fields.country = country;
             if (entry === 'Fuel') {
                 const conditions = draft.conditions;
                 const codes = {
@@ -647,6 +807,14 @@ mgu.run({
             return { litres: null };
         }
 
+        function fuelTankStatus(data) {
+            const capacity = fuelTankCapacity().litres;
+            const override = Number(ctx.settings.get('fullTankThresholdLitres'));
+            const limit = override > 0 ? override
+                : capacity > 0 ? capacity * Number(ctx.settings.get('fullTankThreshold')) / 100 : null;
+            return { capacity, level: data.fuelLevel, limit };
+        }
+
         function renderFuelling(cv, theme) {
             if (draft && activeField) return renderEditor(cv, theme);
             cv.text(draft ? 'Basic data' : 'Fuelling', 48, 80, 32, theme.text, { font: 'bold' });
@@ -656,15 +824,13 @@ mgu.run({
                 G.button(cv, theme, 48, 452, 170, 44, 'Back', () => { savedEntryId = undefined; });
                 return;
             }
-            cv.text(vehicle ? vehicle.name + ' / ' + entry : entry, 1545, 80, 22, theme.dim, { align: 'right' });
+            cv.text(vehicle ? vehicle.name + ' / ' + t(entry) : t(entry), 1545, 80, 22, theme.dim, { align: 'right' });
             const data = liveData();
             draft.odometer = data.odometer;
             draft.trip = data.trip;
             if (entry === 'Fuel' && !draft.manualType) {
-                const capacity = fuelTankCapacity().litres;
-                const threshold = Number(ctx.settings.get('fullTankThreshold'));
-                draft.type = capacity > 0 && data.fuelLevel !== null
-                    ? (data.fuelLevel / capacity * 100 >= threshold ? 'Full' : 'Partial') : '';
+                const { level, limit } = fuelTankStatus(data);
+                draft.type = limit !== null && level !== null ? (level >= limit ? 'Full' : 'Partial') : '';
             }
             const tanks = vehicle ? vehicle.tankDetails : [];
             const matchingTanks = tanks.filter(tank => (Number(tank.type) === 6) === (entry === 'AdBlue'));
@@ -674,7 +840,7 @@ mgu.run({
                 odometer: reading(draft.odometer, 'km', 0),
                 trip: reading(draft.trip, 'km', 0),
                 quantity: (draft.quantity || '--') + ' ' + draft.unit,
-                price: (draft.price || '--') + ' ' + draft.currency + ' / ' + draft.priceMode,
+                price: (draft.price || '--') + ' ' + draft.currency + ' / ' + t(draft.priceMode),
                 note: draft.note ? draft.note.slice(0, 52) + (draft.note.length > 52 ? '...' : '') : '--'
             };
             const offset = formScroll;
@@ -693,6 +859,7 @@ mgu.run({
             if (entry === 'Fuel') renderDrivingConditions(cv, theme, offset);
             const stationY = entry === 'Fuel' ? 1040 : 480;
             renderDetails(cv, theme, 'Gas Station', stationFields, stationY - offset, true);
+            cv.text(draft.gpsResult || stationStatus(), 1506, stationY - offset, 19, theme.dim, { align: 'right' });
             if (entry === 'Fuel') {
                 draft.consumption = reading(data.consumption, data.consumptionUnit, 1);
                 draft.averageSpeed = reading(data.speed, data.speedUnit, 1);
@@ -712,6 +879,12 @@ mgu.run({
         }
 
         ctx.onScroll(delta => {
+            if (page === ABOUT && !draft && !savedEntryId) {
+                const next = Math.max(0, Math.min(maxAboutScroll, aboutScroll + delta));
+                if (next === aboutScroll) return false;
+                aboutScroll = next;
+                return true;
+            }
             if (!draft || activeField) return false;
             const next = Math.max(0, Math.min(maxFormScroll(), formScroll + delta));
             if (next === formScroll) return false;
@@ -721,12 +894,13 @@ mgu.run({
 
         ctx.onTab(index => {
             if (!TABS[index]) return;
-            if (index !== 1) cancelPairingGuide();
+            if (index !== MY_CAR) cancelPairingGuide();
             draft = null;
             savedEntryId = undefined;
             activeField = null;
             page = index;
-            if (page === 1 && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
+            clearLocalOpen = false;
+            if (page === MY_CAR && !vehicle && !vehicleOptions && !accountStatus) refreshVehicle();
         });
 
         const rasterRuns = src => {
@@ -773,78 +947,113 @@ mgu.run({
             return runs;
         };
 
+        const releases = [
+            ['0.1.45', 'List each language once and mark the iDrive language (auto)'],
+            ['0.1.44', 'Add 12 languages and label the detected iDrive language (auto)'],
+            ['0.1.43', 'Allow a full-tank threshold in litres'],
+            ['0.1.42', 'Show the live tank level and full threshold in Type'],
+            ['0.1.41', 'Clear unsynced fuelings from My Car'],
+            ['', 'Remove local upload details after confirmation'],
+            ['0.1.40', 'Verify unconfirmed uploads against Spritmonitor history'],
+            ['0.1.39', 'Show the detected language next to the automatic option'],
+            ['0.1.38', 'Use the iDrive language by default'],
+            ['0.1.37', 'Add Hungarian, Polish, Slovak, Czech, Italian and Russian'],
+            ['', 'Highlight selected fuelling options in red'],
+            ['0.1.36', 'Add Spanish and French language options'],
+            ['', 'Render European accents in the original font'],
+            ['0.1.35', 'Add German as an optional app language'],
+            ['0.1.34', 'Open My Car first and scroll through About'],
+            ['', 'Mark the reset setting as experimental'],
+            ['', 'Match the feedback QR codes to the social QR sizes'],
+            ['0.1.33', 'Default to the currency of the station country'],
+            ['0.1.32', 'Estimate station town and country offline from GPS'],
+            ['0.1.31', 'Use the MGU current-position interface when available'],
+            ['0.1.30', 'Show two-letter country codes in the station form'],
+            ['0.1.29', 'Prefill only the city, without the street or road'],
+            ['0.1.28', 'Read station location from navigation elements'],
+            ['', 'Choose the station country from a list'],
+            ['0.1.27', 'Show navigation field names for location diagnostics'],
+            ['0.1.26', 'Show navigation status and prefill partial addresses'],
+            ['0.1.25', 'Experimental city and country from iDrive'],
+            ['0.1.24', 'Open QR pairing automatically in My Car'],
+            ['0.1.23', 'Hide phone pairing when connected'],
+            ['0.1.22', 'Disconnect the Spritmonitor account'],
+            ['', 'Hide fuelling buttons until a vehicle is selected'],
+            ['0.1.21', 'Show automatic tank capacity in Settings'],
+            ['0.1.20', 'Remove the selected vehicle in My Car'],
+            ['', 'Retry fuel tank capacity from Spritmonitor'],
+            ['0.1.19', 'Restored the original fuelling buttons'],
+            ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
+            ['0.1.17', 'Fixed startup on BMW iDrive 7'],
+            ['0.1.16', 'Offline fuelling and automatic sync'],
+            ['', 'Last driving settings available offline'],
+            ['0.1.15', 'Prefill driving conditions from last fill-up'],
+            ['0.1.14', 'Direct tank selection in charts'],
+            ['0.1.13', 'Fuel and AdBlue in one table'],
+            ['', 'More history points per chart'],
+            ['0.1.12', 'Consumption, distance and unit price charts'],
+            ['', 'Fuel tanks shown before AdBlue'],
+            ['0.1.11', 'Tank statistics in My Car'],
+            ['', 'Two-step phone pairing guide'],
+            ['0.1.10', 'Secure phone pairing with a QR code'],
+            ['0.1.9', 'Removed token entry from iDrive'],
+            ['0.1.8', 'Select a vehicle from the connected account'],
+            ['', 'BC1 averages and manual refilled quantity'],
+            ['0.1.7', 'Tank capacity from Spritmonitor'],
+            ['0.1.6', 'Live fuel and trip readings'],
+            ['0.1.4', 'Trip reset setting'],
+            ['0.1.3', 'Settings tab'],
+            ['0.1.2', 'Feedback QR codes in About'],
+            ['0.1.1', 'BMRMODZ layout and About']
+        ];
+        const maxAboutScroll = Math.max(0, Math.max(512, 105 + (releases.length - 1) * 20 + 20) - ABOUT_BOTTOM);
+
         function renderAbout(cv, theme) {
             if (!artwork) {
                 artwork = [
                     ['brmodz_logo.png', 300, 124, 490, 58],
                     ['qr_instagram.png', 116, 120, 332, 375, 'Instagram'],
                     ['qr_facebook.png', 116, 120, 496, 375, 'Facebook'],
-                    ['qr_report_bug.png', 102, 102, 667, 384, 'Report a bug', true],
-                    ['qr_request_feature.png', 102, 102, 831, 384, 'Request a feature', true]
-                ].map(([file, width, height, x, y, label, feedback]) => ({
-                    x, y, width, height, label, feedback,
+                    ['qr_report_bug.png', 103, 104, 666.5, 383, 'Report a bug'],
+                    ['qr_request_feature.png', 103, 104, 830.5, 383, 'Request a feature']
+                ].map(([file, width, height, x, y, label]) => ({
+                    x, y, width, label,
                     runs: rasterRuns(decodePng(path.join(__dirname, file), width, height))
-                        .filter(run => !feedback || run.color !== 0xffffffff)
                 }));
             }
             const scale = cv.place ? cv.place.scale : 1;
             const edge = coordinate => Math.round(coordinate * scale) / scale;
-            for (const { x, y, width, height, label, feedback, runs } of artwork) {
-                if (feedback) cv.fillRect(edge(x), edge(y), edge(x + width) - edge(x),
-                    edge(y + height) - edge(y), 0xffffffff);
+            const offset = aboutScroll;
+            cv.clip(40, ABOUT_TOP, 1518, ABOUT_BOTTOM - ABOUT_TOP);
+            for (const { x, y, width, label, runs } of artwork) {
                 for (const run of runs) {
                     const left = edge(x + run.x);
-                    const top = edge(y + run.y);
+                    const top = edge(y + run.y - offset);
                     cv.fillRect(left, top, edge(x + run.x + run.width) - left,
-                        edge(y + run.y + run.height) - top, run.color);
+                        edge(y + run.y + run.height - offset) - top, run.color);
                 }
-                cv.text(label, x + width / 2, 512, 15, theme.text, { align: 'center' });
+                if (label) cv.text(label, x + width / 2, 504 - offset, 15, theme.text, { align: 'center' });
             }
 
             const center = { align: 'center' };
             const heading = { align: 'center', font: 'bold', spacing: 2.5 };
-            cv.text('SPRITMONITOR', 640, 225, 30, theme.text, heading);
-            cv.text('Third-party app for Spritmonitor.de.', 640, 258, 19, theme.dim, center);
-            cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285, 19, theme.dim, center);
-            cv.text('Developed by dzooky@bmrmodz', 640, 353, 18, theme.text, center);
-            cv.text("WHAT'S NEW", 1120, 80, 22, theme.text, { font: 'bold' });
-            const releases = [
-                ['0.1.24', 'Open QR pairing automatically in My Car'],
-                ['0.1.23', 'Hide phone pairing when connected'],
-                ['0.1.22', 'Disconnect the Spritmonitor account'],
-                ['', 'Hide fuelling buttons until a vehicle is selected'],
-                ['0.1.21', 'Show automatic tank capacity in Settings'],
-                ['0.1.20', 'Remove the selected vehicle in My Car'],
-                ['', 'Retry fuel tank capacity from Spritmonitor'],
-                ['0.1.19', 'Restored the original fuelling buttons'],
-                ['0.1.18', 'Bottom fuelling buttons and AdBlue detection'],
-                ['0.1.17', 'Fixed startup on BMW iDrive 7'],
-                ['0.1.16', 'Offline fuelling and automatic sync'],
-                ['', 'Last driving settings available offline'],
-                ['0.1.15', 'Prefill driving conditions from last fill-up'],
-                ['0.1.14', 'Direct tank selection in charts'],
-                ['0.1.13', 'Fuel and AdBlue in one table'],
-                ['', 'More history points per chart'],
-                ['0.1.12', 'Consumption, distance and unit price charts'],
-                ['', 'Fuel tanks shown before AdBlue'],
-                ['0.1.11', 'Tank statistics in My Car'],
-                ['', 'Two-step phone pairing guide'],
-                ['0.1.10', 'Secure phone pairing with a QR code'],
-                ['0.1.9', 'Removed token entry from iDrive'],
-                ['0.1.8', 'Select a vehicle from the connected account'],
-                ['', 'BC1 averages and manual refilled quantity'],
-                ['0.1.7', 'Tank capacity from Spritmonitor'],
-                ['0.1.6', 'Live fuel and trip readings'],
-                ['0.1.4', 'Trip reset setting'],
-                ['0.1.3', 'Settings tab'],
-                ['0.1.2', 'Feedback QR codes in About'],
-                ['0.1.1', 'BMRMODZ layout and About']
-            ];
+            cv.text('SPRITMONITOR', 640, 225 - offset, 30, theme.text, heading);
+            cv.text('Third-party app for Spritmonitor.de.', 640, 258 - offset, 19, theme.dim, center);
+            cv.text('Log fuel and AdBlue refills from BMW iDrive 7.', 640, 285 - offset, 19, theme.dim, center);
+            cv.text('Developed by dzooky@bmrmodz', 640, 353 - offset, 18, theme.text, center);
+            cv.text("WHAT'S NEW", 1120, 80 - offset, 22, theme.text, { font: 'bold' });
             releases.forEach(([version, description], index) => {
-                const y = 105 + index * 20;
-                if (version) cv.text(version, 1120, y, 14, theme.text, { font: 'bold' });
-                cv.text(description, 1186, y, 14, theme.dim);
+                const y = 105 + index * 20 - offset;
+                if (y < ABOUT_TOP || y > ABOUT_BOTTOM) return;
+                if (version) cv.text(version, 1120, y, 14, theme.text, { font: 'bold', literal: true });
+                const width = cv.textWidth(description, 14, { literal: true });
+                cv.text(description, 1186, y, width > 360 ? 14 * 360 / width : 14, theme.dim, { literal: true });
             });
+            cv.noclip();
+            const bar = { x: 1563, y: ABOUT_TOP, w: 6, h: ABOUT_BOTTOM - ABOUT_TOP };
+            const thumb = bar.h * bar.h / (bar.h + maxAboutScroll);
+            cv.scroll = { y: ABOUT_TOP, bar };
+            cv.roundRect(bar.x, bar.y + offset / maxAboutScroll * (bar.h - thumb), bar.w, thumb, 3, theme.dim);
         }
 
         ctx.loop('MAIN', 4, () => {
@@ -852,19 +1061,23 @@ mgu.run({
             const cv = ctx.canvas(1600, 520).clear(theme.bg);
             G.panel(cv, theme, 24, 44, 1552, 468, null);
             const showingFuelling = Boolean(draft || savedEntryId);
-            if (showingFuelling) {
+            if (clearLocalOpen) {
+                renderClearLocal(cv, theme);
+            } else if (showingFuelling) {
                 renderFuelling(cv, theme);
-            } else if (page === 2) {
+            } else if (page === ABOUT) {
                 renderAbout(cv, theme);
-            } else if (page === 1 && vehicle) {
+            } else if (vehicle) {
                 cv.text(vehicle.name, 65, 100, 42, theme.text, { font: 'bold' });
                 const capacity = fuelTankCapacity();
                 const tankLabel = capacity.litres
-                    ? 'Fuel tank: ' + capacity.litres + ' L (' + capacity.source + ')'
+                    ? t('Fuel tank') + ': ' + capacity.litres + ' L (' + t(capacity.source) + ')'
                     : 'Fuel tank capacity unavailable';
                 cv.text(tankLabel, 1525, 100, 24, theme.dim, { align: 'right' });
-                cv.text(accountStatus || syncMessage(), 65, 130, 20, theme.dim);
+                const message = Date.now() < clearLocalNoticeUntil ? 'Local fuelings cleared.' : accountStatus || syncMessage();
+                cv.text(message, 65, 130, 20, theme.dim);
                 G.button(cv, theme, 1245, 447, 280, 45, 'Remove vehicle', removeVehicle);
+                showClearLocalButton(cv, theme, 963, 447, 266, 45);
                 G.button(cv, theme, 50, 447, 280, 45, 'Disconnect account', disconnectAccount);
                 const statistics = vehicle.tankStats;
                 const tank = statistics[tankPage];
@@ -908,7 +1121,7 @@ mgu.run({
                     }
                     [['consumption', 'Consumption'], ['distance', 'Distance'], ['price', 'Unit price']]
                         .forEach(([metric, label], i) => {
-                            G.button(cv, theme, 355 + i * 222, 447, 210, 45,
+                            G.button(cv, theme, 345 + i * 204, 447, 194, 45,
                                 chartMetric === metric ? 'Back to summary' : label,
                                 () => { chartMetric = chartMetric === metric ? null : metric; });
                         });
@@ -923,15 +1136,8 @@ mgu.run({
                         });
                     }
                 }
-            } else if (page === 1) {
+            } else {
                 renderAccount(cv, theme);
-            } else if (page === 0) {
-                const centered = { align: 'center' };
-                cv.text('This application is still in development phase and not ready for public use.',
-                    800, 218, 30, theme.text, centered);
-                cv.text('We still working on it and will be available soon.',
-                    800, 260, 30, theme.text, centered);
-                cv.text('Thank you', 800, 302, 30, theme.text, centered);
             }
             G.frame(cv, theme, TABS, showingFuelling ? -1 : page, []);
             return ctx.ui.image('MAIN_GFX', cv);

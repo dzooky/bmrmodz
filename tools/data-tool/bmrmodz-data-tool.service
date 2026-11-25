@@ -1,0 +1,14 @@
+[Unit]
+Description=BMRMODZ Data Tool read-only diagnostic service
+After=vsomeipd.service
+[Service]
+Type=simple
+RuntimeDirectory=bmrmodz-data-tool
+RuntimeDirectoryMode=0755
+ExecStart=/usr/bin/node /var/opt/bmrmodz-data-tool/current/service.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+# Service starts with no helper or ECU reads; diagnostic link is opened on explicit request.
+[Install]
+WantedBy=multi-user.target

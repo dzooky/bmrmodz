@@ -2,8 +2,12 @@
   "id": "osa",
   "title": "Oil Service Assistant",
   "description": "Engine, coolant and transmission oil temperature monitoring with live warm-up estimates and locally stored service history",
-  "version": "0.2.27",
+  "version": "0.2.63",
+  "config": {
+    "customSettings": true
+  },
   "settingsBeforeLast": true,
+  "settingsTabInStandard": false,
   "vendor": "custom",
   "loggingId": "OAA1",
   "iconGlyph": "temp",
@@ -14,21 +18,117 @@
       "title": "Oil Service Assistant",
       "buttons": [
         [
+          "BTN_SETTINGS",
+          "Settings"
+        ],
+        [
           "BTN_PAGE",
           "Next page"
         ],
         [
           "BTN_PREV",
           "Previous page"
-        ],
-        [
-          "BTN_SETTINGS",
-          "Settings"
         ]
       ]
     }
   ],
   "settings": [
+    {
+      "key": "language",
+      "label": "Language",
+      "type": "choice",
+      "default": "auto",
+      "options": [
+        [
+          "en",
+          "English"
+        ],
+        [
+          "de",
+          "Deutsch"
+        ],
+        [
+          "es",
+          "Español"
+        ],
+        [
+          "fr",
+          "Français"
+        ],
+        [
+          "hu",
+          "Magyar"
+        ],
+        [
+          "pl",
+          "Polski"
+        ],
+        [
+          "sk",
+          "Slovenčina"
+        ],
+        [
+          "cs",
+          "Čeština"
+        ],
+        [
+          "it",
+          "Italiano"
+        ],
+        [
+          "ru",
+          "Русский"
+        ],
+        [
+          "da",
+          "Dansk"
+        ],
+        [
+          "el",
+          "Ελληνικά"
+        ],
+        [
+          "zh-CN",
+          "简体中文"
+        ],
+        [
+          "nl",
+          "Nederlands"
+        ],
+        [
+          "nb",
+          "Norsk"
+        ],
+        [
+          "pt",
+          "Português"
+        ],
+        [
+          "ro",
+          "Română"
+        ],
+        [
+          "sl",
+          "Slovenščina"
+        ],
+        [
+          "fi",
+          "Suomi"
+        ],
+        [
+          "sv",
+          "Svenska"
+        ],
+        [
+          "tr",
+          "Türkçe"
+        ],
+        [
+          "uk",
+          "Українська"
+        ]
+      ]
+    },
     {
       "key": "theme",
       "label": "Colour theme",
@@ -86,24 +186,35 @@
       ]
     },
     {
+      "key": "cluster6wbAvailable",
+      "label": "6WB or 6U3 cluster detected",
+      "type": "bool",
+      "default": false,
+      "hidden": true
+    },
+    {
+      "key": "oilCluster",
+      "label": "Notification on cluster",
+      "type": "bool",
+      "default": false,
+      "notification": true,
+      "when": {
+        "cluster6wbAvailable": true
+      }
+    },
+    {
+      "key": "clusterBcTest",
+      "label": "Show notification message",
+      "actionLabel": "Run",
+      "type": "action"
+    },
+    {
       "key": "demo",
       "label": "Demo data",
       "type": "choice",
       "default": "auto",
-      "options": [
-        [
-          "auto",
-          "Auto"
-        ],
-        [
-          "on",
-          "Always"
-        ],
-        [
-          "off",
-          "Never"
-        ]
-      ]
+      "hidden": true,
+      "reset": 1
     },
     {
       "key": "warmOil",
@@ -135,9 +246,21 @@
         85,
         90
       ]
+    },
+    {
+      "key": "reloadEquipment",
+      "label": "Reload Equipment",
+      "actionLabel": "Reload",
+      "type": "action",
+      "hint": "Read vehicle equipment again"
     }
   ],
   "signals": {
+    "de.bmw.infotainment.hmi.hmicontext.HMIContext": {
+      "_optional": "Automatic iDrive language",
+      "_instances": "HMI_CID",
+      "currentDisplayLanguage": "rs"
+    },
     "com.harman.infotainment.systemfunctions.tasu.tasu.InternalTasu": {
       "_instances": "SystemFunctionsInternalTasuInst1",
       "_methods": [
@@ -157,5 +280,11 @@
     "de.bmw.infrastructure.EnvironmentalInformation": {
       "ExteriorTemperature": "s"
     }
+  },
+  "requires": {
+    "idrive7-renderd": "2.1.19",
+    "mgu-inputgate": "1.2.1",
+    "bmrmodz-car-equipment": "0.1.5",
+    "bmrmodz-notification": "0.1.1"
   }
 }

@@ -1,0 +1,78 @@
+# Car Equipment — BMRMODZ HU Tool
+
+**Version:** 0.1.4 · **iDrive 7 MGU** · **Persistent VO cache**
+
+Car Equipment is a background HU Tool that provides a shared read-only BMW Vehicle Order (FA/VO) equipment-check API to **OSA, DPF Monitor**, and other BMRMODZ applications. A client may ask once for a single option or an entire list, and receive yes / no / waiting. Car Equipment does not render on the instrument cluster or HUD.
+
+## How vehicle equipment is detected
+
+The Tool uses the **same ECU and DID and the same strict FA/VO parser as BMRMODZ Climate Comfort** (`apps/climate-comfort/vehicle-order.js`).
+
+1. MGU starts the Car Equipment systemd service.
+2. The service uses the locally installed **hmictl** TASU SOME/IP helper from the **IterioDev Comfort** HU Tool (declared as a dependency in `component.json`).
+3. A read-only `22 3F 06` request goes to gateway `0x10`, via the head unit's TASU diagnostic gateway `0xF8A6`.
+4. The complete response is validated and decoded into the vehicle's SALAPA / SA option codes, cached in memory, and atomically saved locally at `/var/opt/bmrmodz-car-equipment/equipment.json` (mode `0600`).
+5. After a head-unit restart, the service loads the validated saved codes and immediately answers app requests, **without another gateway read**.
+6. Clients check one or more codes through a **local-only Unix socket**.
+
+No ECU coding, writes, actuator commands, or automatic display rendering. Vehicle configuration and installed equipment are not identical in every retrofit scenario; SA codes indicate what is **encoded in VO**, not guaranteed functioning hardware.
+
+## Dependency / installation
+
+The repository includes the Tool's `component.json`, service unit and its source files, and registers it under `mgu-repo.json > tools` for MGU Store. MGU Store must be able to resolve and install the dependency `iteriodev-comfort >= 0.6.3` (from a repository enabled in the Store). This is **another HU Tool, and its Comfort service has additional seat/ambient-light functions**; it is used here only to access its locally installed `hmictl` executable. Car Equipment does not invoke those functions.
+
+The helper is searched at:
+- `/var/opt/iteriodev-comfort/current/hmictl`
+- `/var/opt/iteriodev-turnview/current/hmictl`
+- `/var/opt/iteriodev-overlays/current/hmictl`
+
+Advanced setups can supply `CAR_EQUIPMENT_HMICTL` (executable path) or `CAR_EQUIPMENT_ADAPTER` (Node adapter module path). No helper binary is redistributed with Car Equipment. Without a compatible helper the service fails clearly rather than inventing equipment data.
+
+**Important:** the original 0.1.0 tool was reported working with OSA in a car. The new persistent-cache behavior in 0.1.1 still needs in-car verification; the automated tests simulate a gateway and reboots.
+
+## Local API (JSON Lines)
+
+Socket: `/run/bmrmodz-car-equipment/ctl.sock`. Send one JSON object followed by `\\n` and read one JSON reply followed by `\\n`.
+
+Request:
+```json
+{"op":"check","codes":["610","6WB","6U3"]}
+```
+
+Example reply from a *successfully read and validated* VO (illustrative, not a measurement of any particular car):
+```json
+{"ok":true,"results":{"610":true,"6WB":false,"6U3":true},"source":"vehicle_order","updatedAt":"2026-11-20T00:00:00.000Z","error":null}
+```
+
+If VO cannot be read or validated, requested items return `"waiting"` (never `false`). Every key is echoed as requested; case-insensitive 3-character BMW SA codes are supported. Aliases: `hud` -> `610`, `digital_cluster` -> `6WB`, `live_cockpit_professional` -> `6U3`.
+
+Other operations: `{"op":"status"}`, `{"op":"reload"}` and the backward-compatible alias `{"op":"refresh"}`. At service startup, the tool reads VO **once only if no valid saved cache exists**. Every ordinary `check` is cache-only; after an initial read failure it returns `waiting` immediately; the Tool retries once after 10 seconds, again after 10 seconds, then every 60 seconds until the full VO is successfully read. A new scan occurs only on the explicit `reload`/`refresh` operation, which replaces the cache atomically on success and preserves the last known codes if it fails. Replies include `cached: true` if loaded from disk. The cache belongs to this head unit. UI reload buttons in other applications will be incorporated during their future updates; the existing Climate Comfort manual action continues to use the `refresh` alias.
+
+**Equipment != feature permission:** a HUD option in FA does **not** prove that the app has a functioning renderer or is allowed to write to HUD. OSA/DPF must separately check actual rendering capability.
+
+## Client API for OSA / DPF Monitor
+
+The repository's App Kit now includes `kit/runtime/car-equipment.js`; packaged apps can use:
+
+```js
+const equipment = require('./kit/car-equipment');
+const hud = await equipment.has('610'); // true, false, or 'waiting'
+const options = await equipment.check(['610', '6WB', '6U3']);
+// options.results['610'], options.results['6WB'], options.results['6U3']
+```
+
+An operational Car Equipment Tool returns `waiting` until it has a valid VO. If the client cannot reach the Tool at all, the existing client fallback still returns `unknown` for compatibility; applications must treat both as unconfirmed, never as `false`. Climate Comfort 0.1.61 uses this shared API instead of sending its own FA/VO request; existing OSA/DPF applications may keep using the 0.1.0-compatible client API without modification.
+
+## Development / verification
+
+Run `node tools/car-equipment/test.js`, `node tools/car-equipment/cache.test.js`, `node tools/car-equipment/one-shot.test.js`, and `node apps/climate-comfort/equipment.test.js` from the repository root. The tests use synthetic VO frames; no vehicle is contacted. On the MGU, check the systemd service log and send `{"op":"reload"}` then `{"op":"check","codes":["610","6WB","6U3"]}` via a Unix socket client. Cross-check against E-Sys FA/VO. Do not label it car-tested before doing so.
+
+Source credit: Vehicle Order decoding is adapted from the project's **Climate Comfort**. The HU Tool packaging and TASU helper CLI integration follow the **IterioDev Comfort** tool's published interface. No third-party executable is bundled.
+
+## 0.1.3 – MGU health-check compatibility
+
+The MGU Store deployer checks that the systemd unit remains active without restarting for 10 seconds. Car Equipment now starts its Unix socket first and resolves the optional `hmictl` transport lazily on the initial uncached read or manual reload. If the helper is absent, the service remains active and reports unknown equipment, rather than crashing installation. The cache uses the MGU writable persistent `/var/opt` tool directory, Node 8-compatible filesystem calls, and the component lists its service under `recmgr`. Existing saved cache from the previous path is migrated if present/readable. The single initial read / manual reload-only behavior is unchanged. Run `node tools/car-equipment/health.test.js` for the missing-helper regression. Real MGU installation still needs validation.
+
+## 0.1.4 – Nonblocking waiting and automatic VO recovery
+
+When no validated VO is cached, app `check` requests immediately return `waiting` for equipment codes, without waiting on TASU. The service owns a single background VO reader and retries failed reads after 10 seconds twice, then once every 60 seconds. Once a validated complete VO is obtained, automatic reads stop and the persistent cache answers `true`/`false`. Explicit `reload` remains available; failed reloads retain the last valid cache. No app-specific gateway reads are performed. Older app clients that compare the result strictly with `true` continue to fail closed. The shared client returns `unknown` if the service itself cannot be contacted, so callers should treat both `waiting` and `unknown` as unresolved.

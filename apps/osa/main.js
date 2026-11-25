@@ -10,18 +10,89 @@
 const mgu = require('./kit/mgu');
 const G = require('./kit/gauges');
 const Car = require('./kit/car');
+const Language = require('./language');
+const { t: translate } = require('./kit/i18n');
 const { withAlpha } = require('./kit/canvas');
 const TransmissionReader = require('./transmission');
+const CarEquipment = require('./kit/car-equipment');
+const createSettingsCanvas = require('./kit/settings-canvas');
+const oilNotification = require('./oil-notification');
 const fs = require('fs');
 const path = require('path');
 const { decode: decodePng } = require('./png');
 
 const W = 1600, H = 520;
+const ENGINE_RUNNING_RPM = 300;
 
 mgu.run({
     async start(ctx) {
         const { ui, log } = ctx;
+        ctx.hideButton('BTN_SETTINGS');
+        const settingsCanvas = createSettingsCanvas(ctx.settings, ctx.spec.version, () => switchPage(0));
+        const getLanguage = Language.start(ctx);
         let page = 0;
+        // Cluster output is disabled until VO confirms 6WB or Live Cockpit Professional (6U3).
+        // Never overwrite the user's notification preference when equipment is unresolved.
+        ctx.settings.values.cluster6wbAvailable = false;
+        let equipmentChecking = false;
+        let equipmentCheckedAt = 0;
+        let equipmentRetry = null;
+        function scheduleEquipmentCheck() {
+            if (equipmentRetry) return;
+            equipmentRetry = setTimeout(() => {
+                equipmentRetry = null;
+                refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment retry: ' + error));
+            }, 10000);
+        }
+        async function refreshClusterEquipment(force = false) {
+            if (equipmentChecking || (!force && Date.now() - equipmentCheckedAt < 10000)) return false;
+            equipmentChecking = true;
+            equipmentCheckedAt = Date.now();
+            try {
+                let reloadOk = !force;
+                if (force) {
+                    const reloaded = await CarEquipment.request({ op: 'reload' }, { timeout: 15000 });
+                    reloadOk = !!(reloaded && reloaded.ok === true && reloaded.fresh === true);
+                    if (!reloaded || reloaded.ok !== true || reloaded.available !== true)
+                        log.warn('OSA Car Equipment reload: ' + (reloaded && reloaded.error || 'VO not yet available'));
+                }
+                // Only a cache check. The shared tool owns all gateway reads and retries.
+                const checked = await CarEquipment.check(['6WB', '6U3'], { timeout: 12000 });
+                const sixWb = checked.results['6WB'];
+                const sixU3 = checked.results['6U3'];
+                const supported = sixWb === true || sixU3 === true;
+                const confirmed = [sixWb, sixU3].every(value => value === true || value === false);
+                if (ctx.settings.values.cluster6wbAvailable !== supported)
+                    ctx.settings.set('cluster6wbAvailable', supported);
+                log.info('OSA Car Equipment VO: 6WB=' + sixWb + ', 6U3=' + sixU3);
+                if (!confirmed) scheduleEquipmentCheck();
+                else if (equipmentRetry) { clearTimeout(equipmentRetry); equipmentRetry = null; }
+                return reloadOk;
+            } catch (error) {
+                if (ctx.settings.values.cluster6wbAvailable !== false)
+                    ctx.settings.set('cluster6wbAvailable', false);
+                log.warn('OSA Car Equipment 6WB: ' + String(error && error.message || error));
+                scheduleEquipmentCheck();
+                return false;
+            } finally { equipmentChecking = false; }
+        }
+        ctx.settings.actionStatus = {};
+        ctx.settings.onAction('reloadEquipment', () => {
+            if (equipmentChecking) {
+                ctx.settings.actionStatus.reloadEquipment = 'Check in progress';
+                return;
+            }
+            ctx.settings.actionStatus.reloadEquipment = 'Reloading...';
+            log.info('OSA manual equipment reload pressed');
+            refreshClusterEquipment(true).then(success => {
+                ctx.settings.actionStatus.reloadEquipment = success ? 'Equipment refreshed' : 'Reload failed';
+                log.info('OSA manual equipment reload finished: ' + (success ? 'success' : 'failed'));
+            }).catch(error => {
+                ctx.settings.actionStatus.reloadEquipment = 'Reload failed';
+                log.warn('OSA manual equipment reload: ' + error);
+            });
+        });
+        refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
         const rasterRuns = src => {
             const d = src.d, w = src.w, h = src.h;
             // Join matching runs across rows to avoid seams inside solid areas.
@@ -65,6 +136,13 @@ mgu.run({
             previousRuns.forEach(keepRun);
             return runs;
         };
+        function fitText(cv, text, x, y, size, color, width, options = {}) {
+            while (size > 12 && cv.textWidth(text, size, options) > width) size--;
+            cv.text(text, x, y, size, color, options);
+        }
+
+        let aboutScroll = 0;
+        let maxAboutScroll = 0;
         let aboutLogoRuns;
         let aboutLayers;
         function renderAbout(cv, t) {
@@ -106,16 +184,42 @@ mgu.run({
             aboutLayers.forEach(({ runs, x, y, width, height, label, feedback }) => {
                 if (feedback) drawRect(x, y, width, height, 0xffffffff);
                 drawRuns(runs, x, y);
-                if (label) cv.text(label, x + width / 2, 512, 15, t.text, { align: 'center' });
+                if (label) fitText(cv, label, x + width / 2, 512, 15, t.text, 155, { align: 'center' });
             });
             cv.text('OIL SERVICE ASSISTANT', 640, 225, 30, t.text,
                 { align: 'center', font: 'bold', spacing: 2.5 });
-            cv.text('Monitors engine oil, coolant and transmission oil temperatures.', 640, 258, 19, t.dim, { align: 'center' });
-            cv.text('Shows live estimates for reaching target temperatures.', 640, 285, 19, t.dim, { align: 'center' });
-            cv.text('Saves warm-up history locally for comparison with previous sessions.', 640, 312, 19, t.dim, { align: 'center' });
+            fitText(cv, 'Monitors engine oil, coolant and transmission oil temperatures.', 640, 258, 19, t.dim, 890, { align: 'center' });
+            fitText(cv, 'Shows live estimates for reaching target temperatures.', 640, 285, 19, t.dim, 890, { align: 'center' });
+            fitText(cv, 'Saves warm-up history locally for comparison with previous sessions.', 640, 312, 19, t.dim, 890, { align: 'center' });
 
             const newsX = 1120;
             const milestones = [
+                ['0.2.63', 'Reliable oil temperature reached notification'],
+                ['0.2.61', 'Changed cluster notification preview from toggle to Run action'],
+                ['0.2.60', 'Migrated KOMBI oil notifications to the shared Notification Tool'],
+                ['0.2.52', 'Show cluster notification setting only when VO contains 6WB'],
+                ['0.2.51', 'Each language appears once; iDrive language marked (auto)'],
+                ['0.2.50', 'Scrollable release history'],
+                ['0.2.49', 'Settings tab in Standard layout'],
+                ['0.2.46', 'App language in Settings'],
+                ['0.2.45', 'Aligned the cluster message with DPF Status'],
+                ['0.2.44', 'Raised the oil warm-up message in the map area'],
+                ['0.2.43', 'Transparent message at the cluster bottom edge'],
+                ['0.2.42', 'Bottom-edge cluster message test with black background'],
+                ['0.2.41', 'English oil warm-up message on the cluster'],
+                ['0.2.40', 'Passive cluster capture and lower message test'],
+                ['0.2.39', 'Transparent background for cluster messages'],
+                ['0.2.38', 'Cluster message above factory notifications'],
+                ['0.2.37', 'Lower cluster message placement test'],
+                ['0.2.36', 'Four-second oil warm-up message on the cluster'],
+                ['0.2.35', 'Timed BC test with temporary map replacement'],
+                ['0.2.34', 'Map test records slot and layer states'],
+                ['0.2.33', 'BC test in the cluster map area'],
+                ['0.2.32', 'Three-phase BC diagnostics and refined oil drop'],
+                ['0.2.31', 'Cluster BC test and slimmer oil drop'],
+                ['0.2.30', 'Oil warm-up alert and cluster toggle'],
+                ['0.2.29', 'Oil drop preview below the coolant gauge'],
+                ['0.2.28', 'Turbo icon placement preview on the cluster'],
                 ['0.2.27', 'Larger engine oil gauge'],
                 ['0.2.26', 'Redesigned About and release milestones'],
                 ['0.2.25', 'Feedback QR codes'],
@@ -128,11 +232,26 @@ mgu.run({
                 ['0.1.0', 'First standalone OSA app']
             ];
             cv.text("WHAT'S NEW", newsX, 80, 22, t.text, { font: 'bold' });
+            const top = 94, bottom = 498, rowHeight = 24;
+            maxAboutScroll = Math.max(0, 105 + (milestones.length - 1) * rowHeight - bottom);
+            aboutScroll = Math.min(aboutScroll, maxAboutScroll);
+            cv.clip(newsX, top, 430, bottom - top);
             milestones.forEach(([version, label], index) => {
-                const y = 104 + index * 20;
+                const y = 105 + index * rowHeight - aboutScroll;
+                if (y < top || y > bottom) return;
                 cv.text(version, newsX, y, 14, t.text, { font: 'bold' });
-                cv.text(label, newsX + 66, y, 14, t.dim);
+                const options = { literal: true };
+                const text = translate(label);
+                const measured = cv.textWidth(text, 14, options);
+                cv.text(text, newsX + 66, y, Math.min(14, 14 * 362 / Math.max(1, measured)), t.dim, options);
             });
+            cv.noclip();
+            const bar = { x: 1563, y: top, w: 6, h: bottom - top };
+            if (maxAboutScroll > 0) {
+                const thumb = bar.h * bar.h / (bar.h + maxAboutScroll);
+                cv.roundRect(bar.x, bar.y + aboutScroll / maxAboutScroll * (bar.h - thumb), bar.w, thumb, 3, t.dim);
+            }
+            cv.scroll = { y: top, bar };
 
             cv.text('Developed by dzooky@bmrmodz', 640, aboutLayers.length > 2 ? 363 : 372, 18, t.text, { align: 'center', font: 'bold' });
         }
@@ -165,7 +284,7 @@ mgu.run({
         let atfWarmSession = null;
         let atfCoolSession = pendingCool;
         const updateAtfHistory = (d) => {
-            const running = G.isNum(d.rpm) ? d.rpm >= 300 : null;
+            const running = G.isNum(d.rpm) ? d.rpm >= ENGINE_RUNNING_RPM : null;
             const atf = transmission.fresh ? transmission.temp : null;
             const now = Date.now();
             if (running === null) return;
@@ -232,8 +351,11 @@ mgu.run({
         const updateWarmHistory = (d, oilTarget, coolantTarget) => {
             const now = mono();
             if (d.demo || !G.isNum(d.rpm)) { warmSession = null; return; }
-            if (d.rpm >= 300) {
-                if (!warmSession && !sessionDone) {
+            if (d.rpm >= ENGINE_RUNNING_RPM) {
+                // A completed warm-up has no active session until the engine stops.
+                // Without this guard the next render dereferences warmSession=null.
+                if (sessionDone) return;
+                if (!warmSession) {
                     if (!G.isNum(d.oil) || !G.isNum(d.coolant) || !G.isNum(outsideTemp)) return;
                     warmSession = { start: now, outside: outsideTemp, oilStart: d.oil, coolantStart: d.coolant,
                         oilTarget, coolantTarget, oilAt: null, coolantAt: null };
@@ -257,7 +379,25 @@ mgu.run({
                 sessionDone = false;
             }
         };
+        const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         const car = new Car(ctx, ['rpm', 'speed', 'temps']);
+        const oilWarmTarget = () => Number(ctx.settings.get('warmOil')) || 80;
+        // Preview is a user-requested display sample; no oil temperature or DDE is needed.
+        ctx.settings.onAction('clusterBcTest', () => {
+            // Manual preview is independent of live engine temperature.
+            oilNotification.show(log, getLanguage(), oilWarmTarget(), 'preview');
+        });
+        // The warm-up state machine runs only with output enabled and available data.
+        // The tool handles rendering without waiting for an OSA-owned renderer socket.
+        oilNotification.start(log, () => {
+            const { demo, oil } = car.data();
+            return {
+                enabled: !demo && ctx.settings.get('oilCluster') === true,
+                demo,
+                oil: G.isNum(oil) ? oil : null,
+                target: oilWarmTarget()
+            };
+        }, getLanguage);
         const transmission = new TransmissionReader(ctx);
         let outsideTemp = null;
         ctx.signals.watch('de.bmw.infrastructure.EnvironmentalInformation', '1', {
@@ -271,7 +411,6 @@ mgu.run({
         });
 
         const hist = [];
-        const mono = () => { const h = process.hrtime(); return h[0] * 1000 + h[1] / 1e6; };
         let lastHist = 0;
         // Keep the calculated heating rate stable between samples. The display
         // refreshes faster than the vehicle signals, so update this only on a
@@ -329,7 +468,7 @@ mgu.run({
             return { state: 'warming', min: (target - temp) / Math.max(0.15, rate), rate, est: w < 0.5 };
         }
         function etaRow(cv, t, y, label, e, target, historical) {
-            cv.text(label, 952, y, 22, t.dim, { font: 'bold', spacing: 1.5 });
+            fitText(cv, label, 952, y, 22, t.dim, 360, { font: 'bold', spacing: 1 });
             let big, color = t.text, unit = '', right = '';
             if (e.state === 'ready') { big = 'READY'; color = t.ok; }
             else if (e.state === 'off') { big = 'ENGINE OFF'; color = t.dim; }
@@ -338,7 +477,8 @@ mgu.run({
             else { big = '--'; color = t.dim; }
             const bw = cv.text(big, 952, y + 54, unit ? 52 : 38, color, { font: unit || big === '--' ? 'num' : 'bold', spacing: unit ? 0 : 1 });
             if (unit) cv.text('min', 960 + bw, y + 54, 25, t.dim);
-            cv.text('target ' + Math.round(target) + '°C', 1552, y, 21, t.dim, { align: 'right' });
+            const targetText = translate('Target temperature') + ': ' + Math.round(target) + ' °C';
+            fitText(cv, targetText, 1552, y, 21, t.dim, 220, { align: 'right' });
             if (right) cv.text(right, 1552, y + 48, 21, t.dim, { align: 'right' });
             if (historical !== null && historical !== undefined) {
                 const histText = '(' + Math.max(1, Math.round(historical)) + ' min)';
@@ -347,27 +487,27 @@ mgu.run({
             if (e.state === 'warming' && e.est) cv.text('estimate', 1552, y + 48, 18, t.dim, { align: 'right' });
         }
 
-        function tbdTab(p) { return p >= 0 && p <= 3 ? p : -1; }
+        const tabs = ['Engine', 'Transmission', 'Statistics', 'Settings', 'About'];
 
         function render() {
             const t = ctx.theme();
             const cv = ctx.canvas(W, H).clear(t.bg);
 
             const d = car.data();
-            const oilTarget = Number(ctx.settings.get('warmOil')) || 80;
+            const oilTarget = oilWarmTarget();
             const coolantTarget = Number(ctx.settings.get('warmCoolant')) || 80;
             updateWarmHistory(d, oilTarget, coolantTarget);
             updateAtfHistory(d);
 
             if (page === 0) {
                 const oil = G.isNum(d.oil) ? d.oil : null;
-                const status = oil === null ? 'NO OIL TEMP' : (d.demo ? 'DEMO DATA' : 'LIVE');
+                const status = oil === null ? 'Oil temperature unavailable' : (d.demo ? 'DEMO DATA' : 'LIVE');
                 const statusColor = oil === null ? t.dim : (d.demo ? t.warn : t.ok);
 
                 // Engine page keeps BOTH Warm-Up temperature gauges:
                 // engine oil and engine coolant. Transmission page is oil-only.
                 G.segBar(cv, t, 24, 44, 880, 250, {
-                    label: 'Oil',
+                    label: 'Engine oil',
                     value: oil,
                     unit: '°C',
                     decimals: 0,
@@ -402,8 +542,8 @@ mgu.run({
                 const historical = similarHistory(oilTarget, coolantTarget);
                 G.panel(cv, t, 928, 44, 648, 468, null);
                 cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.22));
-                cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
-                    align: 'center', font: 'bold', spacing: 3
+                fitText(cv, status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, 550, {
+                    align: 'center', font: 'bold', spacing: 2
                 });
                 cv.text('OUTSIDE TEMPERATURE', 952, 170, 22, t.dim, { font: 'bold', spacing: 1.5 });
                 const outsideText = G.isNum(outsideTemp) ? ((outsideTemp > 0 ? '+' : '') + outsideTemp.toFixed(1)) : '--';
@@ -416,7 +556,7 @@ mgu.run({
                 const live = transmission.fresh;
                 const value = live ? transmission.temp : null;
                 const status = live ? 'LIVE' :
-                    transmission.statusText === 'LIVE' ? 'LINK STALE' : transmission.statusText;
+                    transmission.statusText === 'LIVE' ? 'LINK STALE' : transmission.statusText.replace('IDENTIFIED · 0F25D0', translate('Identified') + ' · 0F25D0');
                 const statusColor = live ? t.ok : t.dim;
 
                 // Match the Engine oil page layout; only the data source and
@@ -440,8 +580,8 @@ mgu.run({
 
                 G.panel(cv, t, 928, 44, 648, 468, null);
                 cv.roundRect(952, 70, 600, 60, 10, withAlpha(statusColor, 0.22));
-                cv.text(status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, {
-                    align: 'center', font: 'bold', spacing: 3
+                fitText(cv, status, 1252, 110, status.length > 14 ? 30 : 38, statusColor, 550, {
+                    align: 'center', font: 'bold', spacing: 2
                 });
 
                 cv.text('TRANSMISSION OIL TEMPERATURE', 952, 170, 22, t.dim, {
@@ -452,25 +592,27 @@ mgu.run({
                 });
                 cv.text('°C', value === null ? 1010 : 1018, 245, 27, t.dim);
 
-                const engineRunning = G.isNum(d.rpm) && d.rpm >= 300;
+                const engineRunning = G.isNum(d.rpm) && d.rpm >= ENGINE_RUNNING_RPM;
                 const atfMode = value !== null && value < 30 ? 'heat'
                     : (value !== null && value > 40 && !engineRunning ? 'cool' : null);
                 if (atfMode === 'heat') {
                     cv.text('ATF HEAT-UP · TO 30°C', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
                     const warmAvg = atfAverage('atf-warm');
                     const warmElapsed = atfWarmSession ? Math.max(1, Math.round((mono() - atfWarmSession.start) / 60000)) : null;
-                    cv.text(atfWarmSession ? (warmElapsed + ' min elapsed') : (warmAvg === null ? 'COLLECTING DATA' : 'avg ' + Math.round(warmAvg) + ' min'), 952, 385, 26, atfWarmSession ? t.text : t.dim, { font: 'num' });
+                    cv.text(atfWarmSession ? (translate('Elapsed') + ': ' + warmElapsed + ' min') :
+                        (warmAvg === null ? 'COLLECTING DATA' : translate('Average') + ': ' + Math.round(warmAvg) + ' min'), 952, 385, 26, atfWarmSession ? t.text : t.dim);
                 } else if (atfMode === 'cool') {
                     cv.text('ATF COOL-DOWN · TO 30°C', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
                     const coolAvg = atfAverage('atf-cool');
                     const coolElapsed = atfCoolSession ? Math.max(1, Math.round((Date.now() - atfCoolSession.startedAt) / 60000)) : null;
-                    cv.text(atfCoolSession ? (coolElapsed + ' min elapsed') : (coolAvg === null ? 'COLLECTING DATA' : 'avg ' + Math.round(coolAvg) + ' min'), 952, 385, 26, atfCoolSession ? t.text : t.dim, { font: 'num' });
+                    cv.text(atfCoolSession ? (translate('Elapsed') + ': ' + coolElapsed + ' min') :
+                        (coolAvg === null ? 'COLLECTING DATA' : translate('Average') + ': ' + Math.round(coolAvg) + ' min'), 952, 385, 26, atfCoolSession ? t.text : t.dim);
                 } else {
                     cv.text('SERVICE TEMPERATURE MONITOR', 952, 345, 20, t.dim, { font: 'bold', spacing: 1 });
                     cv.text('HEAT <30°C  ·  COOL >40°C + ENGINE OFF', 952, 385, 20, t.dim);
                 }
                 cv.text('One service mode at a time · HEAT / COOL', 952, 445, 18, t.dim);
-                if (transmission.error) cv.text(transmission.error, 952, 475, 17, t.warn, { maxWidth: 590 });
+                if (transmission.error) fitText(cv, transmission.error, 952, 475, 17, t.warn, 590);
             } else if (page === 2) {
                 G.panel(cv, t, 24, 44, 1552, 468, null);
                 const statsHistory = history.filter((x) => x.oilTarget === oilTarget && x.coolantTarget === coolantTarget);
@@ -479,44 +621,65 @@ mgu.run({
                 cv.text(String(statsHistory.length), 64, 205, 42, t.text, { font: 'num' });
                 const avgOil = statsHistory.length ? statsHistory.reduce((s, x) => s + x.oilMin, 0) / statsHistory.length : null;
                 const avgCoolant = statsHistory.length ? statsHistory.reduce((s, x) => s + x.coolantMin, 0) / statsHistory.length : null;
-                cv.text('OIL AVERAGE', 300, 145, 18, t.dim, { font: 'bold' });
+                fitText(cv, 'OIL AVERAGE', 300, 145, 18, t.dim, 247, { font: 'bold' });
                 cv.text(avgOil === null ? '--' : Math.round(avgOil) + ' min', 300, 205, 32, avgOil === null ? t.dim : t.text, { font: 'num' });
                 cv.text('COOLANT AVERAGE', 570, 145, 18, t.dim, { font: 'bold' });
                 cv.text(avgCoolant === null ? '--' : Math.round(avgCoolant) + ' min', 570, 205, 32, avgCoolant === null ? t.dim : t.text, { font: 'num' });
                 cv.text('TRANSMISSION ATF HISTORY', 64, 285, 27, t.text, { font: 'bold', spacing: 2 });
                 const warmRows = atfHistory.filter((x) => x.kind === 'atf-warm');
                 const coolRows = atfHistory.filter((x) => x.kind === 'atf-cool');
-                cv.text('WARM-UP RECORDS', 64, 345, 18, t.dim, { font: 'bold' });
+                fitText(cv, 'WARM-UP RECORDS', 64, 345, 18, t.dim, 220, { font: 'bold' });
                 cv.text(String(warmRows.length), 64, 400, 30, t.text, { font: 'num' });
                 cv.text('AVERAGE TO 30°C', 300, 345, 18, t.dim, { font: 'bold' });
                 cv.text(atfAverage('atf-warm') === null ? '--' : Math.round(atfAverage('atf-warm')) + ' min', 300, 400, 30, t.text, { font: 'num' });
-                cv.text('COOL-DOWN RECORDS', 700, 345, 18, t.dim, { font: 'bold' });
+                fitText(cv, 'COOL-DOWN RECORDS', 700, 345, 18, t.dim, 244, { font: 'bold' });
                 cv.text(String(coolRows.length), 700, 400, 30, t.text, { font: 'num' });
                 cv.text('AVERAGE TO 30°C', 960, 345, 18, t.dim, { font: 'bold' });
                 cv.text(atfAverage('atf-cool') === null ? '--' : Math.round(atfAverage('atf-cool')) + ' min', 960, 400, 30, t.text, { font: 'num' });
                 cv.text('ATF warm-up starts below 30°C; cool-down starts above 40°C after engine stop.', 64, 470, 18, t.dim);
             } else if (page === 3) {
+                settingsCanvas.draw(cv, t);
+            } else if (page === 4) {
                 renderAbout(cv, t);
             }
 
-            G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'About'], tbdTab(page), []);
+            if (cv.standardSettingsTab) {
+                cv.tabInfo = { tabs, sel: page, badges: [] };
+                G.frame(cv, t, ['Engine', 'Transmission', 'Statistics', 'Settings', 'About'],
+                    page === 3 ? 4 : page, []);
+            } else {
+                cv.tabInfo = null;
+                G.frame(cv, t, tabs, page, []);
+            }
             return ui.image('MAIN_GFX', cv);
         }
 
+        ctx.onScroll(delta => {
+            if (page === 3) return settingsCanvas.scroll(delta);
+            if (page !== 4) return false;
+            const next = Math.max(0, Math.min(maxAboutScroll, aboutScroll + delta));
+            if (next === aboutScroll) return false;
+            aboutScroll = next;
+            return true;
+        });
+
         const switchPage = (next) => {
-            page = (next + 4) % 4;
+            page = (next + 5) % 5;
+
             return render();
         };
 
-        ui.onClick('BTN_PAGE', () => switchPage(page + 1));
-        ui.onClick('BTN_PREV', () => switchPage(page + 2));
+        function pageBy(direction) {
+            return switchPage(page + direction);
+        }
+        ui.onClick('BTN_PAGE', () => pageBy(1));
+        ui.onClick('BTN_PREV', () => pageBy(-1));
         ctx.onTab((i) => {
-            // Display maps the visual header index back to the app tab index;
-            // App tabs map directly; Test is tab 3 and About is tab 4.
-            if (i !== page && i >= 0 && i <= 4) return switchPage(i);
+            if (i !== page && i >= 0 && i < tabs.length) return switchPage(i);
         });
 
         ui.onVisible((name, on) => {
+            if (name === 'MAIN' && on) refreshClusterEquipment().catch(error => log.warn('OSA Car Equipment: ' + error));
             if (name === 'MAIN') transmission.setVisible(on);
         });
         transmission.setVisible(ui.isVisible('MAIN'));

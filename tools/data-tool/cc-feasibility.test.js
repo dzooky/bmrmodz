@@ -1,0 +1,16 @@
+'use strict';
+const assert=require('assert');
+const {plan,echoMatches,SEAT_BUTTONS}=require('./cc-feasibility');
+const p=plan();
+assert.strictEqual(p.controlsEnabled,false);
+assert.strictEqual(p.mode,'static-only');
+assert.strictEqual(p.coverage.length,8);
+assert.strictEqual(p.operations.frontLeftBelt.ecu,1);
+assert.strictEqual(p.operations.frontRightBelt.data[3],2);
+assert.strictEqual(p.operations.wheelHeat.sid,0x2e);
+assert.strictEqual(SEAT_BUTTONS.rearRight.Ventilation,0x25);
+assert.strictEqual(echoMatches('frontLeftBelt',[0x71,1,0xa0,0xd2,1]),true);
+assert.strictEqual(echoMatches('wheelHeat',[0x6e,0xd0,0x74]),true);
+assert.strictEqual(echoMatches('wheelHeat',[0x6e,0xd0,0x75]),false);
+assert.strictEqual(echoMatches('unknown',[0x71,1,0xa0,0xd2]),false);
+console.log('Data Tool CC feasibility: exact operations and no-execution contract passed');

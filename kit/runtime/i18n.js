@@ -5,6 +5,10 @@ const dict = locale.strings || {};
 const language = locale.language || 'en';
 const localizedValues = new Set(Object.values(dict));
 const cache = new Map();
+let runtimeWords = null;
+function setRuntimeTranslations(words) {
+    runtimeWords = words ? new Map(Object.entries(words).map(([key, value]) => [key.toLowerCase(), value])) : null;
+}
 function getLanguage() { return language; }
 // Plural forms live in the locale catalogs: "fault|faults<TAB>ошибка|ошибки|ошибок".
 // The key is the English text for 1 and for many, exactly as English shows it (both the same
@@ -36,6 +40,11 @@ const phrases = Object.keys(dict).filter((s) => s.length >= 4 && s.indexOf('|') 
 const pattern = new RegExp('(^|[^A-Za-z0-9_./])(' + phrases.map(escape).join('|') + ')(?=$|[^A-Za-z0-9_./])', 'gi');
 function t(value) {
     const s = String(value == null ? '' : value);
+    if (runtimeWords) {
+        const key = s.trim();
+        const translation = runtimeWords.get(key.toLowerCase());
+        if (translation !== undefined) return s.replace(key, translation);
+    }
     if (language === 'en') return s;
     if (!/[A-Za-z]/.test(s)) return s; // numeric telemetry / already translated labels: hot path
     if (s.trim() === 'rpm') return s; // preserve the physical unit; uppercase RPM headings may translate
@@ -61,4 +70,4 @@ function t(value) {
     cache.set(s, out);
     return out;
 }
-module.exports = { t, plural, PLURAL_RULES, dict, getLanguage };
+module.exports = { t, plural, PLURAL_RULES, dict, getLanguage, setRuntimeTranslations };

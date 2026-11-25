@@ -24,5 +24,19 @@
         "kit/tools/oapgen"
       ]
     }
-  }
+  },
+  "tools": [
+    {
+      "id": "bmrmodz-car-equipment",
+      "path": "tools/car-equipment"
+    },
+    {
+      "id": "bmrmodz-notification",
+      "path": "tools/notification"
+    },
+    {
+      "id": "bmrmodz-data-tool",
+      "path": "tools/data-tool"
+    }
+  ]
 }

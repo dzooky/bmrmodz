@@ -1,0 +1,12 @@
+{
+  "proxies": {
+    "de.bmw.infotainment.vehicle.CDS": {
+      "instances": "1",
+      "attributes": {
+        "statusEngineTemperature": "rs",
+        "statusEngineSpeed2": "rs"
+      }
+    }
+  },
+  "services": {}
+}
