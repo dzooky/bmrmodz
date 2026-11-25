@@ -5,6 +5,7 @@
 - Low-fuel advisory: when regeneration is approaching and fuel level is critically low, recommend refueling. Prevent unnecessary repeats. Fuel and distance thresholds remain open; do not imply a confirmed DDE regeneration lockout.
 - Overview: preserve existing graphics and layout; replace the redundant right-side distance-to-average-regeneration panel with DPF differential pressure (mbar) and DPF temperature (°C). Verify availability per DDE profile before displaying values.
 - Since last regen gauge: retain blue current-distance fill and yellow DDE average marker; add a red marker for the historical maximum observed by the app. Preserve the existing adaptive scale with 10% headroom and upward rounding to 50 km.
+- About: fix the recurring scrolling regression reported in the vehicle; ensure the entire About content, including What's New, can be scrolled and verify on MGU.
 - All roadmap features are planned only; implementation and vehicle verification pending.
 
 
