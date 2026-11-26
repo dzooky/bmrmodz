@@ -1,3 +1,5 @@
+[简体中文说明](README.zh-CN.md)
+
 <p align="center">
   <img src="docs/brmodz_logo_github.png" alt="BMRMODZ logo" width="220">
 </p>
